@@ -1,0 +1,56 @@
+{
+  "author": {
+    "name": "Yehor Sergeenko",
+    "email": "yehor.sergeenko@gmail.com",
+    "url": "https://github.com/bricss"
+  },
+  "bugs": {
+    "url": "https://github.com/bricss/rekwest/issues"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.14.5",
+    "@babel/core": "^7.14.6",
+    "@babel/eslint-parser": "^7.14.7",
+    "@babel/plugin-transform-runtime": "^7.14.5",
+    "@babel/preset-env": "^7.14.7",
+    "c8": "^7.7.3",
+    "eslint": "^7.29.0",
+    "eslint-config-ultra-refined": "^1.0.35",
+    "mocha": "^9.0.1"
+  },
+  "description": "The multi-culti request lib humanity deserves 🔌",
+  "engines": {
+    "node": ">=14.x"
+  },
+  "exports": {
+    "import": "./src/index.mjs",
+    "require": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "homepage": "https://github.com/bricss/rekwest#readme",
+  "keywords": [
+    "fetch",
+    "http",
+    "https",
+    "request"
+  ],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "name": "rekwest",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bricss/rekwest.git"
+  },
+  "scripts": {
+    "build": "rm -rf dist && npx babel src -d dist",
+    "lint": "eslint . --ext .cjs,.js,.mjs",
+    "prepack": "npm run build",
+    "pretest": "rm -rf coverage",
+    "test": "mocha --exit --recursive",
+    "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
+  },
+  "version": "0.0.1"
+}
