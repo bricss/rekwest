@@ -1,0 +1,3 @@
+ignore:
+  - test/fixtures/**
+require: test/fixtures/index.mjs

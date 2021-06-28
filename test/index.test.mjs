@@ -1,0 +1,135 @@
+import { strict as assert } from 'assert';
+import { Readable } from 'stream';
+import rekwest from '../src/index.mjs';
+
+const baseURL = new URL('http://localhost:3000');
+
+describe('rekwest', () => {
+
+  describe('with { digest: true } & { parse: true } (defaults)', () => {
+
+    it('should make GET [200] request and get json', async () => {
+      const url = new URL('/gimme/json', baseURL);
+      const res = await rekwest(url);
+
+      assert.equal(res.body.here.is, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies, undefined);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make GET [200] request and get text', async () => {
+      const url = new URL('/gimme/text', baseURL);
+      const res = await rekwest(url);
+
+      assert.equal(res.body, 'here is text');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies, undefined);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make GET [200] request with cookies and get more cookies', async () => {
+      const url = new URL('/gimme/cookies', baseURL);
+      const res = await rekwest(url, {
+        cookies: {
+          aux: 'baz',
+        },
+      });
+
+      assert.equal(res.body.here.is, 'cookies');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies?.aux, 'baz');
+      assert.equal(res.cookies?.foo, 'bar');
+      assert.equal(res.cookies?.qux, 'zap');
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make GET [204] request with preserved cookies', async () => {
+      const url = new URL('/gimme/nothing', baseURL);
+      const res = await rekwest(url);
+
+      assert.equal(res.body.length, 0);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies?.aux, 'baz');
+      assert.equal(res.cookies?.foo, 'bar');
+      assert.equal(res.cookies?.qux, 'zap');
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 204);
+    });
+
+    it('should make GET [301] request with redirect { mode: follow } and get new cookies', async () => {
+      const url = new URL('/gimme/redirect', baseURL);
+      const res = await rekwest(url);
+
+      assert.equal(res.body.here.is, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies?.crack, 'duck');
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, true);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make GET [301] request with redirect { mode: error } and catch error', async () => {
+      const url = new URL('/gimme/redirect', baseURL);
+      const res = await rekwest(url, { redirect: 'error' }).catch((err) => err);
+
+      assert.match(res.message, /Unexpected redirect, redirect mode is set to error\./);
+      assert.equal(res.name, 'RequestError');
+    });
+
+    it('should make GET [301] request with redirect { follow: 0 } and catch error', async () => {
+      const url = new URL('/gimme/redirect', baseURL);
+      const res = await rekwest(url, { follow: 0 }).catch((err) => err);
+
+      assert.match(res.message, /Maximum redirect reached at:/);
+      assert.equal(res.name, 'RequestError');
+    });
+
+    it('should make POST [302] request with redirect { body: stream } and catch error', async () => {
+      const url = new URL('/gimme/redirect', baseURL);
+      const res = await rekwest(url, {
+        body: Readable.from(Array.from('zqiygyxz')),
+        method: 'POST',
+      }).catch((err) => err);
+
+      assert.match(res.message, /Unable to follow redirect with body as readable stream\./);
+      assert.equal(res.name, 'RequestError');
+    });
+
+    it('should make PUT [303] request with redirect { body: json }', async () => {
+      const url = new URL('/gimme/redirect', baseURL);
+      const res = await rekwest(url, {
+        body: { eldritch: 'symbols' },
+        method: 'PUT',
+      });
+
+      assert.equal(res.body.here.is, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies?.crack, 'duck');
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, true);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make GET [401] request and catch error', async () => {
+      const url = new URL('/gimme/refusal', baseURL);
+      const res = await rekwest(url).catch((res) => res);
+
+      assert.equal(res.body.message, 'unauthorized');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies?.crack, 'duck');
+      assert.equal(res.ok, false);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 401);
+    });
+
+  });
+
+});
