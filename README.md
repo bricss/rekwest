@@ -5,7 +5,7 @@ native [http(s).request](https://nodejs.org/api/http.html#http_http_request_url_
 
 ## Prerequisites
 
-* Node.js `>= 14.x`
+* Node.js `>= 16.x`
 
 ## Installation
 

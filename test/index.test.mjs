@@ -1,6 +1,11 @@
 import { strict as assert } from 'assert';
+import { once } from 'events';
 import { Readable } from 'stream';
-import rekwest from '../src/index.mjs';
+import { types } from 'util';
+import rekwest, {
+  ackn,
+  Cookies,
+} from '../src/index.mjs';
 
 const baseURL = new URL('http://localhost:3000');
 
@@ -8,11 +13,13 @@ describe('rekwest', () => {
 
   describe('with { digest: true } & { parse: true } (defaults)', () => {
 
+    after(() => Cookies.jar.clear());
+
     it('should make GET [200] request and get json', async () => {
       const url = new URL('/gimme/json', baseURL);
       const res = await rekwest(url);
 
-      assert.equal(res.body.here.is, 'json');
+      assert.equal(res.body.gotta, 'json');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
       assert.equal(res.ok, true);
@@ -20,13 +27,24 @@ describe('rekwest', () => {
       assert.equal(res.statusCode, 200);
     });
 
-    it('should make GET [200] request and get text', async () => {
+    it('should make GET [200] request and get plain text', async () => {
       const url = new URL('/gimme/text', baseURL);
       const res = await rekwest(url);
 
-      assert.equal(res.body, 'here is text');
+      assert.equal(res.body, 'gotta text');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make GET [200] request and get encoded text', async () => {
+      const url = new URL('/gimme/encode', baseURL);
+      const res = await rekwest(url);
+
+      assert.equal(res.body, '杯瑴愠瑥硴');
+      assert.equal(res.bodyUsed, true);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -40,7 +58,7 @@ describe('rekwest', () => {
         },
       });
 
-      assert.equal(res.body.here.is, 'cookies');
+      assert.equal(res.body.gotta, 'cookies');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies?.aux, 'baz');
       assert.equal(res.cookies?.foo, 'bar');
@@ -50,13 +68,18 @@ describe('rekwest', () => {
       assert.equal(res.statusCode, 200);
     });
 
-    it('should make GET [204] request with preserved cookies', async () => {
+    it('should make GET [204] request with new and preserved cookies', async () => {
       const url = new URL('/gimme/nothing', baseURL);
-      const res = await rekwest(url);
+      const res = await rekwest(url, {
+        cookies: {
+          dot: 'com',
+        },
+      });
 
       assert.equal(res.body.length, 0);
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies?.aux, 'baz');
+      assert.equal(res.cookies?.dot, 'com');
       assert.equal(res.cookies?.foo, 'bar');
       assert.equal(res.cookies?.qux, 'zap');
       assert.equal(res.ok, true);
@@ -68,7 +91,7 @@ describe('rekwest', () => {
       const url = new URL('/gimme/redirect', baseURL);
       const res = await rekwest(url);
 
-      assert.equal(res.body.here.is, 'json');
+      assert.equal(res.body.gotta, 'json');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies?.crack, 'duck');
       assert.equal(res.ok, true);
@@ -110,7 +133,7 @@ describe('rekwest', () => {
         method: 'PUT',
       });
 
-      assert.equal(res.body.here.is, 'json');
+      assert.equal(res.body.gotta, 'json');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies?.crack, 'duck');
       assert.equal(res.ok, true);
@@ -128,6 +151,99 @@ describe('rekwest', () => {
       assert.equal(res.ok, false);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 401);
+    });
+
+    [
+      'br',
+      'deflate',
+      'gzip',
+      'identity',
+    ].forEach((item) => {
+      it(`should make POST [200] request with "${ item }" compressed body`, async () => {
+        const url = new URL('/gimme/squash', baseURL);
+        const res = await rekwest(url, {
+          body: Buffer.from('zqiygyxz'),
+          headers: {
+            'accept-encoding': item,
+            'content-encoding': item,
+            'vary': 'accept-encoding',
+          },
+          method: 'POST',
+        });
+
+        assert.equal(res.body, 'zqiygyxz'.split('').reverse().join(''));
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, 200);
+      });
+    });
+
+  });
+
+  describe('with { digest: false } & { parse: false }', () => {
+
+    const opts = { digest: false, parse: false };
+
+    it('should make GET [200] request and resolve to arrayBuffer', async () => {
+      const url = new URL('/gimme/text', baseURL);
+      const res = await rekwest(url, opts);
+
+      assert.ok(types.isArrayBuffer(await res.arrayBuffer()));
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies, undefined);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make GET [200] request and resolve to buffer', async () => {
+      const url = new URL('/gimme/text', baseURL);
+      const res = await rekwest(url, opts);
+
+      assert.ok(Buffer.isBuffer(await res.body()));
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies, undefined);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make GET [200] request and resolve to json', async () => {
+      const url = new URL('/gimme/json', baseURL);
+      const res = await rekwest(url, opts);
+
+      assert.equal((await res.json()).gotta, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies, undefined);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make GET [200] request and resolve to text', async () => {
+      const url = new URL('/gimme/text', baseURL);
+      const res = await rekwest(url, opts);
+
+      assert.equal(await res.text(), 'gotta text');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies, undefined);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
+  });
+
+  describe('stream withal', () => {
+
+    it('should pipe throughout POST [200] request', async () => {
+      const url = new URL('/gimme/squash', baseURL);
+      const req = Readable.from('zqiygyxz').pipe(rekwest.stream(url, { method: 'POST' }));
+      const [res] = await once(req, 'response');
+
+      assert.equal(res.statusCode, 200);
+      assert.equal((await ackn(res).body()).toString(), 'zqiygyxz'.split('').reverse().join(''));
     });
 
   });

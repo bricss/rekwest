@@ -1,49 +1,26 @@
-import { globalAgent } from 'http';
 import { request } from 'https';
 import { Cookies } from './cookies.mjs';
 import { RequestError } from './errors.mjs';
 import {
   ackn,
   compress,
+  merge,
+  preflight,
 } from './helpers.mjs';
 
 export * from './cookies.mjs';
 export * from './errors.mjs';
+export * from './helpers.mjs';
 
 export default async function rekwest(url, opts = {}) {
   const { digest = true, redirected = false } = opts;
   const promise = new Promise((resolve, reject) => {
-    opts.url = new URL(url);
-    opts.agent ??= opts.url.protocol === 'http:' ? globalAgent : void 0;
-    if (opts.cookies !== false) {
-      let cookie = Cookies.jar.get(opts.url.origin);
-
-      if (opts.cookies === Object(opts.cookies) && !opts.redirected) {
-        if (cookie) {
-          new Cookies(opts.cookies).forEach(function (val, key) {
-            this.set(key, val);
-          }, cookie);
-        } else {
-          cookie = new Cookies(opts.cookies);
-          Cookies.jar.set(opts.url.origin, cookie);
-        }
-      }
-
-      opts.headers = {
-        ...cookie ? { cookie } : null,
-        ...opts.headers,
-      };
-    }
-
-    opts.follow ??= 20;
-    opts.headers = {
-      'accept': 'application/json, text/plain, */*',
-      'accept-encoding': 'br, deflate, gzip',
-      ...Object.entries(opts.headers || {})
-               .reduce((acc, [key, val]) => (acc[key.toLowerCase()] = val, acc), {}),
-    };
-    opts.parse ??= true;
-    opts.redirect ??= 'follow';
+    opts = preflight({
+      digest,
+      redirected,
+      url,
+      ...opts.redirected ? opts : merge(rekwest.defaults, opts),
+    });
 
     if (!opts.follow) {
       throw new RequestError(`Maximum redirect reached at: ${ opts.url.href }`);
@@ -164,10 +141,13 @@ export default async function rekwest(url, opts = {}) {
 Reflect.defineProperty(rekwest, 'stream', {
   enumerable: true,
   value: function (url, opts = {}, cb) {
-    opts.url = new URL(url);
-    opts.agent ??= opts.url.protocol === 'http:' ? globalAgent : void 0;
-    opts.headers = { 'content-type': 'application/octet-stream', ...opts.headers };
+    opts = preflight({
+      url,
+      ...merge(rekwest.defaults, { headers: { 'content-type': 'application/octet-stream' } }, opts),
+    });
 
     return request(opts.url, opts, cb);
   },
 });
+
+Reflect.set(rekwest, 'defaults', Object.create(null));
