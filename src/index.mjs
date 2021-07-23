@@ -13,7 +13,7 @@ export * from './errors.mjs';
 export * from './helpers.mjs';
 
 export default async function rekwest(url, opts = {}) {
-  const { digest = true, redirected = false } = opts;
+  const { digest = true, redirected = false, thenable = false } = opts;
   const promise = new Promise((resolve, reject) => {
     opts = preflight({
       digest,
@@ -41,12 +41,12 @@ export default async function rekwest(url, opts = {}) {
 
       Reflect.defineProperty(res, 'cookies', {
         enumerable: true,
-        value: Cookies.jar.has(opts.url.origin)
+        value: opts.cookies !== false && Cookies.jar.has(opts.url.origin)
                ? Object.fromEntries(Cookies.jar.get(opts.url.origin).entries())
                : void 0,
       });
 
-      if (opts.follow && /3\d{2}/.test(res.statusCode) && res.headers.location) {
+      if (opts.follow && /^3\d{2}$/.test(res.statusCode) && res.headers.location) {
         if (opts.redirect === 'error') {
           res.emit('error', new RequestError('Unexpected redirect, redirect mode is set to error.'));
         }
@@ -78,7 +78,7 @@ export default async function rekwest(url, opts = {}) {
       Reflect.defineProperty(res, 'ok', {
         configurable: true,
         enumerable: true,
-        value: /2\d{2}/.test(res.statusCode),
+        value: /^2\d{2}$/.test(res.statusCode),
       });
 
       Reflect.defineProperty(res, 'redirected', {
@@ -134,7 +134,11 @@ export default async function rekwest(url, opts = {}) {
       ex.body = await ex.body();
     }
 
-    throw ex;
+    if (!thenable) {
+      throw ex;
+    } else {
+      return ex;
+    }
   }
 }
 

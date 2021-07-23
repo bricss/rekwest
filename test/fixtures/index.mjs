@@ -44,6 +44,12 @@ export async function mochaGlobalSetup() {
         gotta: 'json',
       }));
       res.end();
+    } else if (pathname.match(String.raw`/gimme/kaboom`) && /get/i.test(req.method)) {
+      res.writeHead(500, { 'content-type': 'application/json' });
+      res.write(JSON.stringify({
+        message: 'kaboom',
+      }));
+      res.end();
     } else if (pathname.match(String.raw`/gimme/nothing`) && /get/i.test(req.method)) {
       res.statusCode = 204;
       res.end();

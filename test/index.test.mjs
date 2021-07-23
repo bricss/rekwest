@@ -87,7 +87,31 @@ describe('rekwest', () => {
       assert.equal(res.statusCode, 204);
     });
 
-    it('should make GET [301] request with redirect { mode: follow } and get new cookies', async () => {
+    it('should make GET [204] request without cookies', async () => {
+      const url = new URL('/gimme/nothing', baseURL);
+      const res = await rekwest(url, { cookies: false });
+
+      assert.equal(res.body.length, 0);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies, undefined);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 204);
+    });
+
+    it('should make GET [301] request with redirect { mode: false } and get new cookies', async () => {
+      const url = new URL('/gimme/redirect', baseURL);
+      const res = await rekwest(url, { redirect: false });
+
+      assert.equal(res.body.length, 0);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies?.crack, 'duck');
+      assert.equal(res.ok, false);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 301);
+    });
+
+    it('should make GET [301] request with redirect { mode: follow } and retain cookies', async () => {
       const url = new URL('/gimme/redirect', baseURL);
       const res = await rekwest(url);
 
@@ -231,6 +255,22 @@ describe('rekwest', () => {
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
+    });
+
+  });
+
+  describe('with { thenable: true }', () => {
+
+    it('should make GET [500] request and slip the error', async () => {
+      const url = new URL('/gimme/kaboom', baseURL);
+      const res = await rekwest(url, { thenable: true });
+
+      assert.equal(res.body.message, 'kaboom');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies, undefined);
+      assert.equal(res.ok, false);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 500);
     });
 
   });
