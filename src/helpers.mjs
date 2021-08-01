@@ -11,100 +11,6 @@ const gunzip = promisify(zlib.gunzip);
 const deflate = promisify(zlib.deflate);
 const inflate = promisify(zlib.inflate);
 
-export const ackn = (res, { digest = false, parse = false } = {}) => {
-  if (!digest) {
-    Object.defineProperties(res, {
-      arrayBuffer: {
-        enumerable: true,
-        value: async function () {
-          const stash = parse;
-
-          parse = false;
-          const { buffer, byteLength, byteOffset } = await this.body().finally(() => parse = stash);
-
-          return buffer.slice(byteOffset, byteOffset + byteLength);
-        },
-      },
-      blob: {
-        enumerable: true,
-        value: async function () {
-          const val = await this.arrayBuffer();
-
-          return new Blob([val]);
-        },
-      },
-      json: {
-        enumerable: true,
-        value: async function () {
-          const val = await this.text();
-
-          return JSON.parse(val);
-        },
-      },
-      text: {
-        enumerable: true,
-        value: async function () {
-          const val = await this.blob().then((blob) => blob.text());
-
-          return val.toString();
-        },
-      },
-    });
-  }
-
-  return Object.defineProperties(res, {
-    body: {
-      enumerable: true,
-      value: async function () {
-        if (this.bodyUsed) {
-          throw new TypeError('Response stream already read.');
-        }
-
-        let spool = [];
-
-        for await (const chunk of this) {
-          spool.push(chunk);
-        }
-
-        spool = Buffer.concat(spool);
-
-        if (spool.length) {
-          spool = await decompress(spool, this.headers['content-encoding'], { async: true });
-        }
-
-        if (spool.length && parse) {
-          const contentType = this.headers['content-type'] || '';
-          const charset = contentType.split(';')
-                                     .find((it) => /charset=/i.test(it))
-                                     ?.toLowerCase()
-                                     ?.replace('charset=', '')
-                                     ?.replace('iso-8859-1', 'latin1')
-                                     ?.trim() || 'utf-8';
-
-          if (/json/i.test(contentType)) {
-            spool = JSON.parse(spool.toString(charset));
-          } else if (/text|xml/i.test(contentType)) {
-            if (/latin1|utf-(8|16le)|ucs-2/.test(charset)) {
-              spool = spool.toString(charset);
-            } else {
-              spool = new TextDecoder(charset).decode(Uint8Array.from(spool).buffer);
-            }
-          }
-        }
-
-        return spool;
-      },
-      writable: true,
-    },
-    bodyUsed: {
-      enumerable: true,
-      get: function () {
-        return this.readableEnded;
-      },
-    },
-  });
-};
-
 export const compress = (buf, encoding, { async = false } = {}) => {
   encoding &&= encoding.match(/\bbr\b|\bdeflate\b|\bgzip\b/i)?.[0].toLowerCase();
   const compressor = {
@@ -185,4 +91,98 @@ export const preflight = (opts) => {
   opts.redirect ??= 'follow';
 
   return opts;
+};
+
+export const premix = (res, { digest = false, parse = false } = {}) => {
+  if (!digest) {
+    Object.defineProperties(res, {
+      arrayBuffer: {
+        enumerable: true,
+        value: async function () {
+          const stash = parse;
+
+          parse = false;
+          const { buffer, byteLength, byteOffset } = await this.body().finally(() => parse = stash);
+
+          return buffer.slice(byteOffset, byteOffset + byteLength);
+        },
+      },
+      blob: {
+        enumerable: true,
+        value: async function () {
+          const val = await this.arrayBuffer();
+
+          return new Blob([val]);
+        },
+      },
+      json: {
+        enumerable: true,
+        value: async function () {
+          const val = await this.text();
+
+          return JSON.parse(val);
+        },
+      },
+      text: {
+        enumerable: true,
+        value: async function () {
+          const val = await this.blob().then((blob) => blob.text());
+
+          return val.toString();
+        },
+      },
+    });
+  }
+
+  return Object.defineProperties(res, {
+    body: {
+      enumerable: true,
+      value: async function () {
+        if (this.bodyUsed) {
+          throw new TypeError('Response stream already read');
+        }
+
+        let spool = [];
+
+        for await (const chunk of this) {
+          spool.push(chunk);
+        }
+
+        spool = Buffer.concat(spool);
+
+        if (spool.length) {
+          spool = await decompress(spool, this.headers['content-encoding'], { async: true });
+        }
+
+        if (spool.length && parse) {
+          const contentType = this.headers['content-type'] || '';
+          const charset = contentType.split(';')
+                                     .find((it) => /charset=/i.test(it))
+                                     ?.toLowerCase()
+                                     ?.replace('charset=', '')
+                                     ?.replace('iso-8859-1', 'latin1')
+                                     ?.trim() || 'utf-8';
+
+          if (/json/i.test(contentType)) {
+            spool = JSON.parse(spool.toString(charset));
+          } else if (/text|xml/i.test(contentType)) {
+            if (/latin1|utf-(8|16le)|ucs-2/.test(charset)) {
+              spool = spool.toString(charset);
+            } else {
+              spool = new TextDecoder(charset).decode(Uint8Array.from(spool).buffer);
+            }
+          }
+        }
+
+        return spool;
+      },
+      writable: true,
+    },
+    bodyUsed: {
+      enumerable: true,
+      get: function () {
+        return this.readableEnded;
+      },
+    },
+  });
 };

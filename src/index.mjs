@@ -2,10 +2,10 @@ import { request } from 'https';
 import { Cookies } from './cookies.mjs';
 import { RequestError } from './errors.mjs';
 import {
-  ackn,
   compress,
   merge,
   preflight,
+  premix,
 } from './helpers.mjs';
 
 export * from './cookies.mjs';
@@ -13,7 +13,12 @@ export * from './errors.mjs';
 export * from './helpers.mjs';
 
 export default async function rekwest(url, opts = {}) {
-  const { digest = true, redirected = false, thenable = false } = opts;
+  const { body, digest = true, redirected = false, thenable = false } = opts;
+
+  if (body?.constructor.name === 'Blob') {
+    opts.body = Buffer.from(await body.arrayBuffer());
+  }
+
   const promise = new Promise((resolve, reject) => {
     opts = preflight({
       digest,
@@ -48,7 +53,7 @@ export default async function rekwest(url, opts = {}) {
 
       if (opts.follow && /^3\d{2}$/.test(res.statusCode) && res.headers.location) {
         if (opts.redirect === 'error') {
-          res.emit('error', new RequestError('Unexpected redirect, redirect mode is set to error.'));
+          res.emit('error', new RequestError('Unexpected redirect, redirect mode is set to error'));
         }
 
         if (opts.redirect === 'follow') {
@@ -59,7 +64,7 @@ export default async function rekwest(url, opts = {}) {
           if (res.statusCode !== 303 && body === Object(body)
             && Reflect.has(body, 'pipe')
             && body.pipe?.constructor === Function) {
-            res.emit('error', new RequestError('Unable to follow redirect with body as readable stream.'));
+            res.emit('error', new RequestError('Unable to follow redirect with body as readable stream'));
           }
 
           opts.follow -= 1;
@@ -87,17 +92,21 @@ export default async function rekwest(url, opts = {}) {
       });
 
       if (res.statusCode >= 400) {
-        return reject(ackn(res, opts));
+        return reject(premix(res, opts));
       }
 
-      resolve(ackn(res, opts));
+      resolve(premix(res, opts));
     });
 
     req.on('error', reject);
     req.on('timeout', req.destroy);
 
     if (opts.body) {
-      let { body } = opts;
+      let { body, method } = opts;
+
+      if (body && (method === 'GET' || method === 'HEAD')) {
+        throw new TypeError('Request with GET/HEAD method cannot have body');
+      }
 
       if (body === Object(body) && Reflect.has(body, 'pipe') && body.pipe?.constructor === Function) {
         body.pipe(req);

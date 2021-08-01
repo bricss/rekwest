@@ -75,6 +75,9 @@ export async function mochaGlobalSetup() {
         message: 'unauthorized',
       }));
       res.end();
+    } else if (pathname.match(String.raw`/gimme/repulse`) && /post/i.test(req.method)) {
+      res.statusCode = 200;
+      req.pipe(res);
     } else if (pathname.match(String.raw`/gimme/squash`) && /post/i.test(req.method)) {
       const compressor = {
         br: zlib.createBrotliCompress,

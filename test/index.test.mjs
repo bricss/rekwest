@@ -1,10 +1,11 @@
 import { strict as assert } from 'assert';
+import { Blob } from 'buffer';
 import { once } from 'events';
 import { Readable } from 'stream';
 import { types } from 'util';
 import rekwest, {
-  ackn,
   Cookies,
+  premix,
 } from '../src/index.mjs';
 
 const baseURL = new URL('http://localhost:3000');
@@ -127,7 +128,7 @@ describe('rekwest', () => {
       const url = new URL('/gimme/redirect', baseURL);
       const res = await rekwest(url, { redirect: 'error' }).catch((err) => err);
 
-      assert.match(res.message, /Unexpected redirect, redirect mode is set to error\./);
+      assert.match(res.message, /Unexpected redirect, redirect mode is set to error/);
       assert.equal(res.name, 'RequestError');
     });
 
@@ -146,7 +147,7 @@ describe('rekwest', () => {
         method: 'POST',
       }).catch((err) => err);
 
-      assert.match(res.message, /Unable to follow redirect with body as readable stream\./);
+      assert.match(res.message, /Unable to follow redirect with body as readable stream/);
       assert.equal(res.name, 'RequestError');
     });
 
@@ -203,6 +204,20 @@ describe('rekwest', () => {
       });
     });
 
+    it('should make POST [200] request with blob', async () => {
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: new Blob(['blob']),
+        method: 'POST',
+      });
+
+      assert.equal(res.body.toString(), 'blob');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
   });
 
   describe('with { digest: false } & { parse: false }', () => {
@@ -214,6 +229,18 @@ describe('rekwest', () => {
       const res = await rekwest(url, opts);
 
       assert.ok(types.isArrayBuffer(await res.arrayBuffer()));
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies, undefined);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make GET [200] request and resolve to blob', async () => {
+      const url = new URL('/gimme/text', baseURL);
+      const res = await rekwest(url, opts);
+
+      assert.ok((await res.blob())?.constructor.name === 'Blob');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
       assert.equal(res.ok, true);
@@ -283,7 +310,7 @@ describe('rekwest', () => {
       const [res] = await once(req, 'response');
 
       assert.equal(res.statusCode, 200);
-      assert.equal((await ackn(res).body()).toString(), 'zqiygyxz'.split('').reverse().join(''));
+      assert.equal((await premix(res).body()).toString(), 'zqiygyxz'.split('').reverse().join(''));
     });
 
   });
