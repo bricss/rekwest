@@ -1,0 +1,24 @@
+name: Lint
+on: [ push, pull_request ]
+env:
+  NODE_ENV: development
+jobs:
+  run:
+    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [ 16 ]
+        os: [ ubuntu-latest ]
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install deps
+        run: npm install
+      - name: Run lint
+        run: npm run lint
