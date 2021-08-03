@@ -1,4 +1,6 @@
+import http2 from 'http2';
 import { request } from 'https';
+import { ackn } from './ackn.mjs';
 import { Cookies } from './cookies.mjs';
 import { RequestError } from './errors.mjs';
 import {
@@ -8,58 +10,108 @@ import {
   premix,
 } from './helpers.mjs';
 
+export * from './ackn.mjs';
 export * from './cookies.mjs';
 export * from './errors.mjs';
 export * from './helpers.mjs';
 
+const {
+        HTTP2_HEADER_CONTENT_ENCODING,
+        HTTP2_HEADER_CONTENT_LENGTH,
+        HTTP2_HEADER_CONTENT_TYPE,
+        HTTP2_HEADER_LOCATION,
+        HTTP2_HEADER_SET_COOKIE,
+        HTTP2_HEADER_STATUS,
+      } = http2.constants;
+
 export default async function rekwest(url, opts = {}) {
-  const { body, digest = true, redirected = false, thenable = false } = opts;
+  url = opts.url = new URL(url);
+  const { digest = true, method, redirected = false, thenable = false } = opts;
+  let { body } = opts;
 
   if (body?.constructor.name === 'Blob') {
-    opts.body = Buffer.from(await body.arrayBuffer());
+    body = Buffer.from(await body.arrayBuffer());
+  }
+
+  if (url.protocol === 'https:') {
+    opts = await ackn(opts);
+  } else if (Reflect.has(opts, 'createConnection')) {
+    [
+      'alpnProtocol',
+      'createConnection',
+      'h2',
+      'protocol',
+    ].forEach((it) => {
+      Reflect.deleteProperty(opts, it);
+    });
   }
 
   const promise = new Promise((resolve, reject) => {
+    let client, req;
+
     opts = preflight({
       digest,
-      redirected,
-      url,
-      ...opts.redirected ? opts : merge(rekwest.defaults, opts),
+      ...redirected ? opts : merge(rekwest.defaults, opts),
     });
 
     if (!opts.follow) {
-      throw new RequestError(`Maximum redirect reached at: ${ opts.url.href }`);
+      throw new RequestError(`Maximum redirect reached at: ${ url.href }`);
     }
 
-    const req = request(opts.url, opts, (res) => {
-      res.on('error', reject);
+    if (opts.h2) {
+      client = http2.connect(url.origin, opts);
+      req = client.request(opts.headers, opts);
+    } else {
+      req = request(url, opts);
+    }
 
-      if (opts.cookies !== false && res.headers['set-cookie']) {
-        if (Cookies.jar.has(opts.url.origin)) {
-          new Cookies(res.headers['set-cookie']).forEach(function (val, key) {
+    req.on('response', (res) => {
+      const { cookies, follow, h2, redirect } = opts;
+
+      if (h2) {
+        const headers = res;
+
+        res = req;
+
+        Reflect.defineProperty(res, 'headers', {
+          enumerable: true,
+          value: headers,
+        });
+
+        Reflect.defineProperty(res, 'statusCode', {
+          enumerable: true,
+          value: headers[HTTP2_HEADER_STATUS],
+        });
+      } else {
+        res.on('error', reject);
+      }
+
+      if (cookies !== false && res.headers[HTTP2_HEADER_SET_COOKIE]) {
+        if (Cookies.jar.has(url.origin)) {
+          new Cookies(res.headers[HTTP2_HEADER_SET_COOKIE]).forEach(function (val, key) {
             this.set(key, val);
-          }, Cookies.jar.get(opts.url.origin));
+          }, Cookies.jar.get(url.origin));
         } else {
-          Cookies.jar.set(opts.url.origin, new Cookies(res.headers['set-cookie']));
+          Cookies.jar.set(url.origin, new Cookies(res.headers[HTTP2_HEADER_SET_COOKIE]));
         }
       }
 
       Reflect.defineProperty(res, 'cookies', {
         enumerable: true,
-        value: opts.cookies !== false && Cookies.jar.has(opts.url.origin)
-               ? Object.fromEntries(Cookies.jar.get(opts.url.origin).entries())
+        value: cookies !== false && Cookies.jar.has(url.origin)
+               ? Object.fromEntries(Cookies.jar.get(url.origin).entries())
                : void 0,
       });
 
-      if (opts.follow && /^3\d{2}$/.test(res.statusCode) && res.headers.location) {
-        if (opts.redirect === 'error') {
+      if (follow && /^3\d{2}$/.test(res.statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
+        if (redirect === 'error') {
           res.emit('error', new RequestError('Unexpected redirect, redirect mode is set to error'));
         }
 
-        if (opts.redirect === 'follow') {
+        if (redirect === 'follow') {
           const { body } = opts;
 
-          opts.url = new URL(res.headers.location, opts.url).href;
+          opts.url = new URL(res.headers[HTTP2_HEADER_LOCATION], url).href;
 
           if (res.statusCode !== 303 && body === Object(body)
             && Reflect.has(body, 'pipe')
@@ -67,9 +119,10 @@ export default async function rekwest(url, opts = {}) {
             res.emit('error', new RequestError('Unable to follow redirect with body as readable stream'));
           }
 
-          opts.follow -= 1;
+          opts.follow--;
+
           if (res.statusCode === 303) {
-            Reflect.deleteProperty(opts.headers, 'content-length');
+            Reflect.deleteProperty(opts.headers, HTTP2_HEADER_CONTENT_LENGTH);
             opts.method = 'GET';
             opts.body = null;
           }
@@ -80,8 +133,12 @@ export default async function rekwest(url, opts = {}) {
         }
       }
 
+      Reflect.defineProperty(res, 'httpVersion', {
+        enumerable: true,
+        value: h2 + 1,
+      });
+
       Reflect.defineProperty(res, 'ok', {
-        configurable: true,
         enumerable: true,
         value: /^2\d{2}$/.test(res.statusCode),
       });
@@ -98,30 +155,44 @@ export default async function rekwest(url, opts = {}) {
       resolve(premix(res, opts));
     });
 
+    req.on('end', () => {
+      client?.close();
+    });
     req.on('error', reject);
+    req.on('frameError', reject);
+    req.on('goaway', reject);
     req.on('timeout', req.destroy);
 
-    if (opts.body) {
-      let { body, method } = opts;
-
-      if (body && (method === 'GET' || method === 'HEAD')) {
+    if (body) {
+      if (method === 'GET' || method === 'HEAD') {
         throw new TypeError('Request with GET/HEAD method cannot have body');
       }
 
       if (body === Object(body) && Reflect.has(body, 'pipe') && body.pipe?.constructor === Function) {
         body.pipe(req);
       } else {
-        if (body === Object(body) && !Buffer.isBuffer(body)) {
-          req.setHeader('content-type', 'application/json');
+        if (body?.constructor === URLSearchParams) {
+          const headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/x-www-form-urlencoded' };
+
+          req.respond?.(headers);
+          req.setHeader?.(HTTP2_HEADER_CONTENT_TYPE, headers[HTTP2_HEADER_CONTENT_TYPE]);
+          body = body.toString();
+        } else if (body === Object(body) && !Buffer.isBuffer(body)) {
+          const headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' };
+
+          req.respond?.(headers);
+          req.setHeader?.(HTTP2_HEADER_CONTENT_TYPE, headers[HTTP2_HEADER_CONTENT_TYPE]);
           body = JSON.stringify(body);
-          req.setHeader('content-length', Buffer.byteLength(body));
         }
 
-        if (opts.headers['content-encoding']) {
-          body = compress(Buffer.from(body), opts.headers['content-encoding']);
-          req.setHeader('content-length', Buffer.byteLength(body));
+        if (opts.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
+          body = compress(Buffer.from(body), opts.headers[HTTP2_HEADER_CONTENT_ENCODING]);
         }
 
+        const headers = { [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body) };
+
+        req.respond?.(headers);
+        req.setHeader?.(HTTP2_HEADER_CONTENT_LENGTH, headers[HTTP2_HEADER_CONTENT_LENGTH]);
         req.write(body);
         req.end();
       }
@@ -153,13 +224,24 @@ export default async function rekwest(url, opts = {}) {
 
 Reflect.defineProperty(rekwest, 'stream', {
   enumerable: true,
-  value: function (url, opts = {}, cb) {
+  value: function (url, opts = {}) {
     opts = preflight({
       url,
-      ...merge(rekwest.defaults, { headers: { 'content-type': 'application/octet-stream' } }, opts),
+      ...merge(rekwest.defaults, { headers: { [HTTP2_HEADER_CONTENT_TYPE]: 'application/octet-stream' } }, opts),
     });
 
-    return request(opts.url, opts, cb);
+    if (opts.h2) {
+      const client = http2.connect(url.origin, opts);
+      const req = client.request(opts.headers, opts);
+
+      req.on('end', () => {
+        client.close();
+      });
+
+      return req;
+    }
+
+    return request(opts.url, opts);
   },
 });
 

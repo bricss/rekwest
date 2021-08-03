@@ -1,6 +1,7 @@
 import { strict as assert } from 'assert';
 import { Blob } from 'buffer';
 import { once } from 'events';
+import http2 from 'http2';
 import { Readable } from 'stream';
 import { types } from 'util';
 import rekwest, {
@@ -8,9 +9,17 @@ import rekwest, {
   premix,
 } from '../src/index.mjs';
 
-const baseURL = new URL('http://localhost:3000');
+const {
+        HTTP2_HEADER_STATUS,
+      } = http2.constants;
 
-describe('rekwest', () => {
+const baseURL = new URL('http://localhost:4433');
+
+describe('rekwest { h2: true } mode', () => {
+
+  before(() => rekwest.defaults.h2 = true);
+
+  after(() => rekwest.defaults.h2 = false);
 
   describe('with { digest: true } & { parse: true } (defaults)', () => {
 
@@ -178,6 +187,18 @@ describe('rekwest', () => {
       assert.equal(res.statusCode, 401);
     });
 
+    it('should make GET [404] request and catch error', async () => {
+      const url = new URL('/gimme/puff', baseURL);
+      const res = await rekwest(url).catch((res) => res);
+
+      assert.equal(res.body.length, 0);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies?.crack, 'duck');
+      assert.equal(res.ok, false);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 404);
+    });
+
     [
       'br',
       'deflate',
@@ -307,10 +328,12 @@ describe('rekwest', () => {
     it('should pipe throughout POST [200] request', async () => {
       const url = new URL('/gimme/squash', baseURL);
       const req = Readable.from('zqiygyxz').pipe(rekwest.stream(url, { method: 'POST' }));
-      const [res] = await once(req, 'response');
+      const [headers] = await once(req, 'response');
 
-      assert.equal(res.statusCode, 200);
-      assert.equal((await premix(res).body()).toString(), 'zqiygyxz'.split('').reverse().join(''));
+      Reflect.set(req, 'headers', headers);
+
+      assert.equal(headers[HTTP2_HEADER_STATUS], 200);
+      assert.equal((await premix(req).body()).toString(), 'zqiygyxz'.split('').reverse().join(''));
     });
 
   });

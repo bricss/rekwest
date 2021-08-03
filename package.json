@@ -36,6 +36,7 @@
     "fetch-alike",
     "http",
     "https",
+    "http2",
     "request"
   ],
   "license": "MIT",
@@ -53,5 +54,5 @@
     "test": "mocha --exit --recursive",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

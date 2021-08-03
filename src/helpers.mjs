@@ -1,8 +1,20 @@
 import { Blob } from 'buffer';
 import { globalAgent } from 'http';
+import http2 from 'http2';
 import { promisify } from 'util';
 import zlib from 'zlib';
 import { Cookies } from './cookies.mjs';
+
+const {
+        HTTP2_HEADER_ACCEPT,
+        HTTP2_HEADER_ACCEPT_ENCODING,
+        HTTP2_HEADER_AUTHORITY,
+        HTTP2_HEADER_CONTENT_ENCODING,
+        HTTP2_HEADER_CONTENT_TYPE,
+        HTTP2_HEADER_METHOD,
+        HTTP2_HEADER_PATH,
+        HTTP2_HEADER_SCHEME,
+      } = http2.constants;
 
 const brotliCompress = promisify(zlib.brotliCompress);
 const brotliDecompress = promisify(zlib.brotliDecompress);
@@ -58,35 +70,49 @@ export const merge = (target = {}, ...rest) => {
 };
 
 export const preflight = (opts) => {
-  opts.url = new URL(opts.url);
-  opts.agent ??= opts.url.protocol === 'http:' ? globalAgent : void 0;
-  if (opts.cookies !== false) {
-    let cookie = Cookies.jar.get(opts.url.origin);
+  const url = opts.url = new URL(opts.url);
+  const { cookies, h2, headers, method = 'GET', redirected } = opts;
 
-    if (opts.cookies === Object(opts.cookies) && !opts.redirected) {
+  if (!h2) {
+    opts.agent ??= url.protocol === 'http:' ? globalAgent : void 0;
+  } else {
+    opts.endStream = method === 'GET';
+  }
+
+  if (cookies !== false) {
+    let cookie = Cookies.jar.get(url.origin);
+
+    if (cookies === Object(cookies) && !redirected) {
       if (cookie) {
-        new Cookies(opts.cookies).forEach(function (val, key) {
+        new Cookies(cookies).forEach(function (val, key) {
           this.set(key, val);
         }, cookie);
       } else {
-        cookie = new Cookies(opts.cookies);
-        Cookies.jar.set(opts.url.origin, cookie);
+        cookie = new Cookies(cookies);
+        Cookies.jar.set(url.origin, cookie);
       }
     }
 
     opts.headers = {
       ...cookie ? { cookie } : null,
-      ...opts.headers,
+      ...headers,
     };
   }
 
   opts.follow ??= 20;
   opts.headers = {
-    'accept': 'application/json, text/plain, */*',
-    'accept-encoding': 'br, deflate, gzip, identity',
+    [HTTP2_HEADER_ACCEPT]: 'application/json, text/plain, */*',
+    [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, gzip, identity',
     ...Object.entries(opts.headers || {})
              .reduce((acc, [key, val]) => (acc[key.toLowerCase()] = val, acc), {}),
+    ...h2 && {
+      [HTTP2_HEADER_AUTHORITY]: url.host,
+      [HTTP2_HEADER_METHOD]: method,
+      [HTTP2_HEADER_PATH]: `${ url.pathname }${ url.search }`,
+      [HTTP2_HEADER_SCHEME]: url.protocol.replaceAll(':', ''),
+    },
   };
+
   opts.parse ??= true;
   opts.redirect ??= 'follow';
 
@@ -151,11 +177,11 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
         spool = Buffer.concat(spool);
 
         if (spool.length) {
-          spool = await decompress(spool, this.headers['content-encoding'], { async: true });
+          spool = await decompress(spool, this.headers[HTTP2_HEADER_CONTENT_ENCODING], { async: true });
         }
 
         if (spool.length && parse) {
-          const contentType = this.headers['content-type'] || '';
+          const contentType = this.headers[HTTP2_HEADER_CONTENT_TYPE] || '';
           const charset = contentType.split(';')
                                      .find((it) => /charset=/i.test(it))
                                      ?.toLowerCase()
