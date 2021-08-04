@@ -30,10 +30,18 @@ npm install rekwest --save
 ### Usage
 
 ```javascript
-import rekwest from 'rekwest';
+import rekwest, { constants } from 'rekwest';
+
+const { HTTP2_HEADER_CONTENT_TYPE } = constants;
 
 const url = 'https://somewhe.re/somewhat/endpoint';
-const res = await rekwest(url);
+const res = await rekwest(url, {
+  body: 'payload',
+  headers: {
+    [HTTP2_HEADER_CONTENT_TYPE]: 'text/plain',
+  },
+  method: 'POST',
+});
 
 console.log(res.body);
 ```
@@ -44,7 +52,11 @@ console.log(res.body);
 
 * `url` **{string | URL}** The URL to send the request to
 * `options` **{Object}**
-  Extends [http.RequestOptions](https://nodejs.org/api/https.html#https_https_request_url_options_callback)
+  Extends [https.RequestOptions](https://nodejs.org/api/https.html#https_https_request_url_options_callback)
+  along with
+  extra [http2.ClientSessionOptions](https://nodejs.org/api/http2.html#http2_http2_connect_authority_options_listener)
+  & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#http2_clienthttp2session_request_headers_options)
+  for HTTP2 attunes
   * `body` **{string | Array | Blob | Object | ReadableStream | URLSearchParams}** Body to send with the request
   * `cookies` **{boolean | Object}** `Default: true` Cookies to add to the request
   * `digest` **{boolean}** `Default: true` Read response stream, or simply add a mixin
@@ -54,8 +66,9 @@ console.log(res.body);
   * `redirect` **{false | follow | error}** `Default: 'follow'` Controls redirect flow
   * `thenable` **{boolean}** `Default: false` Controls promise resolutions
 * **Returns:** Promise that resolves to
-  extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage) which is readable
-  stream
+  extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage)
+  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#http2_class_clienthttp2stream) which are both readable
+  streams
   * if `degist: true` & `parse: true`
     * `body` **{string | Array | Buffer | Object}** Body based on its content type
   * if `degist: false`

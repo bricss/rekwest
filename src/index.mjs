@@ -10,6 +10,8 @@ import {
   premix,
 } from './helpers.mjs';
 
+export { constants } from 'http2';
+
 export * from './ackn.mjs';
 export * from './cookies.mjs';
 export * from './errors.mjs';
@@ -35,7 +37,7 @@ export default async function rekwest(url, opts = {}) {
 
   if (url.protocol === 'https:') {
     opts = await ackn(opts);
-  } else if (Reflect.has(opts, 'createConnection')) {
+  } else if (Reflect.has(opts, 'alpnProtocol')) {
     [
       'alpnProtocol',
       'createConnection',
