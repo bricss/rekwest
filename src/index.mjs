@@ -66,7 +66,7 @@ export default async function rekwest(url, opts = {}) {
     }
 
     req.on('response', (res) => {
-      const { cookies, follow, h2, redirect } = opts;
+      const { cookies, follow, h2 = false, redirect } = opts;
 
       if (h2) {
         const headers = res;

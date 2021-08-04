@@ -23,6 +23,7 @@ describe('rekwest', () => {
       assert.equal(res.body.gotta, 'json');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -35,6 +36,7 @@ describe('rekwest', () => {
       assert.equal(res.body, 'gotta text');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -46,6 +48,7 @@ describe('rekwest', () => {
 
       assert.equal(res.body, '杯瑴愠瑥硴');
       assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -64,6 +67,7 @@ describe('rekwest', () => {
       assert.equal(res.cookies?.aux, 'baz');
       assert.equal(res.cookies?.foo, 'bar');
       assert.equal(res.cookies?.qux, 'zap');
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -83,6 +87,7 @@ describe('rekwest', () => {
       assert.equal(res.cookies?.dot, 'com');
       assert.equal(res.cookies?.foo, 'bar');
       assert.equal(res.cookies?.qux, 'zap');
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 204);
@@ -95,6 +100,7 @@ describe('rekwest', () => {
       assert.equal(res.body.length, 0);
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 204);
@@ -107,6 +113,7 @@ describe('rekwest', () => {
       assert.equal(res.body.length, 0);
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies?.crack, 'duck');
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, false);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 301);
@@ -119,6 +126,7 @@ describe('rekwest', () => {
       assert.equal(res.body.gotta, 'json');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies?.crack, 'duck');
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, true);
       assert.equal(res.statusCode, 200);
@@ -161,6 +169,7 @@ describe('rekwest', () => {
       assert.equal(res.body.gotta, 'json');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies?.crack, 'duck');
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, true);
       assert.equal(res.statusCode, 200);
@@ -173,6 +182,7 @@ describe('rekwest', () => {
       assert.equal(res.body.message, 'unauthorized');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies?.crack, 'duck');
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, false);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 401);
@@ -185,6 +195,7 @@ describe('rekwest', () => {
       assert.equal(res.body.length, 0);
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies?.crack, 'duck');
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, false);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 404);
@@ -210,13 +221,14 @@ describe('rekwest', () => {
 
         assert.equal(res.body, 'zqiygyxz'.split('').reverse().join(''));
         assert.equal(res.bodyUsed, true);
+        assert.equal(res.httpVersion, 1);
         assert.equal(res.ok, true);
         assert.equal(res.redirected, false);
         assert.equal(res.statusCode, 200);
       });
     });
 
-    it('should make POST [200] request with blob', async () => {
+    it('should make POST [200] request with blob as body', async () => {
       const url = new URL('/gimme/repulse', baseURL);
       const res = await rekwest(url, {
         body: new Blob(['blob']),
@@ -225,6 +237,22 @@ describe('rekwest', () => {
 
       assert.equal(res.body.toString(), 'blob');
       assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, 1);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, 200);
+    });
+
+    it('should make POST [200] request with query string as a body', async () => {
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: new URLSearchParams('foo=bar'),
+        method: 'POST',
+      });
+
+      assert.equal(res.body.toString(), 'foo=bar');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -243,6 +271,7 @@ describe('rekwest', () => {
       assert.ok(types.isArrayBuffer(await res.arrayBuffer()));
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -255,6 +284,7 @@ describe('rekwest', () => {
       assert.ok((await res.blob())?.constructor.name === 'Blob');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -267,6 +297,7 @@ describe('rekwest', () => {
       assert.ok(Buffer.isBuffer(await res.body()));
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -279,6 +310,7 @@ describe('rekwest', () => {
       assert.equal((await res.json()).gotta, 'json');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -291,6 +323,7 @@ describe('rekwest', () => {
       assert.equal(await res.text(), 'gotta text');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 200);
@@ -307,6 +340,7 @@ describe('rekwest', () => {
       assert.equal(res.body.message, 'kaboom');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
+      assert.equal(res.httpVersion, 1);
       assert.equal(res.ok, false);
       assert.equal(res.redirected, false);
       assert.equal(res.statusCode, 500);

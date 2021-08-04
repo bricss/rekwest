@@ -49,15 +49,15 @@ console.log(res.body);
   * `cookies` **{boolean | Object}** `Default: true` Cookies to add to request
   * `digest` **{boolean}** `Default: true` Read response stream, or simply add a mixin
   * `follow` **{number}** `Default: 20` Number of redirects to follow
-  * `h2` **{boolean}** `Default: false` Force use of HTTP2 protocol
-  * `parse` **{boolean}** `Default: true` Parse response body, or return a buffer
+  * `h2` **{boolean}** `Default: false` Forces use of HTTP2 protocol
+  * `parse` **{boolean}** `Default: true` Parse response body, or simply return a buffer
   * `redirect` **{false | follow | error}** `Default: 'follow'` Controls redirect flow
   * `thenable` **{boolean}** `Default: false` Controls promise resolutions
 * **Returns:** Promise that resolves to
   extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage) which is readable
   stream
   * if `degist: true` & `parse: true`
-    * `body` **{string | Buffer | Object}** Body based on its content type
+    * `body` **{string | Array | Buffer | Object}** Body based on its content type
   * if `degist: false`
     * `arrayBuffer` **{AsyncFunction}** Reads the response and returns **ArrayBuffer**
     * `blob` **{AsyncFunction}** Reads the response and returns **Blob**

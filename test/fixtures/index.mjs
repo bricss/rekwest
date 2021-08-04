@@ -4,7 +4,7 @@ import { createServer as createH2Server } from 'http2';
 import routes from './routes.mjs';
 
 const baseURL = new URL('http://localhost:3000');
-const baseH2URL = new URL('http://localhost:4433');
+const baseH2URL = new URL('http://localhost:3433');
 
 export async function mochaGlobalSetup() {
   this.h1server = createServer(routes(baseURL));
