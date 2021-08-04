@@ -78,6 +78,11 @@ export default async function rekwest(url, opts = {}) {
           value: headers,
         });
 
+        Reflect.defineProperty(res, 'httpVersion', {
+          enumerable: true,
+          value: `${ h2 + 1 }.0`,
+        });
+
         Reflect.defineProperty(res, 'statusCode', {
           enumerable: true,
           value: headers[HTTP2_HEADER_STATUS],
@@ -132,11 +137,6 @@ export default async function rekwest(url, opts = {}) {
           return rekwest(opts.url, opts).then(resolve, reject);
         }
       }
-
-      Reflect.defineProperty(res, 'httpVersion', {
-        enumerable: true,
-        value: h2 + 1,
-      });
 
       Reflect.defineProperty(res, 'ok', {
         enumerable: true,
