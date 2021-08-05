@@ -32,7 +32,7 @@ npm install rekwest --save
 ```javascript
 import rekwest, { constants } from 'rekwest';
 
-const { HTTP2_HEADER_CONTENT_TYPE } = constants;
+const { HTTP2_HEADER_CONTENT_TYPE, HTTP_STATUS_OK } = constants;
 
 const url = 'https://somewhe.re/somewhat/endpoint';
 const res = await rekwest(url, {
@@ -43,6 +43,8 @@ const res = await rekwest(url, {
   method: 'POST',
 });
 
+console.assert(res.statusCode, HTTP_STATUS_OK);
+console.info(res.headers);
 console.log(res.body);
 ```
 
@@ -67,8 +69,8 @@ console.log(res.body);
   * `thenable` **{boolean}** `Default: false` Controls promise resolutions
 * **Returns:** Promise that resolves to
   extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage)
-  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#http2_class_clienthttp2stream) which are both readable
-  streams
+  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#http2_class_clienthttp2stream) which is readable and
+  duplex streams
   * if `degist: true` & `parse: true`
     * `body` **{string | Array | Buffer | Object}** Body based on its content type
   * if `degist: false`
@@ -79,9 +81,11 @@ console.log(res.body);
     * `text` **{AsyncFunction}** Reads the response and returns **String**
   * `bodyUsed` **{boolean}** Whether the response were read or not
   * `cookies` **{undefined | Object}** Cookies sent and received with the response
+  * `headers` **{Object}** Headers received with the response
   * `httpVersion` **{string}** Indicates protocol version negotiated with the server
   * `ok` **{boolean}** Indicates if the response was successful (statusCode: **200-299**)
   * `redirected` **{boolean}** Indicates if the response is the result of a redirect
+  * `statusCode` **{number}** Indicates the status code of the response
 
 ---
 
@@ -94,7 +98,7 @@ Object to fill with default [options](#rekwesturl-options)
 #### `rekwest.stream(url[, options])`
 
 Method to use with streams and pipes  
-Pass `h2: true` in options to use HTTP2 protocol
+Pass `h2: true` in options to use the HTTP2 protocol
 
 ---
 

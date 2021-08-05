@@ -14,6 +14,8 @@ const {
         HTTP2_HEADER_METHOD,
         HTTP2_HEADER_PATH,
         HTTP2_HEADER_SCHEME,
+        HTTP2_METHOD_GET,
+        HTTP2_METHOD_HEAD,
       } = http2.constants;
 
 const brotliCompress = promisify(zlib.brotliCompress);
@@ -76,7 +78,7 @@ export const preflight = (opts) => {
   if (!h2) {
     opts.agent ??= url.protocol === 'http:' ? globalAgent : void 0;
   } else {
-    opts.endStream = method === 'GET';
+    opts.endStream = method === HTTP2_METHOD_GET || method === HTTP2_METHOD_HEAD;
   }
 
   if (cookies !== false) {

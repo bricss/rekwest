@@ -9,10 +9,10 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.14.8",
-    "@babel/core": "^7.14.8",
-    "@babel/eslint-parser": "^7.14.9",
-    "@babel/plugin-transform-runtime": "^7.14.5",
-    "@babel/preset-env": "^7.14.9",
+    "@babel/core": "^7.15.0",
+    "@babel/eslint-parser": "^7.15.0",
+    "@babel/plugin-transform-runtime": "^7.15.0",
+    "@babel/preset-env": "^7.15.0",
     "c8": "^7.8.0",
     "eslint": "^7.32.0",
     "eslint-config-ultra-refined": "^1.0.35",
@@ -54,5 +54,5 @@
     "test": "mocha --exit --recursive",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "1.1.3"
+  "version": "1.1.4"
 }

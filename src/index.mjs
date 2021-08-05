@@ -24,6 +24,8 @@ const {
         HTTP2_HEADER_LOCATION,
         HTTP2_HEADER_SET_COOKIE,
         HTTP2_HEADER_STATUS,
+        HTTP2_METHOD_GET,
+        HTTP2_METHOD_HEAD,
       } = http2.constants;
 
 export default async function rekwest(url, opts = {}) {
@@ -130,7 +132,7 @@ export default async function rekwest(url, opts = {}) {
 
           if (res.statusCode === 303) {
             Reflect.deleteProperty(opts.headers, HTTP2_HEADER_CONTENT_LENGTH);
-            opts.method = 'GET';
+            opts.method = HTTP2_METHOD_GET;
             opts.body = null;
           }
 
@@ -166,7 +168,7 @@ export default async function rekwest(url, opts = {}) {
     req.on('timeout', req.destroy);
 
     if (body) {
-      if (method === 'GET' || method === 'HEAD') {
+      if (method === HTTP2_METHOD_GET || method === HTTP2_METHOD_HEAD) {
         throw new TypeError('Request with GET/HEAD method cannot have body');
       }
 
