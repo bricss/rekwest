@@ -73,7 +73,7 @@ export const merge = (target = {}, ...rest) => {
 
 export const preflight = (opts) => {
   const url = opts.url = new URL(opts.url);
-  const { cookies, h2, headers, method = 'GET', redirected } = opts;
+  const { cookies, h2, headers, method = HTTP2_METHOD_GET, redirected } = opts;
 
   if (!h2) {
     opts.agent ??= url.protocol === 'http:' ? globalAgent : void 0;

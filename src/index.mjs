@@ -26,6 +26,8 @@ const {
         HTTP2_HEADER_STATUS,
         HTTP2_METHOD_GET,
         HTTP2_METHOD_HEAD,
+        HTTP_STATUS_BAD_REQUEST,
+        HTTP_STATUS_SEE_OTHER,
       } = http2.constants;
 
 export default async function rekwest(url, opts = {}) {
@@ -114,7 +116,7 @@ export default async function rekwest(url, opts = {}) {
 
       if (follow && /^3\d{2}$/.test(res.statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
         if (redirect === 'error') {
-          res.emit('error', new RequestError('Unexpected redirect, redirect mode is set to error'));
+          res.emit('error', new RequestError(`Unexpected redirect, redirect mode is set to ${ redirect }`));
         }
 
         if (redirect === 'follow') {
@@ -122,15 +124,15 @@ export default async function rekwest(url, opts = {}) {
 
           opts.url = new URL(res.headers[HTTP2_HEADER_LOCATION], url).href;
 
-          if (res.statusCode !== 303 && body === Object(body)
+          if (res.statusCode !== HTTP_STATUS_SEE_OTHER && body === Object(body)
             && Reflect.has(body, 'pipe')
             && body.pipe?.constructor === Function) {
-            res.emit('error', new RequestError('Unable to follow redirect with body as readable stream'));
+            res.emit('error', new RequestError(`Unable to ${ redirect } redirect with body as readable stream`));
           }
 
           opts.follow--;
 
-          if (res.statusCode === 303) {
+          if (res.statusCode === HTTP_STATUS_SEE_OTHER) {
             Reflect.deleteProperty(opts.headers, HTTP2_HEADER_CONTENT_LENGTH);
             opts.method = HTTP2_METHOD_GET;
             opts.body = null;
@@ -152,7 +154,7 @@ export default async function rekwest(url, opts = {}) {
         value: !!opts.redirected,
       });
 
-      if (res.statusCode >= 400) {
+      if (res.statusCode >= HTTP_STATUS_BAD_REQUEST) {
         return reject(premix(res, opts));
       }
 
@@ -169,7 +171,7 @@ export default async function rekwest(url, opts = {}) {
 
     if (body) {
       if (method === HTTP2_METHOD_GET || method === HTTP2_METHOD_HEAD) {
-        throw new TypeError('Request with GET/HEAD method cannot have body');
+        throw new TypeError(`Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body`);
       }
 
       if (body === Object(body) && Reflect.has(body, 'pipe') && body.pipe?.constructor === Function) {
@@ -249,4 +251,7 @@ Reflect.defineProperty(rekwest, 'stream', {
   },
 });
 
-Reflect.set(rekwest, 'defaults', Object.create(null));
+Reflect.defineProperty(rekwest, 'defaults', {
+  enumerable: true,
+  value: Object.create(null),
+});

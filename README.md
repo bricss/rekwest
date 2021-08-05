@@ -32,7 +32,7 @@ npm install rekwest --save
 ```javascript
 import rekwest, { constants } from 'rekwest';
 
-const { HTTP2_HEADER_CONTENT_TYPE, HTTP_STATUS_OK } = constants;
+const { HTTP2_HEADER_CONTENT_TYPE, HTTP2_METHOD_POST, HTTP_STATUS_OK } = constants;
 
 const url = 'https://somewhe.re/somewhat/endpoint';
 const res = await rekwest(url, {
@@ -40,7 +40,7 @@ const res = await rekwest(url, {
   headers: {
     [HTTP2_HEADER_CONTENT_TYPE]: 'text/plain',
   },
-  method: 'POST',
+  method: HTTP2_METHOD_POST,
 });
 
 console.assert(res.statusCode, HTTP_STATUS_OK);
@@ -65,12 +65,12 @@ console.log(res.body);
   * `follow` **{number}** `Default: 20` Number of redirects to follow
   * `h2` **{boolean}** `Default: false` Forces use of HTTP2 protocol
   * `parse` **{boolean}** `Default: true` Parse response body, or simply return a buffer
-  * `redirect` **{false | follow | error}** `Default: 'follow'` Controls redirect flow
+  * `redirect` **{error | false | follow}** `Default: 'follow'` Controls redirect flow
   * `thenable` **{boolean}** `Default: false` Controls promise resolutions
 * **Returns:** Promise that resolves to
   extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage)
-  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#http2_class_clienthttp2stream) which is readable and
-  duplex streams
+  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#http2_class_clienthttp2stream) which respectively is
+  readable and duplex streams
   * if `degist: true` & `parse: true`
     * `body` **{string | Array | Buffer | Object}** Body based on its content type
   * if `degist: false`
