@@ -32,7 +32,11 @@ npm install rekwest --save
 ```javascript
 import rekwest, { constants } from 'rekwest';
 
-const { HTTP2_HEADER_CONTENT_TYPE, HTTP2_METHOD_POST, HTTP_STATUS_OK } = constants;
+const {
+        HTTP2_HEADER_CONTENT_TYPE,
+        HTTP2_METHOD_POST,
+        HTTP_STATUS_OK
+      } = constants;
 
 const url = 'https://somewhe.re/somewhat/endpoint';
 const res = await rekwest(url, {
@@ -69,7 +73,7 @@ console.log(res.body);
   * `thenable` **{boolean}** `Default: false` Controls promise resolutions
 * **Returns:** Promise that resolves to
   extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage)
-  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#http2_class_clienthttp2stream) which respectively is
+  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#http2_class_clienthttp2stream) which is respectively
   readable and duplex streams
   * if `degist: true` & `parse: true`
     * `body` **{string | Array | Buffer | Object}** Body based on its content type
