@@ -1,8 +1,8 @@
-import tls from 'tls';
+import { connect } from 'tls';
 
 export const ackn = (opts) => new Promise((resolve, reject) => {
   const { url } = opts;
-  const socket = tls.connect({
+  const socket = connect({
     ALPNProtocols: [
       'h2',
       'http/1.1',

@@ -177,7 +177,7 @@ export default async function rekwest(url, opts = {}) {
       if (body === Object(body) && Reflect.has(body, 'pipe') && body.pipe?.constructor === Function) {
         body.pipe(req);
       } else {
-        if (body?.constructor === URLSearchParams) {
+        if (body.constructor === URLSearchParams) {
           const headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/x-www-form-urlencoded' };
 
           req.respond?.(headers);

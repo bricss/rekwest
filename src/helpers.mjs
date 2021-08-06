@@ -11,6 +11,7 @@ const {
         HTTP2_HEADER_AUTHORITY,
         HTTP2_HEADER_CONTENT_ENCODING,
         HTTP2_HEADER_CONTENT_TYPE,
+        HTTP2_HEADER_COOKIE,
         HTTP2_HEADER_METHOD,
         HTTP2_HEADER_PATH,
         HTTP2_HEADER_SCHEME,
@@ -78,7 +79,10 @@ export const preflight = (opts) => {
   if (!h2) {
     opts.agent ??= url.protocol === 'http:' ? globalAgent : void 0;
   } else {
-    opts.endStream = method === HTTP2_METHOD_GET || method === HTTP2_METHOD_HEAD;
+    opts.endStream = [
+      HTTP2_METHOD_GET,
+      HTTP2_METHOD_HEAD,
+    ].includes(method);
   }
 
   if (cookies !== false) {
@@ -96,7 +100,7 @@ export const preflight = (opts) => {
     }
 
     opts.headers = {
-      ...cookie ? { cookie } : null,
+      ...cookie && { [HTTP2_HEADER_COOKIE]: cookie },
       ...headers,
     };
   }
