@@ -39,6 +39,7 @@ const {
       } = constants;
 
 const url = 'https://somewhe.re/somewhat/endpoint';
+
 const res = await rekwest(url, {
   body: 'payload',
   headers: {
@@ -47,7 +48,7 @@ const res = await rekwest(url, {
   method: HTTP2_METHOD_POST,
 });
 
-console.assert(res.statusCode, HTTP_STATUS_OK);
+console.assert(res.statusCode === HTTP_STATUS_OK);
 console.info(res.headers);
 console.log(res.body);
 ```
@@ -67,9 +68,9 @@ console.log(res.body);
   * `cookies` **{boolean | Object}** `Default: true` Cookies to add to the request
   * `digest` **{boolean}** `Default: true` Read response stream, or simply add a mixin
   * `follow` **{number}** `Default: 20` Number of redirects to follow
-  * `h2` **{boolean}** `Default: false` Forces use of HTTP2 protocol
+  * `h2` **{boolean}** `Default: false` Forces use of the HTTP2 protocol
   * `parse` **{boolean}** `Default: true` Parse response body, or simply return a buffer
-  * `redirect` **{error | false | follow}** `Default: 'follow'` Controls redirect flow
+  * `redirect` **{boolean | error | follow}** `Default: 'follow'` Controls redirect flow
   * `thenable` **{boolean}** `Default: false` Controls promise resolutions
 * **Returns:** Promise that resolves to
   extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage)
