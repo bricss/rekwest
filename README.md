@@ -33,7 +33,8 @@ npm install rekwest --save
 import rekwest, { constants } from 'rekwest';
 
 const {
-        HTTP2_HEADER_CONTENT_TYPE,
+        HTTP2_HEADER_AUTHORIZATION,
+        HTTP2_HEADER_CONTENT_ENCODING,
         HTTP2_METHOD_POST,
         HTTP_STATUS_OK
       } = constants;
@@ -41,9 +42,13 @@ const {
 const url = 'https://somewhe.re/somewhat/endpoint';
 
 const res = await rekwest(url, {
-  body: 'payload',
+  body: { cryptic: 'payload' },
   headers: {
-    [HTTP2_HEADER_CONTENT_TYPE]: 'text/plain',
+    [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
+    [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // activates: auto-encoding
+    /** [HTTP2_HEADER_CONTENT_TYPE]
+     * is undue to Arrays/Objects/URLSearchParams body types
+     */
   },
   method: HTTP2_METHOD_POST,
 });
@@ -63,12 +68,14 @@ console.log(res.body);
   along with
   extra [http2.ClientSessionOptions](https://nodejs.org/api/http2.html#http2_http2_connect_authority_options_listener)
   & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#http2_clienthttp2session_request_headers_options)
-  for HTTP2 attunes
+  and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback)
+  for the HTTP2 attunes
   * `body` **{string | Array | Blob | Object | ReadableStream | URLSearchParams}** Body to send with the request
   * `cookies` **{boolean | Object}** `Default: true` Cookies to add to the request
   * `digest` **{boolean}** `Default: true` Read response stream, or simply add a mixin
   * `follow` **{number}** `Default: 20` Number of redirects to follow
   * `h2` **{boolean}** `Default: false` Forces use of the HTTP2 protocol
+  * `headers` **{Object}** Headers to add to the request
   * `parse` **{boolean}** `Default: true` Parse response body, or simply return a buffer
   * `redirect` **{boolean | error | follow}** `Default: 'follow'` Controls redirect flow
   * `thenable` **{boolean}** `Default: false` Controls promise resolutions
@@ -107,4 +114,4 @@ Pass `h2: true` in options to use the HTTP2 protocol
 
 ---
 
-For more details please check tests in the repository
+For more details, please check tests (coverage: **>97%**) in the repository
