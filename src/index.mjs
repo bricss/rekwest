@@ -32,11 +32,19 @@ const {
 
 export default async function rekwest(url, opts = {}) {
   url = opts.url = new URL(url);
-  const { digest = true, method, redirected = false, thenable = false } = opts;
-  let { body } = opts;
+  if (!opts.redirected) {
+    opts = merge(rekwest.defaults, { follow: 20, method: HTTP2_METHOD_GET }, opts);
+  }
 
-  if (body?.constructor.name === 'Blob') {
-    body = Buffer.from(await body.arrayBuffer());
+  if (opts.body && [
+    HTTP2_METHOD_GET,
+    HTTP2_METHOD_HEAD,
+  ].includes(opts.method)) {
+    throw new TypeError(`Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body`);
+  }
+
+  if (!opts.follow) {
+    throw new RequestError(`Maximum redirect reached at: ${ url.href }`);
   }
 
   if (url.protocol === 'https:') {
@@ -47,24 +55,47 @@ export default async function rekwest(url, opts = {}) {
       'createConnection',
       'h2',
       'protocol',
-    ].forEach((it) => {
-      Reflect.deleteProperty(opts, it);
-    });
+    ].forEach((it) => Reflect.deleteProperty(opts, it));
+  }
+
+  opts = preflight(opts);
+
+  const { cookies, digest, follow, h2, redirect, redirected, thenable } = opts;
+  let { body } = opts;
+
+  if (body?.constructor.name === 'Blob') {
+    body = Buffer.from(await body.arrayBuffer());
   }
 
   const promise = new Promise((resolve, reject) => {
     let client, req;
+    let headers = {};
 
-    opts = preflight({
-      digest,
-      ...redirected ? opts : merge(rekwest.defaults, opts),
-    });
+    if (body && !Reflect.has(body, 'pipe') && body.pipe?.constructor !== Function) {
+      if (body.constructor === URLSearchParams) {
+        headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/x-www-form-urlencoded' };
+        body = body.toString();
+      } else if (body === Object(body) && !Buffer.isBuffer(body)) {
+        headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' };
+        body = JSON.stringify(body);
+      }
 
-    if (!opts.follow) {
-      throw new RequestError(`Maximum redirect reached at: ${ url.href }`);
+      if (opts.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
+        body = compress(Buffer.from(body), opts.headers[HTTP2_HEADER_CONTENT_ENCODING]);
+      }
+
+      headers = {
+        ...headers,
+        [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body),
+        ...opts.headers[HTTP2_HEADER_CONTENT_TYPE] && {
+          [HTTP2_HEADER_CONTENT_TYPE]: opts.headers[HTTP2_HEADER_CONTENT_TYPE],
+        },
+      };
+
+      Object.assign(opts.headers, headers);
     }
 
-    if (opts.h2) {
+    if (h2) {
       client = http2.connect(url.origin, opts);
       req = client.request(opts.headers, opts);
     } else {
@@ -72,8 +103,6 @@ export default async function rekwest(url, opts = {}) {
     }
 
     req.on('response', (res) => {
-      const { cookies, follow, h2 = false, redirect } = opts;
-
       if (h2) {
         const headers = res;
 
@@ -120,8 +149,6 @@ export default async function rekwest(url, opts = {}) {
         }
 
         if (redirect === 'follow') {
-          const { body } = opts;
-
           opts.url = new URL(res.headers[HTTP2_HEADER_LOCATION], url).href;
 
           if (res.statusCode !== HTTP_STATUS_SEE_OTHER && body === Object(body)
@@ -169,41 +196,20 @@ export default async function rekwest(url, opts = {}) {
     req.on('goaway', reject);
     req.on('timeout', req.destroy);
 
-    if (body) {
-      if (method === HTTP2_METHOD_GET || method === HTTP2_METHOD_HEAD) {
-        throw new TypeError(`Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body`);
-      }
-
-      if (body === Object(body) && Reflect.has(body, 'pipe') && body.pipe?.constructor === Function) {
-        body.pipe(req);
-      } else {
-        if (body.constructor === URLSearchParams) {
-          const headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/x-www-form-urlencoded' };
-
-          req.respond?.(headers);
-          req.setHeader?.(HTTP2_HEADER_CONTENT_TYPE, headers[HTTP2_HEADER_CONTENT_TYPE]);
-          body = body.toString();
-        } else if (body === Object(body) && !Buffer.isBuffer(body)) {
-          const headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' };
-
-          req.respond?.(headers);
-          req.setHeader?.(HTTP2_HEADER_CONTENT_TYPE, headers[HTTP2_HEADER_CONTENT_TYPE]);
-          body = JSON.stringify(body);
-        }
-
-        if (opts.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
-          body = compress(Buffer.from(body), opts.headers[HTTP2_HEADER_CONTENT_ENCODING]);
-        }
-
-        const headers = { [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body) };
-
-        req.respond?.(headers);
-        req.setHeader?.(HTTP2_HEADER_CONTENT_LENGTH, headers[HTTP2_HEADER_CONTENT_LENGTH]);
-        req.write(body);
-        req.end();
-      }
+    if (body === Object(body) && Reflect.has(body, 'pipe') && body.pipe?.constructor === Function) {
+      body.pipe(req);
     } else {
-      req.end();
+      const { headers } = opts;
+
+      if (headers[HTTP2_HEADER_CONTENT_LENGTH]) {
+        req.setHeader?.(HTTP2_HEADER_CONTENT_LENGTH, headers[HTTP2_HEADER_CONTENT_LENGTH]);
+      }
+
+      if (headers[HTTP2_HEADER_CONTENT_TYPE]) {
+        req.setHeader?.(HTTP2_HEADER_CONTENT_TYPE, headers[HTTP2_HEADER_CONTENT_TYPE]);
+      }
+
+      req.end(body);
     }
   });
 
@@ -254,4 +260,5 @@ Reflect.defineProperty(rekwest, 'stream', {
 Reflect.defineProperty(rekwest, 'defaults', {
   enumerable: true,
   value: Object.create(null),
+  writable: true,
 });

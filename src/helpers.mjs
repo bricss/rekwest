@@ -74,7 +74,7 @@ export const merge = (target = {}, ...rest) => {
 
 export const preflight = (opts) => {
   const url = opts.url = new URL(opts.url);
-  const { cookies, h2, headers, method = HTTP2_METHOD_GET, redirected } = opts;
+  const { cookies, h2 = false, method = HTTP2_METHOD_GET, headers, redirected } = opts;
 
   if (!h2) {
     opts.agent ??= url.protocol === 'http:' ? globalAgent : void 0;
@@ -105,7 +105,9 @@ export const preflight = (opts) => {
     };
   }
 
+  opts.digest ??= true;
   opts.follow ??= 20;
+  opts.h2 ??= h2;
   opts.headers = {
     [HTTP2_HEADER_ACCEPT]: 'application/json, text/plain, */*',
     [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, gzip, identity',
@@ -119,8 +121,11 @@ export const preflight = (opts) => {
     },
   };
 
+  opts.method ??= method;
   opts.parse ??= true;
   opts.redirect ??= 'follow';
+  opts.redirected ??= false;
+  opts.thenable ??= false;
 
   return opts;
 };

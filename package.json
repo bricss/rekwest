@@ -48,11 +48,13 @@
   },
   "scripts": {
     "build": "rm -rf dist && npx babel src -d dist",
+    "cert:gen": "openssl req -days 365 -keyout localhost.key -newkey ec -nodes -pkeyopt ec_paramgen_curve:prime256v1 -subj //SKIP=1/CN=localhost -out localhost.cert -x509",
+    "cert:ken": "openssl x509 -in localhost.cert -noout -text",
     "lint": "eslint . --ext .cjs,.js,.mjs",
     "prepack": "npm run build",
-    "pretest": "rm -rf coverage",
+    "pretest": "rm -rf coverage && npm run cert:gen",
     "test": "mocha --exit --recursive",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "1.1.8"
+  "version": "1.1.9"
 }

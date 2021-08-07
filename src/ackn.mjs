@@ -3,6 +3,7 @@ import { connect } from 'tls';
 export const ackn = (opts) => new Promise((resolve, reject) => {
   const { url } = opts;
   const socket = connect({
+    ...opts,
     ALPNProtocols: [
       'h2',
       'http/1.1',
@@ -14,11 +15,7 @@ export const ackn = (opts) => new Promise((resolve, reject) => {
     socket.off('error', reject);
     socket.off('timeout', reject);
 
-    const { alpnProtocol, authorizationError, authorized } = socket;
-
-    if (!authorized && opts.rejectUnauthorized !== false) {
-      return reject(authorizationError);
-    }
+    const { alpnProtocol } = socket;
 
     resolve({
       ...opts,
