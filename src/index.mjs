@@ -1,5 +1,7 @@
 import http2 from 'http2';
 import { request } from 'https';
+import { PassThrough } from 'stream';
+import zlib from 'zlib';
 import { ackn } from './ackn.mjs';
 import { Cookies } from './cookies.mjs';
 import { RequestError } from './errors.mjs';
@@ -197,7 +199,13 @@ export default async function rekwest(url, opts = {}) {
     req.on('timeout', req.destroy);
 
     if (body === Object(body) && Reflect.has(body, 'pipe') && body.pipe?.constructor === Function) {
-      body.pipe(req);
+      const compressor = {
+        br: zlib.createBrotliCompress,
+        deflate: zlib.createDeflate,
+        gzip: zlib.createGzip,
+      }[opts.headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
+
+      body.pipe(compressor()).pipe(req);
     } else {
       req.end(body);
     }

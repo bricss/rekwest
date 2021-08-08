@@ -216,7 +216,7 @@ export default ({ baseURL, httpVersion }) => {
         const url = new URL('/gimme/redirect', baseURL);
 
         await assert.rejects(rekwest(url, {
-          body: Readable.from(Array.from('zqiygyxz')),
+          body: Readable.from('zqiygyxz'),
           method: HTTP2_METHOD_POST,
         }), (err) => {
           assert.match(err.message, /Unable to follow redirect with body as readable stream/);
@@ -308,6 +308,36 @@ export default ({ baseURL, httpVersion }) => {
       );
     });
 
+    [
+      'br',
+      'deflate',
+      'gzip',
+      'identity',
+    ].forEach((item) => {
+      it(
+        `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with "${ item }" compressed body as a stream`,
+        async () => {
+          const url = new URL('/gimme/squash', baseURL);
+          const res = await rekwest(url, {
+            body: Readable.from('zqiygyxz'),
+            headers: {
+              [HTTP2_HEADER_ACCEPT_ENCODING]: item,
+              [HTTP2_HEADER_CONTENT_ENCODING]: item,
+              [HTTP2_HEADER_VARY]: [HTTP2_HEADER_ACCEPT_ENCODING],
+            },
+            method: HTTP2_METHOD_POST,
+          });
+
+          assert.equal(res.body, 'zqiygyxz'.split('').reverse().join(''));
+          assert.equal(res.bodyUsed, true);
+          assert.equal(res.httpVersion, httpVersion);
+          assert.equal(res.ok, true);
+          assert.equal(res.redirected, false);
+          assert.equal(res.statusCode, HTTP_STATUS_OK);
+        },
+      );
+    });
+
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a blob`, async () => {
       const url = new URL('/gimme/repulse', baseURL);
       const res = await rekwest(url, {
@@ -357,9 +387,7 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.statusCode, HTTP_STATUS_OK);
     });
 
-    (parseFloat(process.versions.node) >= 16
-     ? it
-     : it.skip)(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and resolve to blob`, async () => {
+    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and resolve to blob`, async () => {
       const url = new URL('/gimme/text', baseURL);
       const res = await rekwest(url, opts);
 
