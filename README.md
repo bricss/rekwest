@@ -45,7 +45,7 @@ const res = await rekwest(url, {
   body: { cryptic: 'payload' },
   headers: {
     [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
-    [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // activates: auto-compression
+    [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // enables: body compression
     /** [HTTP2_HEADER_CONTENT_TYPE]
      * is undue to Arrays/Objects/URLSearchParams body types
      */
