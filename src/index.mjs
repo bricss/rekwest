@@ -178,7 +178,7 @@ export default async function rekwest(url, opts = {}) {
 
       Reflect.defineProperty(res, 'redirected', {
         enumerable: true,
-        value: !!opts.redirected,
+        value: opts.redirected,
       });
 
       if (res.statusCode >= HTTP_STATUS_BAD_REQUEST) {
@@ -199,16 +199,6 @@ export default async function rekwest(url, opts = {}) {
     if (body === Object(body) && Reflect.has(body, 'pipe') && body.pipe?.constructor === Function) {
       body.pipe(req);
     } else {
-      const { headers } = opts;
-
-      if (headers[HTTP2_HEADER_CONTENT_LENGTH]) {
-        req.setHeader?.(HTTP2_HEADER_CONTENT_LENGTH, headers[HTTP2_HEADER_CONTENT_LENGTH]);
-      }
-
-      if (headers[HTTP2_HEADER_CONTENT_TYPE]) {
-        req.setHeader?.(HTTP2_HEADER_CONTENT_TYPE, headers[HTTP2_HEADER_CONTENT_TYPE]);
-      }
-
       req.end(body);
     }
   });
