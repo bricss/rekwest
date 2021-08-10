@@ -1,6 +1,10 @@
 import http2 from 'http2';
 import { request } from 'https';
-import { PassThrough } from 'stream';
+import {
+  PassThrough,
+  Readable,
+} from 'stream';
+import { types } from 'util';
 import zlib from 'zlib';
 import { ackn } from './ackn.mjs';
 import { Cookies } from './cookies.mjs';
@@ -73,28 +77,31 @@ export default async function rekwest(url, opts = {}) {
     let client, req;
     let headers = {};
 
-    if (body && !Reflect.has(body, 'pipe') && body.pipe?.constructor !== Function) {
+    if (body === Object(body) && !Reflect.has(body, Symbol.asyncIterator) && body.pipe?.constructor !== Function) {
       if (body.constructor === URLSearchParams) {
         headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/x-www-form-urlencoded' };
         body = body.toString();
-      } else if (body === Object(body) && !Buffer.isBuffer(body)) {
+      } else if (!Buffer.isBuffer(body)
+        && !(!Array.isArray(body) && Reflect.has(body, Symbol.iterator))) {
         headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' };
         body = JSON.stringify(body);
       }
 
-      if (opts.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
-        body = compress(Buffer.from(body), opts.headers[HTTP2_HEADER_CONTENT_ENCODING]);
+      if (types.isUint8Array(body) || Buffer.isBuffer(body) || body !== Object(body)) {
+        if (opts.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
+          body = compress(body, opts.headers[HTTP2_HEADER_CONTENT_ENCODING]);
+        }
+
+        headers = {
+          ...headers,
+          [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body),
+          ...opts.headers[HTTP2_HEADER_CONTENT_TYPE] && {
+            [HTTP2_HEADER_CONTENT_TYPE]: opts.headers[HTTP2_HEADER_CONTENT_TYPE],
+          },
+        };
+
+        Object.assign(opts.headers, headers);
       }
-
-      headers = {
-        ...headers,
-        [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body),
-        ...opts.headers[HTTP2_HEADER_CONTENT_TYPE] && {
-          [HTTP2_HEADER_CONTENT_TYPE]: opts.headers[HTTP2_HEADER_CONTENT_TYPE],
-        },
-      };
-
-      Object.assign(opts.headers, headers);
     }
 
     if (h2) {
@@ -153,9 +160,8 @@ export default async function rekwest(url, opts = {}) {
         if (redirect === 'follow') {
           opts.url = new URL(res.headers[HTTP2_HEADER_LOCATION], url).href;
 
-          if (res.statusCode !== HTTP_STATUS_SEE_OTHER && body === Object(body)
-            && Reflect.has(body, 'pipe')
-            && body.pipe?.constructor === Function) {
+          if (res.statusCode !== HTTP_STATUS_SEE_OTHER
+            && body === Object(body) && body.pipe?.constructor === Function) {
             res.emit('error', new RequestError(`Unable to ${ redirect } redirect with body as readable stream`));
           }
 
@@ -198,7 +204,30 @@ export default async function rekwest(url, opts = {}) {
     req.on('goaway', reject);
     req.on('timeout', req.destroy);
 
-    if (body === Object(body) && Reflect.has(body, 'pipe') && body.pipe?.constructor === Function) {
+    if (types.isUint8Array(body)) {
+      req.write(body);
+
+      body = null;
+    }
+
+    if (body === Object(body) && !Buffer.isBuffer(body) && body.pipe?.constructor !== Function) {
+      if (Reflect.has(body, Symbol.asyncIterator)) {
+        body = Readable.from(body);
+      } else if (Reflect.has(body, Symbol.iterator)) {
+        for (let chunk of body) {
+          chunk = Buffer.isBuffer(chunk) ? chunk : `${ chunk }`;
+          if (opts.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
+            req.write(compress(chunk, opts.headers[HTTP2_HEADER_CONTENT_ENCODING]));
+          } else {
+            req.write(chunk);
+          }
+        }
+
+        body = null;
+      }
+    }
+
+    if (body === Object(body) && body.pipe?.constructor === Function) {
       const compressor = {
         br: zlib.createBrotliCompress,
         deflate: zlib.createDeflate,

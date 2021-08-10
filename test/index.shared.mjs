@@ -126,7 +126,7 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.statusCode, HTTP_STATUS_NO_CONTENT);
     });
 
-    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request with body and catch error`, async () => {
+    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request with body and catch an error`, async () => {
       const url = new URL('/gimme/text', baseURL);
 
       await assert.rejects(rekwest(url, { body: 'payload' }), (err) => {
@@ -143,7 +143,7 @@ export default ({ baseURL, httpVersion }) => {
     it(
       `should make ${
         HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { follow: 0 } and catch error`,
+      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { follow: 0 } and catch an error`,
       async () => {
         const url = new URL('/gimme/redirect', baseURL);
 
@@ -159,7 +159,7 @@ export default ({ baseURL, httpVersion }) => {
     it(
       `should make ${
         HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { mode: error } and catch error`,
+      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { mode: error } and catch an error`,
       async () => {
         const url = new URL('/gimme/redirect', baseURL);
 
@@ -193,7 +193,7 @@ export default ({ baseURL, httpVersion }) => {
     it(
       `should make ${
         HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { mode: follow } and retain cookies`,
+      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { mode: follow } and retain the cookies`,
       async () => {
         const url = new URL('/gimme/redirect', baseURL);
         const res = await rekwest(url);
@@ -211,7 +211,7 @@ export default ({ baseURL, httpVersion }) => {
     it(
       `should make ${
         HTTP2_METHOD_POST
-      } [${ HTTP_STATUS_FOUND }] request with redirect { body: stream } and catch error`,
+      } [${ HTTP_STATUS_FOUND }] request with redirect { body: stream } and catch an error`,
       async () => {
         const url = new URL('/gimme/redirect', baseURL);
 
@@ -246,7 +246,7 @@ export default ({ baseURL, httpVersion }) => {
       },
     );
 
-    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_UNAUTHORIZED }] request and catch error`, async () => {
+    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_UNAUTHORIZED }] request and catch an error`, async () => {
       const url = new URL('/gimme/refusal', baseURL);
 
       await assert.rejects(rekwest(url), (res) => {
@@ -262,7 +262,7 @@ export default ({ baseURL, httpVersion }) => {
       });
     });
 
-    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_NOT_FOUND }] request and catch error`, async () => {
+    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_NOT_FOUND }] request and catch an error`, async () => {
       const url = new URL('/gimme/puff', baseURL);
 
       await assert.rejects(rekwest(url), (res) => {
@@ -338,14 +338,15 @@ export default ({ baseURL, httpVersion }) => {
       );
     });
 
-    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a blob`, async () => {
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as an Array`, async () => {
+      const payload = ['array'];
       const url = new URL('/gimme/repulse', baseURL);
       const res = await rekwest(url, {
-        body: new Blob(['blob']),
+        body: payload,
         method: HTTP2_METHOD_POST,
       });
 
-      assert.equal(res.body.toString(), 'blob');
+      assert.equal(res.body.toString(), JSON.stringify(payload));
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
       assert.equal(res.ok, true);
@@ -353,14 +354,168 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.statusCode, HTTP_STATUS_OK);
     });
 
-    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a query`, async () => {
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as an AsyncIterator`, async () => {
+      const payload = {
+        async* [Symbol.asyncIterator]() {
+          yield 'async';
+          yield 'iterator';
+        },
+      };
       const url = new URL('/gimme/repulse', baseURL);
       const res = await rekwest(url, {
-        body: new URLSearchParams('foo=bar'),
+        body: payload,
         method: HTTP2_METHOD_POST,
       });
 
-      assert.equal(res.body.toString(), 'foo=bar');
+      assert.equal(res.body.toString(), (await async function () {
+        const coil = [];
+
+        for await (const it of payload) {
+          coil.push(it);
+        }
+
+        return coil.join('');
+      }()));
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a Blob`, async () => {
+      const payload = new Blob(['blob']);
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: payload,
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), (await payload.text()));
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a Buffer`, async () => {
+      const payload = Buffer.from('buffer');
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: payload,
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), payload.toString());
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as an Iterator`, async () => {
+      const payload = {
+        * [Symbol.iterator]() {
+          yield 'sync';
+          yield 'iterator';
+        },
+      };
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: payload,
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), [...payload].join(''));
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as an Object`, async () => {
+      const payload = { cryptic: 'payload' };
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: payload,
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), JSON.stringify(payload));
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a String`, async () => {
+      const payload = 'string';
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: payload,
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), payload);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a Readable`, async () => {
+      const payload = 'readable';
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: Readable.from(payload),
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), payload);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a Uint8Array`, async () => {
+      const payload = new Uint8Array([
+        8,
+        16,
+        32,
+        64,
+        128,
+        255,
+      ]);
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: payload,
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), new TextDecoder().decode(payload));
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a URLSearchParams`, async () => {
+      const payload = new URLSearchParams('query=string');
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: payload,
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), payload.toString());
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
       assert.equal(res.ok, true);
@@ -374,70 +529,104 @@ export default ({ baseURL, httpVersion }) => {
 
     const opts = { digest: false, parse: false };
 
-    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and resolve to arrayBuffer`, async () => {
-      const url = new URL('/gimme/text', baseURL);
-      const res = await rekwest(url, opts);
+    it(
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response with "arrayBuffer" method`,
+      async () => {
+        const url = new URL('/gimme/text', baseURL);
+        const res = await rekwest(url, opts);
 
-      assert.ok(types.isArrayBuffer(await res.arrayBuffer()));
-      assert.equal(res.bodyUsed, true);
-      assert.equal(res.cookies, undefined);
-      assert.equal(res.httpVersion, httpVersion);
-      assert.equal(res.ok, true);
-      assert.equal(res.redirected, false);
-      assert.equal(res.statusCode, HTTP_STATUS_OK);
-    });
+        assert.ok(types.isArrayBuffer(await res.arrayBuffer()));
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.cookies, undefined);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      },
+    );
 
-    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and resolve to blob`, async () => {
-      const url = new URL('/gimme/text', baseURL);
-      const res = await rekwest(url, opts);
+    it(
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response with "blob" method`,
+      async () => {
+        const url = new URL('/gimme/text', baseURL);
+        const res = await rekwest(url, opts);
 
-      assert.ok((await res.blob())?.constructor.name === 'Blob');
-      assert.equal(res.bodyUsed, true);
-      assert.equal(res.cookies, undefined);
-      assert.equal(res.httpVersion, httpVersion);
-      assert.equal(res.ok, true);
-      assert.equal(res.redirected, false);
-      assert.equal(res.statusCode, HTTP_STATUS_OK);
-    });
+        assert.ok((await res.blob())?.constructor.name === 'Blob');
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.cookies, undefined);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      },
+    );
 
-    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and resolve to buffer`, async () => {
-      const url = new URL('/gimme/text', baseURL);
-      const res = await rekwest(url, opts);
+    it(
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response with "buffer" method`,
+      async () => {
+        const url = new URL('/gimme/text', baseURL);
+        const res = await rekwest(url, opts);
 
-      assert.ok(Buffer.isBuffer(await res.body()));
-      assert.equal(res.bodyUsed, true);
-      assert.equal(res.cookies, undefined);
-      assert.equal(res.httpVersion, httpVersion);
-      assert.equal(res.ok, true);
-      assert.equal(res.redirected, false);
-      assert.equal(res.statusCode, HTTP_STATUS_OK);
-    });
+        assert.ok(Buffer.isBuffer(await res.body()));
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.cookies, undefined);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      },
+    );
 
-    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and resolve to json`, async () => {
-      const url = new URL('/gimme/json', baseURL);
-      const res = await rekwest(url, opts);
+    it(
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response with "json" method`,
+      async () => {
+        const url = new URL('/gimme/json', baseURL);
+        const res = await rekwest(url, opts);
 
-      assert.equal((await res.json()).gotta, 'json');
-      assert.equal(res.bodyUsed, true);
-      assert.equal(res.cookies, undefined);
-      assert.equal(res.httpVersion, httpVersion);
-      assert.equal(res.ok, true);
-      assert.equal(res.redirected, false);
-      assert.equal(res.statusCode, HTTP_STATUS_OK);
-    });
+        assert.equal((await res.json()).gotta, 'json');
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.cookies, undefined);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      },
+    );
 
-    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and resolve to text`, async () => {
-      const url = new URL('/gimme/text', baseURL);
-      const res = await rekwest(url, opts);
+    it(
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response with "text" method`,
+      async () => {
+        const url = new URL('/gimme/text', baseURL);
+        const res = await rekwest(url, opts);
 
-      assert.equal(await res.text(), 'gotta text');
-      assert.equal(res.bodyUsed, true);
-      assert.equal(res.cookies, undefined);
-      assert.equal(res.httpVersion, httpVersion);
-      assert.equal(res.ok, true);
-      assert.equal(res.redirected, false);
-      assert.equal(res.statusCode, HTTP_STATUS_OK);
-    });
+        assert.equal(await res.text(), 'gotta text');
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.cookies, undefined);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      },
+    );
+
+    it(
+      `should make ${
+        HTTP2_METHOD_GET
+      } [${ HTTP_STATUS_OK }] request and catch an error in attempt to re-read the response`,
+      async () => {
+        const url = new URL('/gimme/text', baseURL);
+        const res = await rekwest(url, opts);
+
+        assert.ok(Buffer.isBuffer(await res.body()));
+
+        await assert.rejects(res.body(), (err) => {
+          assert.match(err.message, /Response stream already read/);
+          assert.equal(err.name, 'TypeError');
+
+          return true;
+        });
+      },
+    );
 
   });
 

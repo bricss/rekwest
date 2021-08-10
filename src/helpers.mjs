@@ -60,7 +60,11 @@ export const merge = (target = {}, ...rest) => {
         Array,
         Object,
       ].includes(val?.constructor)) {
-        acc[key] = merge(acc[key], val);
+        if (acc[key]?.constructor === val.constructor) {
+          acc[key] = merge(acc[key], val);
+        } else {
+          acc[key] = val;
+        }
       } else {
         acc[key] = val;
       }
@@ -117,7 +121,7 @@ export const preflight = (opts) => {
       [HTTP2_HEADER_AUTHORITY]: url.host,
       [HTTP2_HEADER_METHOD]: method,
       [HTTP2_HEADER_PATH]: `${ url.pathname }${ url.search }`,
-      [HTTP2_HEADER_SCHEME]: url.protocol.replaceAll(':', ''),
+      [HTTP2_HEADER_SCHEME]: url.protocol.replace(/\p{Punctuation}/gu, ''),
     },
   };
 
@@ -206,7 +210,7 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
             if (/latin1|utf-(8|16le)|ucs-2/.test(charset)) {
               spool = spool.toString(charset);
             } else {
-              spool = new TextDecoder(charset).decode(Uint8Array.from(spool).buffer);
+              spool = new TextDecoder(charset).decode(spool);
             }
           }
         }

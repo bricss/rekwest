@@ -7,7 +7,7 @@ and [http2.request](https://nodejs.org/api/http2.html#http2_clienthttp2session_r
 ## Abstract
 
 * Fetch-alike
-* Cool-kids config options (with defaults)
+* Cool-beans config options (with defaults)
 * Automatic HTTP2 support (ALPN negotiation)
 * Automatic or opt-in body parse (with non-UTF-8 charset decoding)
 * Automatic and simplistic cookie(s) treatment (with built-in jar)
@@ -70,7 +70,8 @@ console.log(res.body);
   & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#http2_clienthttp2session_request_headers_options)
   and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback)
   for the HTTP2 attunes
-  * `body` **{string | Array | Blob | Object | Readable | URLSearchParams}** Body to send with the request
+  * `body` **{string | Array | AsyncIterator | Blob | Buffer | Iterator | Object | Readable | Uint8Array |
+    URLSearchParams}** Body to send with the request
   * `cookies` **{boolean | Object}** `Default: true` Cookies to add to the request
   * `digest` **{boolean}** `Default: true` Read response stream, or simply add a mixin
   * `follow` **{number}** `Default: 20` Number of redirects to follow
