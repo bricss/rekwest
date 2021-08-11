@@ -1,7 +1,7 @@
 export class RequestError extends Error {
 
   get name() {
-    return this.constructor.name;
+    return this[Symbol.toStringTag];
   }
 
   get [Symbol.toStringTag]() {

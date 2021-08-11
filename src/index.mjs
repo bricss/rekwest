@@ -1,19 +1,14 @@
 import http2 from 'http2';
 import { request } from 'https';
-import {
-  PassThrough,
-  Readable,
-} from 'stream';
-import { types } from 'util';
-import zlib from 'zlib';
 import { ackn } from './ackn.mjs';
 import { Cookies } from './cookies.mjs';
 import { RequestError } from './errors.mjs';
 import {
-  compress,
+  dispatch,
   merge,
   preflight,
   premix,
+  transmute,
 } from './helpers.mjs';
 
 export { constants } from 'http2';
@@ -24,7 +19,6 @@ export * from './errors.mjs';
 export * from './helpers.mjs';
 
 const {
-        HTTP2_HEADER_CONTENT_ENCODING,
         HTTP2_HEADER_CONTENT_LENGTH,
         HTTP2_HEADER_CONTENT_TYPE,
         HTTP2_HEADER_LOCATION,
@@ -75,34 +69,8 @@ export default async function rekwest(url, opts = {}) {
 
   const promise = new Promise((resolve, reject) => {
     let client, req;
-    let headers = {};
 
-    if (body === Object(body) && !Reflect.has(body, Symbol.asyncIterator) && body.pipe?.constructor !== Function) {
-      if (body.constructor === URLSearchParams) {
-        headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/x-www-form-urlencoded' };
-        body = body.toString();
-      } else if (!Buffer.isBuffer(body)
-        && !(!Array.isArray(body) && Reflect.has(body, Symbol.iterator))) {
-        headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' };
-        body = JSON.stringify(body);
-      }
-
-      if (types.isUint8Array(body) || Buffer.isBuffer(body) || body !== Object(body)) {
-        if (opts.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
-          body = compress(body, opts.headers[HTTP2_HEADER_CONTENT_ENCODING]);
-        }
-
-        headers = {
-          ...headers,
-          [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body),
-          ...opts.headers[HTTP2_HEADER_CONTENT_TYPE] && {
-            [HTTP2_HEADER_CONTENT_TYPE]: opts.headers[HTTP2_HEADER_CONTENT_TYPE],
-          },
-        };
-
-        Object.assign(opts.headers, headers);
-      }
-    }
+    body = transmute(body, opts);
 
     if (h2) {
       client = http2.connect(url.origin, opts);
@@ -204,40 +172,7 @@ export default async function rekwest(url, opts = {}) {
     req.on('goaway', reject);
     req.on('timeout', req.destroy);
 
-    if (types.isUint8Array(body)) {
-      req.write(body);
-
-      body = null;
-    }
-
-    if (body === Object(body) && !Buffer.isBuffer(body) && body.pipe?.constructor !== Function) {
-      if (Reflect.has(body, Symbol.asyncIterator)) {
-        body = Readable.from(body);
-      } else if (Reflect.has(body, Symbol.iterator)) {
-        for (let chunk of body) {
-          chunk = Buffer.isBuffer(chunk) ? chunk : `${ chunk }`;
-          if (opts.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
-            req.write(compress(chunk, opts.headers[HTTP2_HEADER_CONTENT_ENCODING]));
-          } else {
-            req.write(chunk);
-          }
-        }
-
-        body = null;
-      }
-    }
-
-    if (body === Object(body) && body.pipe?.constructor === Function) {
-      const compressor = {
-        br: zlib.createBrotliCompress,
-        deflate: zlib.createDeflate,
-        gzip: zlib.createGzip,
-      }[opts.headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
-
-      body.pipe(compressor()).pipe(req);
-    } else {
-      req.end(body);
-    }
+    dispatch(req, { ...opts, body });
   });
 
   try {

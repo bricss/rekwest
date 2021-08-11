@@ -1,7 +1,14 @@
 import { Blob } from 'buffer';
 import { globalAgent } from 'http';
 import http2 from 'http2';
-import { promisify } from 'util';
+import {
+  PassThrough,
+  Readable,
+} from 'stream';
+import {
+  promisify,
+  types,
+} from 'util';
 import zlib from 'zlib';
 import { Cookies } from './cookies.mjs';
 
@@ -10,6 +17,7 @@ const {
         HTTP2_HEADER_ACCEPT_ENCODING,
         HTTP2_HEADER_AUTHORITY,
         HTTP2_HEADER_CONTENT_ENCODING,
+        HTTP2_HEADER_CONTENT_LENGTH,
         HTTP2_HEADER_CONTENT_TYPE,
         HTTP2_HEADER_COOKIE,
         HTTP2_HEADER_METHOD,
@@ -48,6 +56,43 @@ export const decompress = (buf, encoding, { async = false } = {}) => {
   return decompressor?.(buf) || (async ? Promise.resolve(buf) : buf);
 };
 
+export const dispatch = (req, { body, headers }) => {
+  if (types.isUint8Array(body)) {
+    req.write(body);
+
+    return req.end();
+  }
+
+  if (body === Object(body) && !Buffer.isBuffer(body) && body.pipe?.constructor !== Function) {
+    if (Reflect.has(body, Symbol.asyncIterator)) {
+      body = Readable.from(body);
+    } else if (Reflect.has(body, Symbol.iterator)) {
+      for (let chunk of body) {
+        chunk = Buffer.isBuffer(chunk) ? chunk : `${ chunk }`;
+        if (headers[HTTP2_HEADER_CONTENT_ENCODING]) {
+          req.write(compress(chunk, headers[HTTP2_HEADER_CONTENT_ENCODING]));
+        } else {
+          req.write(chunk);
+        }
+      }
+
+      return req.end();
+    }
+  }
+
+  if (body === Object(body) && body.pipe?.constructor === Function) {
+    const compressor = {
+      br: zlib.createBrotliCompress,
+      deflate: zlib.createDeflate,
+      gzip: zlib.createGzip,
+    }[headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
+
+    body.pipe(compressor()).pipe(req);
+  } else {
+    req.end(body);
+  }
+};
+
 export const merge = (target = {}, ...rest) => {
   target = JSON.parse(JSON.stringify(target));
   if (!rest.length) {
@@ -57,9 +102,12 @@ export const merge = (target = {}, ...rest) => {
   rest.filter((it) => it === Object(it)).forEach((it) => {
     Object.entries(it).reduce((acc, [key, val]) => {
       if ([
+        acc[key]?.constructor,
+        val?.constructor,
+      ].every((it) => [
         Array,
         Object,
-      ].includes(val?.constructor)) {
+      ].includes(it))) {
         if (acc[key]?.constructor === val.constructor) {
           acc[key] = merge(acc[key], val);
         } else {
@@ -226,4 +274,37 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
       },
     },
   });
+};
+
+export const transmute = (body, opts) => {
+  let headers = {};
+
+  if (body === Object(body) && !Reflect.has(body, Symbol.asyncIterator)) {
+    if (body.constructor === URLSearchParams) {
+      headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/x-www-form-urlencoded' };
+      body = body.toString();
+    } else if (!Buffer.isBuffer(body)
+      && !(!Array.isArray(body) && Reflect.has(body, Symbol.iterator))) {
+      headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' };
+      body = JSON.stringify(body);
+    }
+
+    if (types.isUint8Array(body) || Buffer.isBuffer(body) || body !== Object(body)) {
+      if (opts.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
+        body = compress(body, opts.headers[HTTP2_HEADER_CONTENT_ENCODING]);
+      }
+
+      headers = {
+        ...headers,
+        [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body),
+        ...opts.headers[HTTP2_HEADER_CONTENT_TYPE] && {
+          [HTTP2_HEADER_CONTENT_TYPE]: opts.headers[HTTP2_HEADER_CONTENT_TYPE],
+        },
+      };
+
+      Object.assign(opts.headers, headers);
+    }
+  }
+
+  return body;
 };

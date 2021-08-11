@@ -42,7 +42,7 @@ const {
 const url = 'https://somewhe.re/somewhat/endpoint';
 
 const res = await rekwest(url, {
-  body: { cryptic: 'payload' },
+  body: { celestial: 'payload' },
   headers: {
     [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
     [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // enables: body compression

@@ -16,7 +16,7 @@ const {
 const baseURL = new URL('https://localhost:3433');
 const httpVersion = '2.0';
 
-describe('rekwest { h2: true } mode', () => {
+describe('rekwest { h2 } mode', () => {
 
   before(() => {
     rekwest.defaults = {

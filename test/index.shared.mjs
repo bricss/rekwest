@@ -630,6 +630,27 @@ export default ({ baseURL, httpVersion }) => {
 
   });
 
+  describe('with abort { signal }', () => {
+
+    it(
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and catch an error after abort signal`,
+      async () => {
+        const ac = new AbortController();
+        const url = new URL('/gimme/nothing', baseURL);
+
+        setImmediate(() => ac.abort());
+
+        await assert.rejects(rekwest(url, { signal: ac.signal }), (err) => {
+          assert.match(err.message, /The operation was aborted/);
+          assert.equal(err.name, 'AbortError');
+
+          return true;
+        });
+      },
+    );
+
+  });
+
   describe('with { thenable: true }', () => {
 
     it(
