@@ -64,7 +64,7 @@ export default async function rekwest(url, opts = {}) {
   let { body } = opts;
 
   if (body?.constructor.name === 'Blob') {
-    body = Buffer.from(await body.arrayBuffer());
+    body = body.stream?.() || Buffer.from(await body.arrayBuffer());
   }
 
   const promise = new Promise((resolve, reject) => {
