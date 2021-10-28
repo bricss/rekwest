@@ -1,5 +1,9 @@
 name: Coverage
-on: [ push, pull_request ]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 5 1 */2 *'
 env:
   NODE_ENV: development
 jobs:
@@ -9,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [ 16 ]
+        node: [ 16, 17 ]
         os: [ ubuntu-latest ]
     steps:
       - name: Clone repo

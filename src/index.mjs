@@ -8,75 +8,74 @@ import {
   merge,
   preflight,
   premix,
-  transmute,
+  transform,
 } from './helpers.mjs';
+import { APPLICATION_OCTET_STREAM } from './mediatypes.mjs';
 
 export { constants } from 'http2';
 
 export * from './ackn.mjs';
 export * from './cookies.mjs';
 export * from './errors.mjs';
+export * from './file.mjs';
+export * from './formdata.mjs';
 export * from './helpers.mjs';
 
 const {
-        HTTP2_HEADER_CONTENT_LENGTH,
-        HTTP2_HEADER_CONTENT_TYPE,
-        HTTP2_HEADER_LOCATION,
-        HTTP2_HEADER_SET_COOKIE,
-        HTTP2_HEADER_STATUS,
-        HTTP2_METHOD_GET,
-        HTTP2_METHOD_HEAD,
-        HTTP_STATUS_BAD_REQUEST,
-        HTTP_STATUS_SEE_OTHER,
-      } = http2.constants;
+  HTTP2_HEADER_CONTENT_LENGTH,
+  HTTP2_HEADER_CONTENT_TYPE,
+  HTTP2_HEADER_LOCATION,
+  HTTP2_HEADER_SET_COOKIE,
+  HTTP2_HEADER_STATUS,
+  HTTP2_METHOD_GET,
+  HTTP2_METHOD_HEAD,
+  HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_SEE_OTHER,
+} = http2.constants;
 
-export default async function rekwest(url, opts = {}) {
-  url = opts.url = new URL(url);
-  if (!opts.redirected) {
-    opts = merge(rekwest.defaults, { follow: 20, method: HTTP2_METHOD_GET }, opts);
+export default async function rekwest(url, options = {}) {
+  url = options.url = new URL(url);
+  if (!options.redirected) {
+    options = merge(rekwest.defaults, { follow: 20, method: HTTP2_METHOD_GET }, options);
   }
 
-  if (opts.body && [
+  if (options.body && [
     HTTP2_METHOD_GET,
     HTTP2_METHOD_HEAD,
-  ].includes(opts.method)) {
+  ].includes(options.method)) {
     throw new TypeError(`Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body`);
   }
 
-  if (!opts.follow) {
+  if (!options.follow) {
     throw new RequestError(`Maximum redirect reached at: ${ url.href }`);
   }
 
   if (url.protocol === 'https:') {
-    opts = await ackn(opts);
-  } else if (Reflect.has(opts, 'alpnProtocol')) {
+    options = await ackn(options);
+  } else if (Reflect.has(options, 'alpnProtocol')) {
     [
       'alpnProtocol',
       'createConnection',
       'h2',
       'protocol',
-    ].forEach((it) => Reflect.deleteProperty(opts, it));
+    ].forEach((it) => Reflect.deleteProperty(options, it));
   }
 
-  opts = preflight(opts);
+  options = preflight(options);
 
-  const { cookies, digest, follow, h2, redirect, redirected, thenable } = opts;
-  let { body } = opts;
-
-  if (body?.constructor.name === 'Blob') {
-    body = body.stream?.() || Buffer.from(await body.arrayBuffer());
-  }
+  const { cookies, digest, follow, h2, redirect, redirected, thenable } = options;
+  let { body } = options;
 
   const promise = new Promise((resolve, reject) => {
     let client, req;
 
-    body = transmute(body, opts);
+    body &&= transform(body, options);
 
     if (h2) {
-      client = http2.connect(url.origin, opts);
-      req = client.request(opts.headers, opts);
+      client = http2.connect(url.origin, options);
+      req = client.request(options.headers, options);
     } else {
-      req = request(url, opts);
+      req = request(url, options);
     }
 
     req.on('response', (res) => {
@@ -122,28 +121,28 @@ export default async function rekwest(url, opts = {}) {
 
       if (follow && /^3\d{2}$/.test(res.statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
         if (redirect === 'error') {
-          res.emit('error', new RequestError(`Unexpected redirect, redirect mode is set to ${ redirect }`));
+          res.emit('error', new RequestError(`Unexpected redirect, redirect mode is set to '${ redirect }'`));
         }
 
         if (redirect === 'follow') {
-          opts.url = new URL(res.headers[HTTP2_HEADER_LOCATION], url).href;
+          options.url = new URL(res.headers[HTTP2_HEADER_LOCATION], url).href;
 
           if (res.statusCode !== HTTP_STATUS_SEE_OTHER
             && body === Object(body) && body.pipe?.constructor === Function) {
             res.emit('error', new RequestError(`Unable to ${ redirect } redirect with body as readable stream`));
           }
 
-          opts.follow--;
+          options.follow--;
 
           if (res.statusCode === HTTP_STATUS_SEE_OTHER) {
-            Reflect.deleteProperty(opts.headers, HTTP2_HEADER_CONTENT_LENGTH);
-            opts.method = HTTP2_METHOD_GET;
-            opts.body = null;
+            Reflect.deleteProperty(options.headers, HTTP2_HEADER_CONTENT_LENGTH);
+            options.method = HTTP2_METHOD_GET;
+            options.body = null;
           }
 
-          Reflect.set(opts, 'redirected', true);
+          Reflect.set(options, 'redirected', true);
 
-          return rekwest(opts.url, opts).then(resolve, reject);
+          return rekwest(options.url, options).then(resolve, reject);
         }
       }
 
@@ -154,14 +153,14 @@ export default async function rekwest(url, opts = {}) {
 
       Reflect.defineProperty(res, 'redirected', {
         enumerable: true,
-        value: opts.redirected,
+        value: options.redirected,
       });
 
       if (res.statusCode >= HTTP_STATUS_BAD_REQUEST) {
-        return reject(premix(res, opts));
+        return reject(premix(res, options));
       }
 
-      resolve(premix(res, opts));
+      resolve(premix(res, options));
     });
 
     req.on('end', () => {
@@ -172,7 +171,7 @@ export default async function rekwest(url, opts = {}) {
     req.on('goaway', reject);
     req.on('timeout', req.destroy);
 
-    dispatch(req, { ...opts, body });
+    dispatch(req, { ...options, body });
   });
 
   try {
@@ -198,15 +197,17 @@ export default async function rekwest(url, opts = {}) {
 
 Reflect.defineProperty(rekwest, 'stream', {
   enumerable: true,
-  value: function (url, opts = {}) {
-    opts = preflight({
+  value: function (url, options = {}) {
+    options = preflight({
       url,
-      ...merge(rekwest.defaults, { headers: { [HTTP2_HEADER_CONTENT_TYPE]: 'application/octet-stream' } }, opts),
+      ...merge(rekwest.defaults, {
+        headers: { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_OCTET_STREAM },
+      }, options),
     });
 
-    if (opts.h2) {
-      const client = http2.connect(url.origin, opts);
-      const req = client.request(opts.headers, opts);
+    if (options.h2) {
+      const client = http2.connect(url.origin, options);
+      const req = client.request(options.headers, options);
 
       req.on('end', () => {
         client.close();
@@ -215,7 +216,7 @@ Reflect.defineProperty(rekwest, 'stream', {
       return req;
     }
 
-    return request(opts.url, opts);
+    return request(options.url, options);
   },
 });
 

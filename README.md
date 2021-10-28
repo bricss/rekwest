@@ -10,10 +10,12 @@ and [http2.request](https://nodejs.org/api/http2.html#http2_clienthttp2session_r
 * Cool-beans config options (with defaults)
 * Automatic HTTP2 support (ALPN negotiation)
 * Automatic or opt-in body parse (with non-UTF-8 charset decoding)
-* Automatic and simplistic cookie(s) treatment (with built-in jar)
+* Automatic and simplistic `Cookies` treatment (with built-in jar)
 * Automatic decompression (with opt-in body compression)
+* Built-in streamable `File` & `FormData` interfaces
 * Support redirects with fine-grained tune-ups
 * Support all legit request body types (include blobs & streams)
+* Support both CJS and ESM module systems
 * Fully promise-able and pipe-able
 * Zero dependencies
 
@@ -33,11 +35,11 @@ npm install rekwest --save
 import rekwest, { constants } from 'rekwest';
 
 const {
-        HTTP2_HEADER_AUTHORIZATION,
-        HTTP2_HEADER_CONTENT_ENCODING,
-        HTTP2_METHOD_POST,
-        HTTP_STATUS_OK
-      } = constants;
+  HTTP2_HEADER_AUTHORIZATION,
+  HTTP2_HEADER_CONTENT_ENCODING,
+  HTTP2_METHOD_POST,
+  HTTP_STATUS_OK
+} = constants;
 
 const url = 'https://somewhe.re/somewhat/endpoint';
 
@@ -47,9 +49,48 @@ const res = await rekwest(url, {
     [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
     [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // enables: body compression
     /** [HTTP2_HEADER_CONTENT_TYPE]
-     * is undue to Arrays/Objects/URLSearchParams body types
+     * is undue for
+     * Arrays/Blob/File/FormData/Objects/URLSearchParams body types
+     * and will be set automatically, with an option to override it here
      */
   },
+  method: HTTP2_METHOD_POST,
+});
+
+console.assert(res.statusCode === HTTP_STATUS_OK);
+console.info(res.headers);
+console.log(res.body);
+```
+
+---
+
+```javascript
+import rekwest, {
+  constants,
+  Blob,
+  File,
+  FormData
+} from 'rekwest';
+
+const {
+  HTTP2_METHOD_POST,
+  HTTP_STATUS_OK
+} = constants;
+
+const blob = new Blob(['bits']);
+const file = new File(['bits'], 'file.dab');
+const readable = Readable.from('bits');
+const fd = new FormData();
+
+fd.append('blob', blob, 'blob.dab');
+fd.append('file', file);
+fd.append('readable', readable, 'readable.dab');
+fd.append('celestial', 'payload');
+
+const url = 'https://somewhe.re/somewhat/endpoint';
+
+const res = await rekwest(url, {
+  body: fd,
   method: HTTP2_METHOD_POST,
 });
 
@@ -70,8 +111,8 @@ console.log(res.body);
   & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#http2_clienthttp2session_request_headers_options)
   and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback)
   for the HTTP2 attunes
-  * `body` **{string | Array | AsyncIterator | Blob | Buffer | Iterator | Object | Readable | Uint8Array |
-    URLSearchParams}** Body to send with the request
+  * `body` **{string | Array | AsyncIterator | Blob | Buffer | File | FromData | Iterator | Object | Readable |
+    Uint8Array | URLSearchParams}** Body to send with the request
   * `cookies` **{boolean | Object}** `Default: true` Cookies to add to the request
   * `digest` **{boolean}** `Default: true` Read response stream, or simply add a mixin
   * `follow` **{number}** `Default: 20` Number of redirects to follow

@@ -7,25 +7,35 @@ import {
 } from 'stream';
 import {
   promisify,
+  toUSVString,
   types,
 } from 'util';
 import zlib from 'zlib';
 import { Cookies } from './cookies.mjs';
+import { File } from './file.mjs';
+import { FormData } from './formdata.mjs';
+import {
+  APPLICATION_FORM_URLENCODED,
+  APPLICATION_JSON,
+  APPLICATION_OCTET_STREAM,
+  TEXT_PLAIN,
+  WILDCARD,
+} from './mediatypes.mjs';
 
 const {
-        HTTP2_HEADER_ACCEPT,
-        HTTP2_HEADER_ACCEPT_ENCODING,
-        HTTP2_HEADER_AUTHORITY,
-        HTTP2_HEADER_CONTENT_ENCODING,
-        HTTP2_HEADER_CONTENT_LENGTH,
-        HTTP2_HEADER_CONTENT_TYPE,
-        HTTP2_HEADER_COOKIE,
-        HTTP2_HEADER_METHOD,
-        HTTP2_HEADER_PATH,
-        HTTP2_HEADER_SCHEME,
-        HTTP2_METHOD_GET,
-        HTTP2_METHOD_HEAD,
-      } = http2.constants;
+  HTTP2_HEADER_ACCEPT,
+  HTTP2_HEADER_ACCEPT_ENCODING,
+  HTTP2_HEADER_AUTHORITY,
+  HTTP2_HEADER_CONTENT_ENCODING,
+  HTTP2_HEADER_CONTENT_LENGTH,
+  HTTP2_HEADER_CONTENT_TYPE,
+  HTTP2_HEADER_COOKIE,
+  HTTP2_HEADER_METHOD,
+  HTTP2_HEADER_PATH,
+  HTTP2_HEADER_SCHEME,
+  HTTP2_METHOD_GET,
+  HTTP2_METHOD_HEAD,
+} = http2.constants;
 
 const brotliCompress = promisify(zlib.brotliCompress);
 const brotliDecompress = promisify(zlib.brotliDecompress);
@@ -68,7 +78,7 @@ export const dispatch = (req, { body, headers }) => {
       body = Readable.from(body);
     } else if (Reflect.has(body, Symbol.iterator)) {
       for (let chunk of body) {
-        chunk = Buffer.isBuffer(chunk) ? chunk : `${ chunk }`;
+        chunk = Buffer.isBuffer(chunk) ? chunk : toUSVString(chunk);
         if (headers[HTTP2_HEADER_CONTENT_ENCODING]) {
           req.write(compress(chunk, headers[HTTP2_HEADER_CONTENT_ENCODING]));
         } else {
@@ -124,14 +134,14 @@ export const merge = (target = {}, ...rest) => {
   return target;
 };
 
-export const preflight = (opts) => {
-  const url = opts.url = new URL(opts.url);
-  const { cookies, h2 = false, method = HTTP2_METHOD_GET, headers, redirected } = opts;
+export const preflight = (options) => {
+  const url = options.url = new URL(options.url);
+  const { cookies, h2 = false, method = HTTP2_METHOD_GET, headers, redirected } = options;
 
   if (!h2) {
-    opts.agent ??= url.protocol === 'http:' ? globalAgent : void 0;
+    options.agent ??= url.protocol === 'http:' ? globalAgent : void 0;
   } else {
-    opts.endStream = [
+    options.endStream = [
       HTTP2_METHOD_GET,
       HTTP2_METHOD_HEAD,
     ].includes(method);
@@ -151,19 +161,19 @@ export const preflight = (opts) => {
       }
     }
 
-    opts.headers = {
+    options.headers = {
       ...cookie && { [HTTP2_HEADER_COOKIE]: cookie },
       ...headers,
     };
   }
 
-  opts.digest ??= true;
-  opts.follow ??= 20;
-  opts.h2 ??= h2;
-  opts.headers = {
-    [HTTP2_HEADER_ACCEPT]: 'application/json, text/plain, */*',
+  options.digest ??= true;
+  options.follow ??= 20;
+  options.h2 ??= h2;
+  options.headers = {
+    [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
     [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, gzip, identity',
-    ...Object.entries(opts.headers || {})
+    ...Object.entries(options.headers || {})
              .reduce((acc, [key, val]) => (acc[key.toLowerCase()] = val, acc), {}),
     ...h2 && {
       [HTTP2_HEADER_AUTHORITY]: url.host,
@@ -173,13 +183,13 @@ export const preflight = (opts) => {
     },
   };
 
-  opts.method ??= method;
-  opts.parse ??= true;
-  opts.redirect ??= 'follow';
-  opts.redirected ??= false;
-  opts.thenable ??= false;
+  options.method ??= method;
+  options.parse ??= true;
+  options.redirect ??= 'follow';
+  options.redirected ??= false;
+  options.thenable ??= false;
 
-  return opts;
+  return options;
 };
 
 export const premix = (res, { digest = false, parse = false } = {}) => {
@@ -254,7 +264,7 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
 
           if (/json/i.test(contentType)) {
             spool = JSON.parse(spool.toString(charset));
-          } else if (/text|xml/i.test(contentType)) {
+          } else if (/text|xml|yaml/i.test(contentType)) {
             if (/latin1|utf-(8|16le)|ucs-2/.test(charset)) {
               spool = spool.toString(charset);
             } else {
@@ -276,35 +286,56 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
   });
 };
 
-export const transmute = (body, opts) => {
+export async function* tap(value) {
+  if (Reflect.has(value, Symbol.asyncIterator)) {
+    yield* value;
+  } else if (value.stream) {
+    yield* value.stream();
+  } else {
+    yield await value.arrayBuffer();
+  }
+}
+
+export const transform = (body, options) => {
   let headers = {};
 
-  if (body === Object(body) && !Reflect.has(body, Symbol.asyncIterator)) {
+  if (File.alike(body)) {
+    headers = {
+      [HTTP2_HEADER_CONTENT_LENGTH]: body.size,
+      [HTTP2_HEADER_CONTENT_TYPE]: body.type || APPLICATION_OCTET_STREAM,
+    };
+    body = body.stream?.() || Readable.from(tap(body));
+  } else if (FormData.alike(body)) {
+    body = FormData.actuate(body);
+    headers = { [HTTP2_HEADER_CONTENT_TYPE]: body.contentType };
+  } else if (body === Object(body) && !Reflect.has(body, Symbol.asyncIterator)) {
     if (body.constructor === URLSearchParams) {
-      headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/x-www-form-urlencoded' };
+      headers = { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_FORM_URLENCODED };
       body = body.toString();
     } else if (!Buffer.isBuffer(body)
       && !(!Array.isArray(body) && Reflect.has(body, Symbol.iterator))) {
-      headers = { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' };
+      headers = { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON };
       body = JSON.stringify(body);
     }
 
     if (types.isUint8Array(body) || Buffer.isBuffer(body) || body !== Object(body)) {
-      if (opts.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
-        body = compress(body, opts.headers[HTTP2_HEADER_CONTENT_ENCODING]);
+      if (options.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
+        body = compress(body, options.headers[HTTP2_HEADER_CONTENT_ENCODING]);
       }
 
       headers = {
         ...headers,
         [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body),
-        ...opts.headers[HTTP2_HEADER_CONTENT_TYPE] && {
-          [HTTP2_HEADER_CONTENT_TYPE]: opts.headers[HTTP2_HEADER_CONTENT_TYPE],
-        },
       };
-
-      Object.assign(opts.headers, headers);
     }
   }
+
+  Object.assign(options.headers, {
+    ...headers,
+    ...options.headers[HTTP2_HEADER_CONTENT_TYPE] && {
+      [HTTP2_HEADER_CONTENT_TYPE]: options.headers[HTTP2_HEADER_CONTENT_TYPE],
+    },
+  });
 
   return body;
 };

@@ -6,22 +6,22 @@ import {
 import zlib from 'zlib';
 
 const {
-        HTTP2_HEADER_CONTENT_ENCODING,
-        HTTP2_HEADER_CONTENT_TYPE,
-        HTTP2_HEADER_SET_COOKIE,
-        HTTP2_HEADER_LOCATION,
-        HTTP2_METHOD_GET,
-        HTTP2_METHOD_POST,
-        HTTP2_METHOD_PUT,
-        HTTP_STATUS_FOUND,
-        HTTP_STATUS_INTERNAL_SERVER_ERROR,
-        HTTP_STATUS_MOVED_PERMANENTLY,
-        HTTP_STATUS_NO_CONTENT,
-        HTTP_STATUS_NOT_FOUND,
-        HTTP_STATUS_OK,
-        HTTP_STATUS_SEE_OTHER,
-        HTTP_STATUS_UNAUTHORIZED,
-      } = constants;
+  HTTP2_HEADER_CONTENT_ENCODING,
+  HTTP2_HEADER_CONTENT_TYPE,
+  HTTP2_HEADER_SET_COOKIE,
+  HTTP2_HEADER_LOCATION,
+  HTTP2_METHOD_GET,
+  HTTP2_METHOD_POST,
+  HTTP2_METHOD_PUT,
+  HTTP_STATUS_FOUND,
+  HTTP_STATUS_INTERNAL_SERVER_ERROR,
+  HTTP_STATUS_MOVED_PERMANENTLY,
+  HTTP_STATUS_NO_CONTENT,
+  HTTP_STATUS_NOT_FOUND,
+  HTTP_STATUS_OK,
+  HTTP_STATUS_SEE_OTHER,
+  HTTP_STATUS_UNAUTHORIZED,
+} = constants;
 
 export default (baseURL) => (req, res) => {
   const { pathname } = new URL(req.url, baseURL);
@@ -42,19 +42,19 @@ export default (baseURL) => (req, res) => {
       ],
     ]);
     res.write(JSON.stringify({
-      gotta: 'cookies',
+      got: 'cookies',
     }));
     res.end();
   } else if (pathname.match(String.raw`/gimme/encode`) && req.method === HTTP2_METHOD_GET) {
     const charset = 'utf-16be';
 
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: `text/plain; charset=${ charset }` });
-    res.write(new TextEncoder(charset).encode('gotta text'));
+    res.write(new TextEncoder(charset).encode('got text'));
     res.end();
   } else if (pathname.match(String.raw`/gimme/json`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' });
     res.write(JSON.stringify({
-      gotta: 'json',
+      got: 'json',
     }));
     res.end();
   } else if (pathname.match(String.raw`/gimme/kaboom`) && req.method === HTTP2_METHOD_GET) {
@@ -130,7 +130,7 @@ export default (baseURL) => (req, res) => {
        })).pipe(compressor()).pipe(res);
   } else if (pathname.match(String.raw`/gimme/text`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: 'text/plain' });
-    res.write('gotta text');
+    res.write('got text');
     res.end();
   } else {
     res.end();

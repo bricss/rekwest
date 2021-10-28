@@ -8,9 +8,9 @@ import rekwest, {
 import shared from './index.shared.mjs';
 
 const {
-        HTTP2_METHOD_POST,
-        HTTP_STATUS_OK,
-      } = constants;
+  HTTP2_METHOD_POST,
+  HTTP_STATUS_OK,
+} = constants;
 
 const baseURL = new URL('http://localhost:3000');
 const httpVersion = '1.1';
