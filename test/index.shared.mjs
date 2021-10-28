@@ -440,10 +440,10 @@ export default ({ baseURL, httpVersion }) => {
       const readable = Readable.from('bits');
       const payload = new FormData();
 
+      payload.append('celestial', 'payload');
       payload.append('blob', blob, 'blob.dab');
       payload.append('file', file);
       payload.append('readable', readable, 'readable.dab');
-      payload.append('celestial', 'payload');
 
       payload.set('celestial', 'goddess');
       assert.equal(payload.has('celestial'), true);

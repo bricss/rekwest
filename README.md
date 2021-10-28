@@ -82,10 +82,10 @@ const file = new File(['bits'], 'file.dab');
 const readable = Readable.from('bits');
 const fd = new FormData();
 
+fd.append('celestial', 'payload');
 fd.append('blob', blob, 'blob.dab');
 fd.append('file', file);
 fd.append('readable', readable, 'readable.dab');
-fd.append('celestial', 'payload');
 
 const url = 'https://somewhe.re/somewhat/endpoint';
 
