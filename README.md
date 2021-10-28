@@ -71,6 +71,7 @@ import rekwest, {
   File,
   FormData
 } from 'rekwest';
+import { Readable } from 'stream';
 
 const {
   HTTP2_METHOD_POST,
