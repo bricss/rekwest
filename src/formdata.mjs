@@ -3,7 +3,10 @@ import http2 from 'http2';
 import { toUSVString } from 'util';
 import { File } from './file.mjs';
 import { tap } from './helpers.mjs';
-import { MULTIPART_FORM_DATA } from './mediatypes.mjs';
+import {
+  APPLICATION_OCTET_STREAM,
+  MULTIPART_FORM_DATA,
+} from './mediatypes.mjs';
 
 const {
   HTTP2_HEADER_CONTENT_DISPOSITION,
@@ -36,7 +39,7 @@ export class FormData {
             }"${ value.name ? `; filename="${ escape(value.name) }"` : '' }\r\n${
               HTTP2_HEADER_CONTENT_TYPE
             }: ${
-              value.type || 'application/octet-stream'
+              value.type || APPLICATION_OCTET_STREAM
             }\r\n\r\n`);
             yield* tap(value);
             yield encoder.encode('\r\n');
@@ -135,7 +138,7 @@ export class FormData {
     this.#ensureArgs(args, 1, 'get');
     const name = toUSVString(args[0]);
 
-    return (this.#entries.find((it) => it.name === name) || {}).value || null;
+    return (this.#entries.find((it) => it.name === name) || {}).value ?? null;
   }
 
   getAll(...args) {

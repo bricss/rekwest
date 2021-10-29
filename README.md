@@ -50,7 +50,7 @@ const res = await rekwest(url, {
     [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // enables: body compression
     /** [HTTP2_HEADER_CONTENT_TYPE]
      * is undue for
-     * Arrays/Blob/File/FormData/Objects/URLSearchParams body types
+     * Array/Blob/File/FormData/Object/URLSearchParams body types
      * and will be set automatically, with an option to override it here
      */
   },

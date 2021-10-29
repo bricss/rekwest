@@ -4,6 +4,10 @@ import {
   Transform,
 } from 'stream';
 import zlib from 'zlib';
+import {
+  APPLICATION_JSON,
+  TEXT_PLAIN,
+} from '../../src/mediatypes.mjs';
 
 const {
   HTTP2_HEADER_CONTENT_ENCODING,
@@ -31,7 +35,7 @@ export default (baseURL) => (req, res) => {
     res.writeHead(HTTP_STATUS_OK, [
       [
         HTTP2_HEADER_CONTENT_TYPE,
-        'application/json; charset=utf-8',
+        `${ APPLICATION_JSON }; charset=utf-8`,
       ],
       [
         HTTP2_HEADER_SET_COOKIE,
@@ -46,19 +50,17 @@ export default (baseURL) => (req, res) => {
     }));
     res.end();
   } else if (pathname.match(String.raw`/gimme/encode`) && req.method === HTTP2_METHOD_GET) {
-    const charset = 'utf-16be';
-
-    res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: `text/plain; charset=${ charset }` });
-    res.write(new TextEncoder(charset).encode('got text'));
+    res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: `${ TEXT_PLAIN }; charset=utf-16be` });
+    res.write(new TextEncoder().encode('got text'));
     res.end();
   } else if (pathname.match(String.raw`/gimme/json`) && req.method === HTTP2_METHOD_GET) {
-    res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' });
+    res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });
     res.write(JSON.stringify({
       got: 'json',
     }));
     res.end();
   } else if (pathname.match(String.raw`/gimme/kaboom`) && req.method === HTTP2_METHOD_GET) {
-    res.writeHead(HTTP_STATUS_INTERNAL_SERVER_ERROR, { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' });
+    res.writeHead(HTTP_STATUS_INTERNAL_SERVER_ERROR, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });
     res.write(JSON.stringify({
       message: 'kaboom',
     }));
@@ -83,7 +85,7 @@ export default (baseURL) => (req, res) => {
     });
     res.end();
   } else if (pathname.match(String.raw`/gimme/refusal`) && req.method === HTTP2_METHOD_GET) {
-    res.writeHead(HTTP_STATUS_UNAUTHORIZED, { [HTTP2_HEADER_CONTENT_TYPE]: 'application/json' });
+    res.writeHead(HTTP_STATUS_UNAUTHORIZED, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });
     res.write(JSON.stringify({
       message: 'unauthorized',
     }));
@@ -104,8 +106,8 @@ export default (baseURL) => (req, res) => {
     }[req.headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
 
     res.writeHead(HTTP_STATUS_OK, {
-      [HTTP2_HEADER_CONTENT_ENCODING]: req.headers[HTTP2_HEADER_CONTENT_ENCODING] ?? 'utf-8',
-      [HTTP2_HEADER_CONTENT_TYPE]: 'text/plain',
+      [HTTP2_HEADER_CONTENT_ENCODING]: req.headers[HTTP2_HEADER_CONTENT_ENCODING] || 'utf-8',
+      [HTTP2_HEADER_CONTENT_TYPE]: TEXT_PLAIN,
     });
     req.pipe(decompressor()).setEncoding('utf-8')
        .pipe(new Transform({
@@ -129,7 +131,7 @@ export default (baseURL) => (req, res) => {
          },
        })).pipe(compressor()).pipe(res);
   } else if (pathname.match(String.raw`/gimme/text`) && req.method === HTTP2_METHOD_GET) {
-    res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: 'text/plain' });
+    res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: TEXT_PLAIN });
     res.write('got text');
     res.end();
   } else {
