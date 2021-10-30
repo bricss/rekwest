@@ -74,6 +74,8 @@ import rekwest, {
 import { Readable } from 'stream';
 
 const {
+  HTTP2_HEADER_AUTHORIZATION,
+  HTTP2_HEADER_CONTENT_ENCODING,
   HTTP2_METHOD_POST,
   HTTP_STATUS_OK
 } = constants;
@@ -81,6 +83,7 @@ const {
 const blob = new Blob(['bits']);
 const file = new File(['bits'], 'file.dab');
 const readable = Readable.from('bits');
+
 const fd = new FormData();
 
 fd.append('celestial', 'payload');
@@ -92,6 +95,10 @@ const url = 'https://somewhe.re/somewhat/endpoint';
 
 const res = await rekwest(url, {
   body: fd,
+  headers: {
+    [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
+    [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // enables: body compression
+  },
   method: HTTP2_METHOD_POST,
 });
 
