@@ -7,7 +7,6 @@ import {
 } from 'stream';
 import {
   promisify,
-  toUSVString,
   types,
 } from 'util';
 import zlib from 'zlib';
@@ -52,7 +51,7 @@ export const compress = (buf, encoding, { async = false } = {}) => {
     gzip: async ? gzip : zlib.gzipSync,
   }[encoding];
 
-  return compressor?.(buf) || (async ? Promise.resolve(buf) : buf);
+  return compressor?.(buf) ?? (async ? Promise.resolve(buf) : buf);
 };
 
 export const decompress = (buf, encoding, { async = false } = {}) => {
@@ -63,41 +62,30 @@ export const decompress = (buf, encoding, { async = false } = {}) => {
     gzip: async ? gunzip : zlib.gunzipSync,
   }[encoding];
 
-  return decompressor?.(buf) || (async ? Promise.resolve(buf) : buf);
+  return decompressor?.(buf) ?? (async ? Promise.resolve(buf) : buf);
 };
 
 export const dispatch = (req, { body, headers }) => {
   if (types.isUint8Array(body)) {
-    req.write(body);
-
-    return req.end();
+    return req.end(body);
   }
 
-  if (body === Object(body) && !Buffer.isBuffer(body) && body.pipe?.constructor !== Function) {
-    if (Reflect.has(body, Symbol.asyncIterator)) {
-      body = Readable.from(body);
-    } else if (Reflect.has(body, Symbol.iterator)) {
-      for (let chunk of body) {
-        chunk = Buffer.isBuffer(chunk) ? chunk : toUSVString(chunk);
-        if (headers[HTTP2_HEADER_CONTENT_ENCODING]) {
-          req.write(compress(chunk, headers[HTTP2_HEADER_CONTENT_ENCODING]));
-        } else {
-          req.write(chunk);
-        }
+  if (body === Object(body)) {
+    if (!Buffer.isBuffer(body) && body.pipe?.constructor !== Function) {
+      if (Reflect.has(body, Symbol.asyncIterator) || Reflect.has(body, Symbol.iterator)) {
+        body = Readable.from(body);
       }
-
-      return req.end();
     }
-  }
 
-  if (body === Object(body) && body.pipe?.constructor === Function) {
-    const compressor = {
-      br: zlib.createBrotliCompress,
-      deflate: zlib.createDeflate,
-      gzip: zlib.createGzip,
-    }[headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
+    if (body.pipe?.constructor === Function) {
+      const compressor = {
+        br: zlib.createBrotliCompress,
+        deflate: zlib.createDeflate,
+        gzip: zlib.createGzip,
+      }[headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
 
-    body.pipe(compressor()).pipe(req);
+      body.pipe(compressor()).pipe(req);
+    }
   } else {
     req.end(body);
   }
@@ -173,7 +161,7 @@ export const preflight = (options) => {
   options.headers = {
     [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
     [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, gzip, identity',
-    ...Object.entries(options.headers || {})
+    ...Object.entries(options.headers ?? {})
              .reduce((acc, [key, val]) => (acc[key.toLowerCase()] = val, acc), {}),
     ...h2 && {
       [HTTP2_HEADER_AUTHORITY]: url.host,
@@ -254,7 +242,7 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
         }
 
         if (spool.length && parse) {
-          const contentType = this.headers[HTTP2_HEADER_CONTENT_TYPE] || '';
+          const contentType = this.headers[HTTP2_HEADER_CONTENT_TYPE] ?? '';
           const charset = contentType.split(';')
                                      .find((it) => /charset=/i.test(it))
                                      ?.toLowerCase()
@@ -264,7 +252,7 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
 
           if (/json/i.test(contentType)) {
             spool = JSON.parse(spool.toString(charset));
-          } else if (/text|xml|yaml/i.test(contentType)) {
+          } else if (/text|xml/i.test(contentType)) {
             if (/latin1|utf-(8|16le)|ucs-2/.test(charset)) {
               spool = spool.toString(charset);
             } else {
@@ -304,7 +292,7 @@ export const transform = (body, options) => {
       [HTTP2_HEADER_CONTENT_LENGTH]: body.size,
       [HTTP2_HEADER_CONTENT_TYPE]: body.type || APPLICATION_OCTET_STREAM,
     };
-    body = body.stream?.() || Readable.from(tap(body));
+    body = body.stream?.() ?? Readable.from(tap(body));
   } else if (FormData.alike(body)) {
     body = FormData.actuate(body);
     headers = { [HTTP2_HEADER_CONTENT_TYPE]: body.contentType };

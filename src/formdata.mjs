@@ -138,7 +138,7 @@ export class FormData {
     this.#ensureArgs(args, 1, 'get');
     const name = toUSVString(args[0]);
 
-    return (this.#entries.find((it) => it.name === name) || {}).value ?? null;
+    return (this.#entries.find((it) => it.name === name) ?? {}).value ?? null;
   }
 
   getAll(...args) {

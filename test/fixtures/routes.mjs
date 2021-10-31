@@ -105,10 +105,10 @@ export default (baseURL) => (req, res) => {
       gzip: zlib.createUnzip,
     }[req.headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
 
-    res.writeHead(HTTP_STATUS_OK, {
-      [HTTP2_HEADER_CONTENT_ENCODING]: req.headers[HTTP2_HEADER_CONTENT_ENCODING] || 'utf-8',
-      [HTTP2_HEADER_CONTENT_TYPE]: TEXT_PLAIN,
-    });
+    res.writeHead(
+      HTTP_STATUS_OK,
+      Object.fromEntries(Object.entries(req.headers).filter(([key]) => !key.startsWith(':'))),
+    );
     req.pipe(decompressor()).setEncoding('utf-8')
        .pipe(new Transform({
          construct(cb) {

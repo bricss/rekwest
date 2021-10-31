@@ -8,11 +8,13 @@ import rekwest, {
   File,
   FormData,
 } from '../src/index.mjs';
+import { TEXT_PLAIN } from '../src/mediatypes.mjs';
 
 const {
   HTTP2_HEADER_ACCEPT_ENCODING,
   HTTP2_HEADER_CONTENT_DISPOSITION,
   HTTP2_HEADER_CONTENT_ENCODING,
+  HTTP2_HEADER_CONTENT_TYPE,
   HTTP2_HEADER_VARY,
   HTTP2_METHOD_GET,
   HTTP2_METHOD_HEAD,
@@ -296,6 +298,7 @@ export default ({ baseURL, httpVersion }) => {
             headers: {
               [HTTP2_HEADER_ACCEPT_ENCODING]: item,
               [HTTP2_HEADER_CONTENT_ENCODING]: item,
+              [HTTP2_HEADER_CONTENT_TYPE]: TEXT_PLAIN,
               [HTTP2_HEADER_VARY]: [HTTP2_HEADER_ACCEPT_ENCODING],
             },
             method: HTTP2_METHOD_POST,
@@ -318,7 +321,7 @@ export default ({ baseURL, httpVersion }) => {
       'identity',
     ].forEach((item) => {
       it(
-        `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with "${ item }" compressed body as a stream`,
+        `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with "${ item }" compressed body stream`,
         async () => {
           const url = new URL('/gimme/squash', baseURL);
           const res = await rekwest(url, {
@@ -326,6 +329,7 @@ export default ({ baseURL, httpVersion }) => {
             headers: {
               [HTTP2_HEADER_ACCEPT_ENCODING]: item,
               [HTTP2_HEADER_CONTENT_ENCODING]: item,
+              [HTTP2_HEADER_CONTENT_TYPE]: TEXT_PLAIN,
               [HTTP2_HEADER_VARY]: [HTTP2_HEADER_ACCEPT_ENCODING],
             },
             method: HTTP2_METHOD_POST,
@@ -360,8 +364,8 @@ export default ({ baseURL, httpVersion }) => {
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as an AsyncIterator`, async () => {
       const payload = {
         async* [Symbol.asyncIterator]() {
-          yield 'eldritch';
-          yield 'symbols';
+          yield Promise.resolve('eldritch');
+          yield Promise.resolve('symbols');
         },
       };
       const url = new URL('/gimme/repulse', baseURL);
@@ -619,7 +623,7 @@ export default ({ baseURL, httpVersion }) => {
     const options = { digest: false, parse: false };
 
     it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response with "arrayBuffer" method`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response via "arrayBuffer" method`,
       async () => {
         const url = new URL('/gimme/text', baseURL);
         const res = await rekwest(url, options);
@@ -635,7 +639,7 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response with "blob" method`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response via "blob" method`,
       async () => {
         const url = new URL('/gimme/text', baseURL);
         const res = await rekwest(url, options);
@@ -651,7 +655,7 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response with "buffer" method`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response via "buffer" method`,
       async () => {
         const url = new URL('/gimme/text', baseURL);
         const res = await rekwest(url, options);
@@ -667,7 +671,7 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response with "json" method`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response via "json" method`,
       async () => {
         const url = new URL('/gimme/json', baseURL);
         const res = await rekwest(url, options);
@@ -683,7 +687,7 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response with "text" method`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and read response via "text" method`,
       async () => {
         const url = new URL('/gimme/text', baseURL);
         const res = await rekwest(url, options);
