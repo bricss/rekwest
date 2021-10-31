@@ -38,7 +38,7 @@ const {
   HTTP2_HEADER_AUTHORIZATION,
   HTTP2_HEADER_CONTENT_ENCODING,
   HTTP2_METHOD_POST,
-  HTTP_STATUS_OK
+  HTTP_STATUS_OK,
 } = constants;
 
 const url = 'https://somewhe.re/somewhat/endpoint';
@@ -69,7 +69,7 @@ import rekwest, {
   constants,
   Blob,
   File,
-  FormData
+  FormData,
 } from 'rekwest';
 import { Readable } from 'stream';
 
@@ -77,7 +77,7 @@ const {
   HTTP2_HEADER_AUTHORIZATION,
   HTTP2_HEADER_CONTENT_ENCODING,
   HTTP2_METHOD_POST,
-  HTTP_STATUS_OK
+  HTTP_STATUS_OK,
 } = constants;
 
 const blob = new Blob(['bits']);
