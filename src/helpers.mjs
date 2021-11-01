@@ -70,22 +70,19 @@ export const dispatch = (req, { body, headers }) => {
     return req.end(body);
   }
 
-  if (body === Object(body)) {
-    if (!Buffer.isBuffer(body) && body.pipe?.constructor !== Function) {
-      if (Reflect.has(body, Symbol.asyncIterator) || Reflect.has(body, Symbol.iterator)) {
-        body = Readable.from(body);
-      }
+  if (body === Object(body) && !Buffer.isBuffer(body)) {
+    if (body.pipe?.constructor !== Function
+      && (Reflect.has(body, Symbol.asyncIterator) || Reflect.has(body, Symbol.iterator))) {
+      body = Readable.from(body);
     }
 
-    if (body.pipe?.constructor === Function) {
-      const compressor = {
-        br: zlib.createBrotliCompress,
-        deflate: zlib.createDeflate,
-        gzip: zlib.createGzip,
-      }[headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
+    const compressor = {
+      br: zlib.createBrotliCompress,
+      deflate: zlib.createDeflate,
+      gzip: zlib.createGzip,
+    }[headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
 
-      body.pipe(compressor()).pipe(req);
-    }
+    body.pipe(compressor()).pipe(req);
   } else {
     req.end(body);
   }
