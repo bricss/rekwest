@@ -40,7 +40,7 @@ export default (baseURL) => (req, res) => {
       [
         HTTP2_HEADER_SET_COOKIE,
         [
-          'foo=bar; HttpOnly',
+          'foo=bar; HttpOnly; Secure',
           'qux=zap; Path=/',
         ],
       ],
@@ -71,7 +71,7 @@ export default (baseURL) => (req, res) => {
   } else if (pathname.match(String.raw`/gimme/redirect`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_MOVED_PERMANENTLY, {
       [HTTP2_HEADER_LOCATION]: '/gimme/json',
-      [HTTP2_HEADER_SET_COOKIE]: 'crack=duck; SameSite=Lax',
+      [HTTP2_HEADER_SET_COOKIE]: 'crack=duck; SameParty; SameSite=Lax',
     });
     res.end();
   } else if (pathname.match(String.raw`/gimme/redirect`) && req.method === HTTP2_METHOD_POST) {

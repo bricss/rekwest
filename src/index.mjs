@@ -115,7 +115,7 @@ export default async function rekwest(url, options = {}) {
       Reflect.defineProperty(res, 'cookies', {
         enumerable: true,
         value: cookies !== false && Cookies.jar.has(url.origin)
-               ? Object.fromEntries(Cookies.jar.get(url.origin).entries())
+               ? Cookies.jar.get(url.origin)
                : void 0,
       });
 

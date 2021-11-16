@@ -85,9 +85,9 @@ export default ({ baseURL, httpVersion }) => {
 
         assert.equal(res.body.got, 'cookies');
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies?.aux, 'baz');
-        assert.equal(res.cookies?.foo, 'bar');
-        assert.equal(res.cookies?.qux, 'zap');
+        assert.equal(res.cookies.get('aux'), 'baz');
+        assert.equal(res.cookies.get('foo'), 'bar');
+        assert.equal(res.cookies.get('qux'), 'zap');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, true);
         assert.equal(res.redirected, false);
@@ -107,10 +107,10 @@ export default ({ baseURL, httpVersion }) => {
 
         assert.equal(res.body.length, 0);
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies?.aux, 'baz');
-        assert.equal(res.cookies?.dot, 'com');
-        assert.equal(res.cookies?.foo, 'bar');
-        assert.equal(res.cookies?.qux, 'zap');
+        assert.equal(res.cookies.get('aux'), 'baz');
+        assert.equal(res.cookies.get('dot'), 'com');
+        assert.equal(res.cookies.get('foo'), 'bar');
+        assert.equal(res.cookies.get('qux'), 'zap');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, true);
         assert.equal(res.redirected, false);
@@ -187,7 +187,7 @@ export default ({ baseURL, httpVersion }) => {
 
         assert.equal(res.body.length, 0);
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies?.crack, 'duck');
+        assert.equal(res.cookies.get('crack'), 'duck');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, false);
         assert.equal(res.redirected, false);
@@ -205,7 +205,7 @@ export default ({ baseURL, httpVersion }) => {
 
         assert.equal(res.body.got, 'json');
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies?.crack, 'duck');
+        assert.equal(res.cookies.get('crack'), 'duck');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, true);
         assert.equal(res.redirected, true);
@@ -243,7 +243,7 @@ export default ({ baseURL, httpVersion }) => {
 
         assert.equal(res.body.got, 'json');
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies?.crack, 'duck');
+        assert.equal(res.cookies.get('crack'), 'duck');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, true);
         assert.equal(res.redirected, true);
@@ -257,7 +257,7 @@ export default ({ baseURL, httpVersion }) => {
       await assert.rejects(rekwest(url), (res) => {
         assert.equal(res.body.message, 'unauthorized');
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies?.crack, 'duck');
+        assert.equal(res.cookies.get('crack'), 'duck');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, false);
         assert.equal(res.redirected, false);
@@ -273,7 +273,7 @@ export default ({ baseURL, httpVersion }) => {
       await assert.rejects(rekwest(url), (res) => {
         assert.equal(res.body.length, 0);
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies?.crack, 'duck');
+        assert.equal(res.cookies.get('crack'), 'duck');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, false);
         assert.equal(res.redirected, false);

@@ -121,7 +121,8 @@ console.log(res.body);
   for the HTTP2 attunes
   * `body` **{string | Array | AsyncIterator | Blob | Buffer | File | FromData | Iterator | Object | Readable |
     Uint8Array | URLSearchParams}** Body to send with the request
-  * `cookies` **{boolean | Object}** `Default: true` Cookies to add to the request
+  * `cookies` **{boolean | Array[[key, value]] | Cookies | Object | URLSearchParams}** `Default: true` Cookies to add to
+    the request
   * `digest` **{boolean}** `Default: true` Read response stream, or simply add a mixin
   * `follow` **{number}** `Default: 20` Number of redirects to follow
   * `h2` **{boolean}** `Default: false` Forces use of the HTTP2 protocol
@@ -142,7 +143,7 @@ console.log(res.body);
     * `json` **{AsyncFunction}** Reads the response and returns **Object**
     * `text` **{AsyncFunction}** Reads the response and returns **String**
   * `bodyUsed` **{boolean}** Whether the response were read or not
-  * `cookies` **{undefined | Object}** Cookies sent and received with the response
+  * `cookies` **{undefined | Cookies}** Cookies sent and received with the response
   * `headers` **{Object}** Headers received with the response
   * `httpVersion` **{string}** Indicates protocol version negotiated with the server
   * `ok` **{boolean}** Indicates if the response was successful (statusCode: **200-299**)
