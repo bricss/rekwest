@@ -170,6 +170,12 @@ export default async function rekwest(url, options = {}) {
     req.on('frameError', reject);
     req.on('goaway', reject);
     req.on('timeout', req.destroy);
+    req.on('trailers', (trailers) => {
+      Reflect.defineProperty(req, 'trailers', {
+        enumerable: true,
+        value: trailers,
+      });
+    });
 
     dispatch(req, { ...options, body });
   });

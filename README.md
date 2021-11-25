@@ -149,6 +149,7 @@ console.log(res.body);
   * `ok` **{boolean}** Indicates if the response was successful (statusCode: **200-299**)
   * `redirected` **{boolean}** Indicates if the response is the result of a redirect
   * `statusCode` **{number}** Indicates the status code of the response
+  * `trailers` **{undefined | Object}** Trailer headers received with the response
 
 ---
 

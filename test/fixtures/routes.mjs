@@ -12,8 +12,9 @@ import {
 const {
   HTTP2_HEADER_CONTENT_ENCODING,
   HTTP2_HEADER_CONTENT_TYPE,
-  HTTP2_HEADER_SET_COOKIE,
+  HTTP2_HEADER_DATE,
   HTTP2_HEADER_LOCATION,
+  HTTP2_HEADER_SET_COOKIE,
   HTTP2_METHOD_GET,
   HTTP2_METHOD_POST,
   HTTP2_METHOD_PUT,
@@ -30,6 +31,9 @@ const {
 export default (baseURL) => (req, res) => {
   const { pathname } = new URL(req.url, baseURL);
 
+  res.addTrailers({
+    [HTTP2_HEADER_DATE]: new Date(),
+  });
   res.statusCode = HTTP_STATUS_NOT_FOUND;
   if (pathname.match(String.raw`/gimme/cookies`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, [
