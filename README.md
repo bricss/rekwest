@@ -84,7 +84,9 @@ const blob = new Blob(['bits']);
 const file = new File(['bits'], 'file.dab');
 const readable = Readable.from('bits');
 
-const fd = new FormData();
+const fd = new FormData({
+  aux: Date.now(),  // or [[key, value]]
+});
 
 fd.append('celestial', 'payload');
 fd.append('blob', blob, 'blob.dab');

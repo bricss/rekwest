@@ -442,7 +442,9 @@ export default ({ baseURL, httpVersion }) => {
       const blob = new Blob(['bits']);
       const file = new File(['bits'], 'file.dab');
       const readable = Readable.from('bits');
-      const payload = new FormData();
+      const payload = new FormData({
+        aux: Date.now(),
+      });
 
       payload.append('celestial', 'payload');
       payload.append('blob', blob, 'blob.dab');
@@ -470,6 +472,8 @@ export default ({ baseURL, httpVersion }) => {
         assert.equal(key, keys.shift());
       });
 
+      assert.throws(() => new FormData(null), TypeError);
+      assert.throws(() => new FormData([[]]), TypeError);
       assert.throws(() => payload.append(), TypeError);
       assert.throws(() => payload.append(null, null, null), TypeError);
       assert.throws(() => payload.delete(), TypeError);
@@ -493,6 +497,7 @@ export default ({ baseURL, httpVersion }) => {
                 HTTP2_HEADER_CONTENT_DISPOSITION
               }: form-data; name="([^"]*)"(?:; filename="([^"]*)")?`, 'g')),
       ].flatMap((it) => it.slice(1).filter(Boolean)), [
+        'aux',
         'blob',
         'blob.dab',
         'file',

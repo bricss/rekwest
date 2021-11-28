@@ -62,7 +62,7 @@ export class FormData {
     if (File.alike(value)) {
       value = new File([value], filename, value);
     } else if (this.#ensureInstance(value)) {
-      value.name = filename;
+      value.name = filename || value.name;
     } else {
       value = toUSVString(value);
     }
@@ -81,6 +81,29 @@ export class FormData {
 
   get [Symbol.toStringTag]() {
     return this.constructor.name;
+  }
+
+  constructor(input) {
+    if (input !== undefined && ![
+      Array,
+      Object,
+    ].includes(input?.constructor)) {
+      throw new TypeError(`Failed to construct '${
+        this[Symbol.toStringTag]
+      }': parameter 1 is not of type 'Array' or 'Object'.`);
+    } else {
+      if (Array.isArray(input) && !input.every((it) => Array.isArray(it) && it.length === 2)) {
+        throw new TypeError(`Failed to construct '${
+          this[Symbol.toStringTag]
+        }': The provided value cannot be converted to a sequence.`);
+      }
+
+      if (input.constructor === Object) {
+        input = Object.entries(input);
+      }
+
+      input.forEach(([key, value]) => this.append(key, value));
+    }
   }
 
   #ensureArgs(args, expected, method) {
