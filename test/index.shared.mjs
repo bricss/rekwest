@@ -472,7 +472,7 @@ export default ({ baseURL, httpVersion }) => {
         assert.equal(key, keys.shift());
       });
 
-      assert.throws(() => new FormData(null), TypeError);
+      assert.throws(() => new FormData([null]), TypeError);
       assert.throws(() => new FormData([[]]), TypeError);
       assert.throws(() => payload.append(), TypeError);
       assert.throws(() => payload.append(null, null, null), TypeError);

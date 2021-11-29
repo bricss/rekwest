@@ -85,7 +85,7 @@ const file = new File(['bits'], 'file.dab');
 const readable = Readable.from('bits');
 
 const fd = new FormData({
-  aux: Date.now(),  // or [[key, value]]
+  aux: Date.now(),  // either [[key, value]], or kv sequenceable
 });
 
 fd.append('celestial', 'payload');

@@ -84,18 +84,23 @@ export class FormData {
   }
 
   constructor(input) {
-    if (input !== undefined && ![
-      Array,
-      Object,
-    ].includes(input?.constructor)) {
-      throw new TypeError(`Failed to construct '${
-        this[Symbol.toStringTag]
-      }': parameter 1 is not of type 'Array' or 'Object'.`);
-    } else {
-      if (Array.isArray(input) && !input.every((it) => Array.isArray(it) && it.length === 2)) {
-        throw new TypeError(`Failed to construct '${
-          this[Symbol.toStringTag]
-        }': The provided value cannot be converted to a sequence.`);
+    if (input === Object(input)
+      && (input?.constructor === Object || Reflect.has(input, Symbol.iterator))) {
+
+      if (input.constructor !== Object) {
+        input = Array.from(input);
+      }
+
+      if (Array.isArray(input)) {
+        if (!input.every((it) => Array.isArray(it))) {
+          throw new TypeError(`Failed to construct '${
+            this[Symbol.toStringTag]
+          }': The provided value cannot be converted to a sequence.`);
+        } else if (!input.every((it) => it.length === 2)) {
+          throw new TypeError(`Failed to construct '${
+            this[Symbol.toStringTag]
+          }': Sequence initializer must only contain pair elements.`);
+        }
       }
 
       if (input.constructor === Object) {

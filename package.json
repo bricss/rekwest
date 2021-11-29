@@ -55,5 +55,5 @@
     "test": "mocha --exit --recursive",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "2.2.0"
+  "version": "2.3.0"
 }
