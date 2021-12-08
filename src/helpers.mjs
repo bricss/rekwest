@@ -247,10 +247,10 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
                                      ?.replace('iso-8859-1', 'latin1')
                                      ?.trim() || 'utf-8';
 
-          if (/json/i.test(contentType)) {
+          if (/\bjson\b/i.test(contentType)) {
             spool = JSON.parse(spool.toString(charset));
-          } else if (/text|xml/i.test(contentType)) {
-            if (/latin1|utf-(8|16le)|ucs-2/.test(charset)) {
+          } else if (/\b(text|xml)\b/i.test(contentType)) {
+            if (/\b(latin1|ucs-2|utf-(8|16le))\b/.test(charset)) {
               spool = spool.toString(charset);
             } else {
               spool = new TextDecoder(charset).decode(spool);

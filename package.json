@@ -13,7 +13,7 @@
     "@babel/eslint-parser": "^7.16.3",
     "@babel/preset-env": "^7.16.4",
     "c8": "^7.10.0",
-    "eslint": "^8.3.0",
+    "eslint": "^8.4.1",
     "eslint-config-ultra-refined": "^2.2.0",
     "mocha": "^9.1.3"
   },
@@ -55,5 +55,5 @@
     "test": "mocha --exit --recursive",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "2.3.0"
+  "version": "2.3.1"
 }
