@@ -44,7 +44,7 @@ const deflate = promisify(zlib.deflate);
 const inflate = promisify(zlib.inflate);
 
 export const compress = (buf, encoding, { async = false } = {}) => {
-  encoding &&= encoding.match(/\bbr\b|\bdeflate\b|\bgzip\b/i)?.[0].toLowerCase();
+  encoding &&= encoding.match(/(?<encoding>\bbr\b|\bdeflate\b|\bgzip\b)/i)?.groups.encoding.toLowerCase();
   const compressor = {
     br: async ? brotliCompress : zlib.brotliCompressSync,
     deflate: async ? deflate : zlib.deflateSync,
@@ -55,7 +55,7 @@ export const compress = (buf, encoding, { async = false } = {}) => {
 };
 
 export const decompress = (buf, encoding, { async = false } = {}) => {
-  encoding &&= encoding.match(/\bbr\b|\bdeflate\b|\bgzip\b/i)?.[0].toLowerCase();
+  encoding &&= encoding.match(/(?<encoding>\bbr\b|\bdeflate\b|\bgzip\b)/i)?.groups.encoding.toLowerCase();
   const decompressor = {
     br: async ? brotliDecompress : zlib.brotliDecompressSync,
     deflate: async ? inflate : zlib.inflateSync,

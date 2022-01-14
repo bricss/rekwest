@@ -8,6 +8,7 @@ import {
   MULTIPART_FORM_DATA,
 } from './mediatypes.mjs';
 
+const CRLF = '\r\n';
 const {
   HTTP2_HEADER_CONTENT_DISPOSITION,
   HTTP2_HEADER_CONTENT_TYPE,
@@ -18,10 +19,10 @@ export class FormData {
   static actuate(fd) {
     const boundary = randomBytes(24).toString('hex');
     const contentType = `${ MULTIPART_FORM_DATA }; boundary=${ boundary }`;
-    const prefix = `--${ boundary }\r\n${ HTTP2_HEADER_CONTENT_DISPOSITION }: form-data`;
+    const prefix = `--${ boundary }${ CRLF }${ HTTP2_HEADER_CONTENT_DISPOSITION }: form-data`;
 
     const escape = (str) => str.replace(/\n/g, '%0A').replace(/\r/g, '%0D').replace(/"/g, '%22');
-    const normalize = (value) => value.replace(/\r?\n|\r/g, '\r\n');
+    const normalize = (value) => value.replace(/\r?\n|\r/g, CRLF);
 
     return {
       contentType,
@@ -32,17 +33,17 @@ export class FormData {
           if (value.constructor === String) {
             yield encoder.encode(`${ prefix }; name="${
               escape(normalize(name))
-            }"\r\n\r\n${ normalize(value) }\r\n`);
+            }"${ CRLF.repeat(2) }${ normalize(value) }${ CRLF }`);
           } else {
             yield encoder.encode(`${ prefix }; name="${
               escape(normalize(name))
-            }"${ value.name ? `; filename="${ escape(value.name) }"` : '' }\r\n${
+            }"${ value.name ? `; filename="${ escape(value.name) }"` : '' }${ CRLF }${
               HTTP2_HEADER_CONTENT_TYPE
             }: ${
               value.type || APPLICATION_OCTET_STREAM
-            }\r\n\r\n`);
+            }${ CRLF.repeat(2) }`);
             yield* tap(value);
-            yield encoder.encode('\r\n');
+            yield encoder.encode(CRLF);
           }
         }
 
