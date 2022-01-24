@@ -1,4 +1,5 @@
-# Coding Rules
+Coding Rules
+---
 
 Make sure your `IDE` uses [ESLint](https://eslint.org/) rules and applies [EditorConfig](https://editorconfig.org/)
 coding styles.
@@ -33,11 +34,11 @@ Please use one of the following:
 * **bump**: Manual increment of the application version.
 * **chore**: Update to task runner or build scripts, etc.
 * **feat**: New feature for the user, not a new feature for build scripts.
-* **fix**: Bug fix for the user, not a fix to a build scripts.
+* **fix**: Bugs fix for the user, not a fix to a build scripts.
 * **doc**: Change to the documentation.
 * **perf**: Change that improves code performance.
-* **refactor**: Change that neither fixes a bug or adds a feature.
-* **style**: Change that do not affect the meaning of the code (formatting, missing semi-colons, white-spaces, etc).
+* **refactor**: Change that neither fixes a bug nor adds a feature.
+* **style**: Change that do not affect the meaning of the code (formatting, missing semicolons, white-spaces, etc.).
 * **test**: Add new or missing tests, or tests refactoring.
 
 ### Scope

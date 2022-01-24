@@ -9,13 +9,13 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.16.8",
-    "@babel/core": "^7.16.7",
+    "@babel/core": "^7.16.12",
     "@babel/eslint-parser": "^7.16.5",
-    "@babel/preset-env": "^7.16.8",
+    "@babel/preset-env": "^7.16.11",
     "c8": "^7.11.0",
-    "eslint": "^8.6.0",
+    "eslint": "^8.7.0",
     "eslint-config-ultra-refined": "^2.3.0",
-    "mocha": "^9.1.3"
+    "mocha": "^9.2.0"
   },
   "description": "The robust request library that humanity deserves 🌐",
   "engines": {
@@ -59,5 +59,5 @@
     "test": "mocha --exit --recursive",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "2.3.2"
+  "version": "2.3.3"
 }

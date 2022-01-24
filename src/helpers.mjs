@@ -183,10 +183,8 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
       arrayBuffer: {
         enumerable: true,
         value: async function () {
-          const stash = parse;
-
-          parse = false;
-          const { buffer, byteLength, byteOffset } = await this.body().finally(() => parse = stash);
+          parse &&= false;
+          const { buffer, byteLength, byteOffset } = await this.body();
 
           return buffer.slice(byteOffset, byteOffset + byteLength);
         },
@@ -243,9 +241,9 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
           const charset = contentType.split(';')
                                      .find((it) => /charset=/i.test(it))
                                      ?.toLowerCase()
-                                     ?.replace('charset=', '')
-                                     ?.replace('iso-8859-1', 'latin1')
-                                     ?.trim() || 'utf-8';
+                                     .replace('charset=', '')
+                                     .replace('iso-8859-1', 'latin1')
+                                     .trim() || 'utf-8';
 
           if (/\bjson\b/i.test(contentType)) {
             spool = JSON.parse(spool.toString(charset));
