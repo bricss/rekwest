@@ -1,5 +1,4 @@
 import { Blob } from 'buffer';
-import { globalAgent } from 'http';
 import http2 from 'http2';
 import {
   PassThrough,
@@ -123,9 +122,7 @@ export const preflight = (options) => {
   const url = options.url = new URL(options.url);
   const { cookies, h2 = false, method = HTTP2_METHOD_GET, headers, redirected } = options;
 
-  if (!h2) {
-    options.agent ??= url.protocol === 'http:' ? globalAgent : void 0;
-  } else {
+  if (h2) {
     options.endStream = [
       HTTP2_METHOD_GET,
       HTTP2_METHOD_HEAD,

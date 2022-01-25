@@ -1,5 +1,6 @@
+import http from 'http';
 import http2 from 'http2';
-import { request } from 'https';
+import https from 'https';
 import { ackn } from './ackn.mjs';
 import { Cookies } from './cookies.mjs';
 import { RequestError } from './errors.mjs';
@@ -63,7 +64,8 @@ export default async function rekwest(url, options = {}) {
 
   options = preflight(options);
 
-  const { cookies, digest, follow, h2, redirect, redirected, thenable } = options;
+  const { cookies, digest, follow, h2, redirect, redirected, thenable, url: { protocol } } = options;
+  const { request } = (protocol === 'http:' ? http : https);
   let { body } = options;
 
   const promise = new Promise((resolve, reject) => {
@@ -221,6 +223,9 @@ Reflect.defineProperty(rekwest, 'stream', {
 
       return req;
     }
+
+    const { url: { protocol } } = options;
+    const { request } = (protocol === 'http:' ? http : https);
 
     return request(options.url, options);
   },
