@@ -182,35 +182,31 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
     Object.defineProperties(res, {
       arrayBuffer: {
         enumerable: true,
-        value: async function () {
+        value: function () {
           parse &&= false;
-          const { buffer, byteLength, byteOffset } = await this.body();
 
-          return buffer.slice(byteOffset, byteOffset + byteLength);
+          return this.body().then(({ buffer, byteLength, byteOffset }) => buffer.slice(
+            byteOffset,
+            byteOffset + byteLength,
+          ));
         },
       },
       blob: {
         enumerable: true,
-        value: async function () {
-          const val = await this.arrayBuffer();
-
-          return new Blob([val]);
+        value: function () {
+          return this.arrayBuffer().then((res) => new Blob([res]));
         },
       },
       json: {
         enumerable: true,
-        value: async function () {
-          const val = await this.text();
-
-          return JSON.parse(val);
+        value: function () {
+          return this.text().then((res) => JSON.parse(res));
         },
       },
       text: {
         enumerable: true,
-        value: async function () {
-          const val = await this.blob().then((blob) => blob.text());
-
-          return val.toString();
+        value: function () {
+          return this.blob().then((blob) => blob.text());
         },
       },
     });
