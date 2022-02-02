@@ -12,7 +12,7 @@ const {
   HTTP_STATUS_OK,
 } = constants;
 
-const baseURL = new URL('http://localhost:3000');
+const baseURL = globalThis.baseH1URL;
 const httpVersion = '1.1';
 
 describe('rekwest', () => {

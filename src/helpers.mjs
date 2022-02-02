@@ -167,7 +167,15 @@ export const preflight = (options) => {
 
   options.method ??= method;
   options.parse ??= true;
-  options.redirect ??= 'follow';
+  options.redirect ??= redirects.follow;
+
+  if (!Object.values(redirects).includes(options.redirect)) {
+    options.createConnection?.().destroy();
+    throw new TypeError(`Failed to read the 'redirect' property from 'options': The provided value '${
+      options.redirect
+    }' is not a valid enum value.`);
+  }
+
   options.redirected ??= false;
   options.thenable ??= false;
 
@@ -214,7 +222,7 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
       enumerable: true,
       value: async function () {
         if (this.bodyUsed) {
-          throw new TypeError('Response stream already read');
+          throw new TypeError('Response stream already read.');
         }
 
         let spool = [];
@@ -260,6 +268,12 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
       },
     },
   });
+};
+
+export const redirects = {
+  error: 'error',
+  follow: 'follow',
+  manual: 'manual',
 };
 
 export async function* tap(value) {

@@ -5,7 +5,12 @@ import { createSecureServer } from 'http2';
 import routes from './routes.mjs';
 
 const baseH1URL = new URL('http://localhost:3000');
-const baseH2URL = new URL('https://localhost:3433');
+const baseH2URL = new URL('https://localhost:3443');
+
+Object.assign(globalThis, {
+  baseH1URL,
+  baseH2URL,
+});
 
 export async function mochaGlobalSetup() {
   this.h1server = createServer(routes(baseH1URL));

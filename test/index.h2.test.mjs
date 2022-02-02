@@ -13,7 +13,7 @@ const {
   HTTP_STATUS_OK,
 } = constants;
 
-const baseURL = new URL('https://localhost:3433');
+const baseURL = globalThis.baseH2URL;
 const httpVersion = '2.0';
 
 describe('rekwest { h2 } mode', () => {

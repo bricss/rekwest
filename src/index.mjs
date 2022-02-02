@@ -9,6 +9,7 @@ import {
   merge,
   preflight,
   premix,
+  redirects,
   transform,
 } from './helpers.mjs';
 import { APPLICATION_OCTET_STREAM } from './mediatypes.mjs';
@@ -44,7 +45,7 @@ export default async function rekwest(url, options = {}) {
     HTTP2_METHOD_GET,
     HTTP2_METHOD_HEAD,
   ].includes(options.method)) {
-    throw new TypeError(`Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body`);
+    throw new TypeError(`Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body.`);
   }
 
   if (!options.follow) {
@@ -122,16 +123,16 @@ export default async function rekwest(url, options = {}) {
       });
 
       if (follow && /^3\d{2}$/.test(res.statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
-        if (redirect === 'error') {
-          res.emit('error', new RequestError(`Unexpected redirect, redirect mode is set to '${ redirect }'`));
+        if (redirect === redirects.error) {
+          res.emit('error', new RequestError(`Unexpected redirect, redirect mode is set to '${ redirect }'.`));
         }
 
-        if (redirect === 'follow') {
+        if (redirect === redirects.follow) {
           options.url = new URL(res.headers[HTTP2_HEADER_LOCATION], url).href;
 
           if (res.statusCode !== HTTP_STATUS_SEE_OTHER
             && body === Object(body) && body.pipe?.constructor === Function) {
-            res.emit('error', new RequestError(`Unable to ${ redirect } redirect with body as readable stream`));
+            res.emit('error', new RequestError(`Unable to ${ redirect } redirect with body as readable stream.`));
           }
 
           options.follow--;
@@ -211,6 +212,7 @@ Reflect.defineProperty(rekwest, 'stream', {
       ...merge(rekwest.defaults, {
         headers: { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_OCTET_STREAM },
       }, options),
+      redirect: redirects.manual,
     });
 
     if (options.h2) {

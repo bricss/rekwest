@@ -130,7 +130,7 @@ console.log(res.body);
   * `h2` **{boolean}** `Default: false` Forces use of the HTTP2 protocol
   * `headers` **{Object}** Headers to add to the request
   * `parse` **{boolean}** `Default: true` Parse response body, or simply return a buffer
-  * `redirect` **{boolean | error | follow}** `Default: 'follow'` Controls redirect flow
+  * `redirect` **{error | follow | manual}** `Default: 'follow'` Controls redirect flow
   * `thenable` **{boolean}** `Default: false` Controls promise resolutions
 * **Returns:** Promise that resolves to
   extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage)
@@ -168,6 +168,7 @@ Method with limited functionality to use with streams and pipes
 * No automata
 * No redirects
 * Pass `h2: true` in options to use the HTTP2 protocol
+  * Or use `ackn({ url: URL })` method in advance to probe the available protocols
 
 ---
 
