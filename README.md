@@ -122,7 +122,7 @@ console.log(res.body);
   and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback)
   for HTTP/2 attunes
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
-    FromData | Iterator | Object | Readable | SharedArrayBuffer | URLSearchParams}** The body to send with the request
+    FormData | Iterator | Object | Readable | SharedArrayBuffer | URLSearchParams}** The body to send with the request
   * `cookies` **{boolean | Array<[k, v]> | Cookies | Object | URLSearchParams}** `Default: true` The cookies to add to
     the request
   * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or simply add a mixin
