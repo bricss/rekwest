@@ -109,10 +109,6 @@ export const decompress = (buf, encoding, { async = false } = {}) => {
 };
 
 export const dispatch = (req, { body, headers }) => {
-  if (types.isUint8Array(body)) {
-    return req.end(body);
-  }
-
   if (body === Object(body) && !Buffer.isBuffer(body)) {
     if (body.pipe?.constructor !== Function
       && (Reflect.has(body, Symbol.asyncIterator) || Reflect.has(body, Symbol.iterator))) {
@@ -333,6 +329,12 @@ export async function* tap(value) {
 export const transform = (body, options) => {
   let headers = {};
 
+  if (types.isAnyArrayBuffer(body) && !Buffer.isBuffer(body)) {
+    body = Buffer.from(body);
+  } else if (types.isArrayBufferView(body) && !Buffer.isBuffer(body)) {
+    body = Buffer.from(body.buffer, body.byteOffset, body.byteLength);
+  }
+
   if (File.alike(body)) {
     headers = {
       [HTTP2_HEADER_CONTENT_LENGTH]: body.size,
@@ -352,7 +354,7 @@ export const transform = (body, options) => {
       body = JSON.stringify(body);
     }
 
-    if (types.isUint8Array(body) || Buffer.isBuffer(body) || body !== Object(body)) {
+    if (Buffer.isBuffer(body) || body !== Object(body)) {
       if (options.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
         body = compress(body, options.headers[HTTP2_HEADER_CONTENT_ENCODING]);
       }

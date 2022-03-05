@@ -34,6 +34,7 @@ const {
 } = constants;
 
 const logarithmic = 'logarithmic';
+const encoder = new TextEncoder();
 
 export default ({ baseURL, httpVersion }) => {
   describe('with { digest: true } & { parse: true } (defaults)', () => {
@@ -70,7 +71,7 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL('/gimme/encode', baseURL);
       const res = await rekwest(url);
 
-      assert.equal(res.body, '浥獳慧�');
+      assert.equal(res.body, '😀😮😎');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
       assert.equal(res.ok, true);
@@ -524,6 +525,38 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.statusCode, HTTP_STATUS_OK);
     });
 
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a ArrayBuffer`, async () => {
+      const payload = 'message';
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: encoder.encode(payload).buffer,
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), payload);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a ArrayBufferView`, async () => {
+      const payload = 'message';
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: encoder.encode(payload),
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), payload);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as an AsyncIterator`, async () => {
       const payload = {
         async* [Symbol.asyncIterator]() {
@@ -578,6 +611,22 @@ export default ({ baseURL, httpVersion }) => {
       });
 
       assert.equal(res.body.toString(), payload.toString());
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a DataView`, async () => {
+      const payload = 'message';
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: new DataView(encoder.encode(payload).buffer),
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), payload);
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
       assert.equal(res.ok, true);
@@ -745,28 +794,29 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.statusCode, HTTP_STATUS_OK);
     });
 
-    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a Uint8Array`, async () => {
-      const payload = new Uint8Array([
-        8,
-        16,
-        32,
-        64,
-        128,
-        255,
-      ]);
-      const url = new URL('/gimme/repulse', baseURL);
-      const res = await rekwest(url, {
-        body: payload,
-        method: HTTP2_METHOD_POST,
-      });
+    it(
+      `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a SharedArrayBuffer (Uint8Array)`,
+      async () => {
+        const payload = 'message';
+        const data = encoder.encode(payload);
+        const datum = new SharedArrayBuffer(data.length);
+        const die = new Uint8Array(datum);
 
-      assert.equal(res.body.toString(), new TextDecoder().decode(payload));
-      assert.equal(res.bodyUsed, true);
-      assert.equal(res.httpVersion, httpVersion);
-      assert.equal(res.ok, true);
-      assert.equal(res.redirected, false);
-      assert.equal(res.statusCode, HTTP_STATUS_OK);
-    });
+        die.set(data, 0);
+        const url = new URL('/gimme/repulse', baseURL);
+        const res = await rekwest(url, {
+          body: datum,
+          method: HTTP2_METHOD_POST,
+        });
+
+        assert.equal(res.body.toString(), payload);
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      },
+    );
 
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a URLSearchParams`, async () => {
       const payload = new URLSearchParams('eldritch=symbols&ley=lines');

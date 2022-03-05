@@ -60,5 +60,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "3.0.1"
+  "version": "3.1.0"
 }

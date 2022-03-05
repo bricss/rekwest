@@ -205,21 +205,23 @@ export default async function rekwest(url, options = {}) {
 
     return res;
   } catch (ex) {
-    if (options.retry?.attempts && options.retry?.statusCodes.includes(ex.statusCode)) {
-      let { interval } = options.retry;
+    const { maxRetryAfter, retry } = options;
 
-      if (options.retry.retryAfter && ex.headers[HTTP2_HEADER_RETRY_AFTER]) {
+    if (retry?.attempts && retry?.statusCodes.includes(ex.statusCode)) {
+      let { interval } = retry;
+
+      if (retry.retryAfter && ex.headers[HTTP2_HEADER_RETRY_AFTER]) {
         interval = ex.headers[HTTP2_HEADER_RETRY_AFTER];
         interval = Number(interval) * 1000 || new Date(interval) - Date.now();
-        if (interval > options.maxRetryAfter) {
+        if (interval > maxRetryAfter) {
           throw maxRetryAfterError(interval, { cause: ex });
         }
       } else {
-        interval = new Function('interval', `return Math.ceil(${ options.retry.backoffStrategy });`)(interval);
+        interval = new Function('interval', `return Math.ceil(${ retry.backoffStrategy });`)(interval);
       }
 
-      options.retry.attempts--;
-      options.retry.interval = interval;
+      retry.attempts--;
+      retry.interval = interval;
 
       return setTimeoutPromise(interval).then(() => rekwest(url, options));
     }
