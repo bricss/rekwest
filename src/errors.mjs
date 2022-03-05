@@ -8,9 +8,11 @@ export class RequestError extends Error {
     return this[Symbol.toStringTag];
   }
 
-  constructor(message) {
-    super(message);
+  constructor(...args) {
+    super(...args);
     Error.captureStackTrace(this, this.constructor);
   }
 
 }
+
+export class TimeoutError extends RequestError {}

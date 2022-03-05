@@ -10,6 +10,7 @@ import {
 } from 'util';
 import zlib from 'zlib';
 import { Cookies } from './cookies.mjs';
+import { TimeoutError } from './errors.mjs';
 import { File } from './file.mjs';
 import { FormData } from './formdata.mjs';
 import {
@@ -31,6 +32,7 @@ const {
   HTTP2_HEADER_METHOD,
   HTTP2_HEADER_PATH,
   HTTP2_HEADER_SCHEME,
+  HTTP2_HEADER_STATUS,
   HTTP2_METHOD_GET,
   HTTP2_METHOD_HEAD,
 } = http2.constants;
@@ -41,6 +43,48 @@ const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
 const deflate = promisify(zlib.deflate);
 const inflate = promisify(zlib.inflate);
+
+export const admix = (res, headers, options) => {
+  const { h2 } = options;
+
+  if (h2) {
+    Reflect.defineProperty(res, 'headers', {
+      enumerable: true,
+      value: headers,
+    });
+
+    Reflect.defineProperty(res, 'httpVersion', {
+      enumerable: true,
+      value: `${ h2 + 1 }.0`,
+    });
+
+    Reflect.defineProperty(res, 'statusCode', {
+      enumerable: true,
+      value: headers[HTTP2_HEADER_STATUS],
+    });
+  }
+
+  Reflect.defineProperty(res, 'ok', {
+    enumerable: true,
+    value: /^2\d{2}$/.test(res.statusCode),
+  });
+
+  Reflect.defineProperty(res, 'redirected', {
+    enumerable: true,
+    value: !!options.redirected,
+  });
+};
+
+export const affix = (client, req, options) => {
+  req.once('end', () => client?.close());
+  req.once('timeout', () => req.destroy(new TimeoutError(`Timed out after ${ options.timeout } ms.`)));
+  req.once('trailers', (trailers) => {
+    Reflect.defineProperty(req, 'trailers', {
+      enumerable: true,
+      value: trailers,
+    });
+  });
+};
 
 export const compress = (buf, encoding, { async = false } = {}) => {
   encoding &&= encoding.match(/(?<encoding>\bbr\b|\bdeflate\b|\bgzip\b)/i)?.groups.encoding.toLowerCase();
@@ -118,71 +162,7 @@ export const merge = (target = {}, ...rest) => {
   return target;
 };
 
-export const preflight = (options) => {
-  const url = options.url = new URL(options.url);
-  const { cookies, h2 = false, method = HTTP2_METHOD_GET, headers, redirected } = options;
-
-  if (h2) {
-    options.endStream = [
-      HTTP2_METHOD_GET,
-      HTTP2_METHOD_HEAD,
-    ].includes(method);
-  }
-
-  if (cookies !== false) {
-    let cookie = Cookies.jar.get(url.origin);
-
-    if (cookies === Object(cookies) && !redirected) {
-      if (cookie) {
-        new Cookies(cookies).forEach(function (val, key) {
-          this.set(key, val);
-        }, cookie);
-      } else {
-        cookie = new Cookies(cookies);
-        Cookies.jar.set(url.origin, cookie);
-      }
-    }
-
-    options.headers = {
-      ...cookie && { [HTTP2_HEADER_COOKIE]: cookie },
-      ...headers,
-    };
-  }
-
-  options.digest ??= true;
-  options.follow ??= 20;
-  options.h2 ??= h2;
-  options.headers = {
-    [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
-    [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, gzip, identity',
-    ...Object.entries(options.headers ?? {})
-             .reduce((acc, [key, val]) => (acc[key.toLowerCase()] = val, acc), {}),
-    ...h2 && {
-      [HTTP2_HEADER_AUTHORITY]: url.host,
-      [HTTP2_HEADER_METHOD]: method,
-      [HTTP2_HEADER_PATH]: `${ url.pathname }${ url.search }`,
-      [HTTP2_HEADER_SCHEME]: url.protocol.replace(/\p{Punctuation}/gu, ''),
-    },
-  };
-
-  options.method ??= method;
-  options.parse ??= true;
-  options.redirect ??= redirects.follow;
-
-  if (!Object.values(redirects).includes(options.redirect)) {
-    options.createConnection?.().destroy();
-    throw new TypeError(`Failed to read the 'redirect' property from 'options': The provided value '${
-      options.redirect
-    }' is not a valid enum value.`);
-  }
-
-  options.redirected ??= false;
-  options.thenable ??= false;
-
-  return options;
-};
-
-export const premix = (res, { digest = false, parse = false } = {}) => {
+export const mixin = (res, { digest = false, parse = false } = {}) => {
   if (!digest) {
     Object.defineProperties(res, {
       arrayBuffer: {
@@ -268,6 +248,70 @@ export const premix = (res, { digest = false, parse = false } = {}) => {
       },
     },
   });
+};
+
+export const preflight = (options) => {
+  const url = options.url = new URL(options.url);
+  const { cookies, h2 = false, method = HTTP2_METHOD_GET, headers, redirected } = options;
+
+  if (h2) {
+    options.endStream = [
+      HTTP2_METHOD_GET,
+      HTTP2_METHOD_HEAD,
+    ].includes(method);
+  }
+
+  if (cookies !== false) {
+    let cookie = Cookies.jar.get(url.origin);
+
+    if (cookies === Object(cookies) && !redirected) {
+      if (cookie) {
+        new Cookies(cookies).forEach(function (val, key) {
+          this.set(key, val);
+        }, cookie);
+      } else {
+        cookie = new Cookies(cookies);
+        Cookies.jar.set(url.origin, cookie);
+      }
+    }
+
+    options.headers = {
+      ...cookie && { [HTTP2_HEADER_COOKIE]: cookie },
+      ...headers,
+    };
+  }
+
+  options.digest ??= true;
+  options.follow ??= 20;
+  options.h2 ??= h2;
+  options.headers = {
+    [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
+    [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, gzip, identity',
+    ...Object.entries(options.headers ?? {})
+             .reduce((acc, [key, val]) => (acc[key.toLowerCase()] = val, acc), {}),
+    ...h2 && {
+      [HTTP2_HEADER_AUTHORITY]: url.host,
+      [HTTP2_HEADER_METHOD]: method,
+      [HTTP2_HEADER_PATH]: `${ url.pathname }${ url.search }`,
+      [HTTP2_HEADER_SCHEME]: url.protocol.replace(/\p{Punctuation}/gu, ''),
+    },
+  };
+
+  options.method ??= method;
+  options.parse ??= true;
+  options.redirect ??= redirects.follow;
+
+  if (!Object.values(redirects).includes(options.redirect)) {
+    options.createConnection?.().destroy();
+    throw new TypeError(`Failed to read the 'redirect' property from 'options': The provided value '${
+      options.redirect
+    }' is not a valid enum value.`);
+  }
+
+  options.redirected ??= false;
+  options.thenable ??= false;
+
+  return options;
 };
 
 export const redirects = {

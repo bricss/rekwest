@@ -3,7 +3,7 @@ import { once } from 'events';
 import { Readable } from 'stream';
 import rekwest, {
   constants,
-  premix,
+  mixin,
 } from '../src/index.mjs';
 import shared from './index.shared.mjs';
 
@@ -19,15 +19,16 @@ describe('rekwest', () => {
 
   shared({ baseURL, httpVersion });
 
-  describe('stream withal', () => {
+  describe('and stream withal', () => {
 
-    it(`should pipe throughout ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request`, async () => {
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request and must pipe throughout it`, async () => {
       const url = new URL('/gimme/squash', baseURL);
       const req = Readable.from('zqiygyxz').pipe(rekwest.stream(url, { method: HTTP2_METHOD_POST }));
       const [res] = await once(req, 'response');
 
+      assert.ok(res.ok);
       assert.equal(res.statusCode, HTTP_STATUS_OK);
-      assert.equal((await premix(res).body()).toString(), 'zqiygyxz'.split('').reverse().join(''));
+      assert.equal((await mixin(res).body()).toString(), 'zqiygyxz'.split('').reverse().join(''));
     });
 
   });

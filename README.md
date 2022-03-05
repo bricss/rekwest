@@ -8,12 +8,12 @@ and [http2.request](https://nodejs.org/api/http2.html#http2_clienthttp2session_r
 
 * Fetch-alike
 * Cool-beans config options (with defaults)
-* Automatic HTTP2 support (ALPN negotiation)
+* Automatic HTTP/2 support (ALPN negotiation)
 * Automatic or opt-in body parse (with non-UTF-8 charset decoding)
 * Automatic and simplistic `Cookies` treatment (with built-in jar)
 * Automatic decompression (with opt-in body compression)
 * Built-in streamable `File` & `FormData` interfaces
-* Support redirects with fine-grained tune-ups
+* Support redirects & retries with fine-grained tune-ups
 * Support all legit request body types (include blobs & streams)
 * Support both CJS and ESM module systems
 * Fully promise-able and pipe-able
@@ -120,54 +120,63 @@ console.log(res.body);
   extra [http2.ClientSessionOptions](https://nodejs.org/api/http2.html#http2_http2_connect_authority_options_listener)
   & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#http2_clienthttp2session_request_headers_options)
   and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback)
-  for the HTTP2 attunes
+  for HTTP/2 attunes
   * `body` **{string | Array | AsyncIterator | Blob | Buffer | File | FromData | Iterator | Object | Readable |
-    Uint8Array | URLSearchParams}** Body to send with the request
-  * `cookies` **{boolean | Array[[key, value]] | Cookies | Object | URLSearchParams}** `Default: true` Cookies to add to
+    Uint8Array | URLSearchParams}** The body to send with the request
+  * `cookies` **{boolean | Array<[k, v]> | Cookies | Object | URLSearchParams}** `Default: true` The cookies to add to
     the request
-  * `digest` **{boolean}** `Default: true` Read response stream, or simply add a mixin
-  * `follow` **{number}** `Default: 20` Number of redirects to follow
-  * `h2` **{boolean}** `Default: false` Forces use of the HTTP2 protocol
-  * `headers` **{Object}** Headers to add to the request
-  * `parse` **{boolean}** `Default: true` Parse response body, or simply return a buffer
-  * `redirect` **{error | follow | manual}** `Default: 'follow'` Controls redirect flow
-  * `thenable` **{boolean}** `Default: false` Controls promise resolutions
+  * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or just add a mixin
+  * `follow` **{number}** `Default: 20` The number of redirects to follow
+  * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol
+  * `headers` **{Object}** The headers to add to the request
+  * `maxRetryAfter` **{number}** The upper limit of `retry-after` header. If unset, it will use `timeout` value
+  * `parse` **{boolean}** `Default: true` Controls whether to parse response body or simply return a buffer
+  * `redirect` **{error | follow | manual}** `Default: follow` Controls the redirect flows
+  * `retry` **{Object}** Represents the retry options
+    * `attempts` **{number}** `Default: 0` The number of retry attempts
+    * `backoffStrategy` **{string}** `Default: interval * Math.log(Math.random() * (Math.E * Math.E - Math.E) + Math.E)`
+      The backoff strategy algorithm that increases logarithmically. To fixate set value to `interval * 1`
+    * `interval` **{number}** `Default: 1e3` The initial retry interval
+    * `retryAfter` **{boolean}** `Default: true` Controls `retry-after` header receptiveness
+    * `statusCodes` **{number[]}** `Default: [429, 503]` The list of status codes to retry on
+  * `thenable` **{boolean}** `Default: false` Controls the promise resolutions
+  * `timeout` **{number}** `Default: 3e5` The number of milliseconds a request can take before termination
 * **Returns:** Promise that resolves to
   extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage)
   or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#http2_class_clienthttp2stream) which is respectively
   readable and duplex streams
   * if `degist: true` & `parse: true`
-    * `body` **{string | Array | Buffer | Object}** Body based on its content type
+    * `body` **{string | Array | Buffer | Object}** The body based on its content type
   * if `degist: false`
     * `arrayBuffer` **{AsyncFunction}** Reads the response and returns **ArrayBuffer**
     * `blob` **{AsyncFunction}** Reads the response and returns **Blob**
     * `body` **{AsyncFunction}** Reads the response and returns **Buffer** if `parse: false`
     * `json` **{AsyncFunction}** Reads the response and returns **Object**
     * `text` **{AsyncFunction}** Reads the response and returns **String**
-  * `bodyUsed` **{boolean}** Whether the response were read or not
-  * `cookies` **{undefined | Cookies}** Cookies sent and received with the response
-  * `headers` **{Object}** Headers received with the response
+  * `bodyUsed` **{boolean}** Indicates whether the response were read or not
+  * `cookies` **{undefined | Cookies}** The cookies sent and received with the response
+  * `headers` **{Object}** The headers received with the response
   * `httpVersion` **{string}** Indicates protocol version negotiated with the server
   * `ok` **{boolean}** Indicates if the response was successful (statusCode: **200-299**)
   * `redirected` **{boolean}** Indicates if the response is the result of a redirect
   * `statusCode` **{number}** Indicates the status code of the response
-  * `trailers` **{undefined | Object}** Trailer headers received with the response
+  * `trailers` **{undefined | Object}** The trailer headers received with the response
 
 ---
 
 #### `rekwest.defaults`
 
-Object to fill with default [options](#rekwesturl-options)
+The object to fulfill with default [options](#rekwesturl-options)
 
 ---
 
 #### `rekwest.stream(url[, options])`
 
-Method with limited functionality to use with streams and pipes
+The method with limited functionality to use with streams and/or pipes
 
 * No automata
 * No redirects
-* Pass `h2: true` in options to use the HTTP2 protocol
+* Pass `h2: true` in options to use HTTP/2 protocol
   * Or use `ackn({ url: URL })` method in advance to probe the available protocols
 
 ---

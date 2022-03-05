@@ -14,6 +14,7 @@ const {
   HTTP2_HEADER_CONTENT_TYPE,
   HTTP2_HEADER_DATE,
   HTTP2_HEADER_LOCATION,
+  HTTP2_HEADER_RETRY_AFTER,
   HTTP2_HEADER_SET_COOKIE,
   HTTP2_METHOD_GET,
   HTTP2_METHOD_POST,
@@ -25,11 +26,28 @@ const {
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_OK,
   HTTP_STATUS_SEE_OTHER,
+  HTTP_STATUS_TOO_MANY_REQUESTS,
   HTTP_STATUS_UNAUTHORIZED,
 } = constants;
 
+const attempts = 'attempts';
+const json = {
+  message: 'json',
+};
+const sentinel = (date, lapse = '1') => new Date(date.getTime() + (lapse.split(':').pop() * 1e3)).toUTCString();
+const stowage = new Map();
+
 export default (baseURL) => (req, res) => {
-  const { pathname } = new URL(req.url, baseURL);
+  const { href, pathname, searchParams } = new URL(req.url, baseURL);
+  const retryAfter = searchParams.get(HTTP2_HEADER_RETRY_AFTER);
+
+  if (searchParams.has(attempts)) {
+    if (stowage.has(href)) {
+      stowage.set(href, stowage.get(href) - 1);
+    } else {
+      stowage.set(href, +searchParams.get(attempts));
+    }
+  }
 
   res.addTrailers({
     [HTTP2_HEADER_DATE]: new Date(),
@@ -49,19 +67,15 @@ export default (baseURL) => (req, res) => {
         ],
       ],
     ]);
-    res.write(JSON.stringify({
-      got: 'cookies',
-    }));
+    res.write(JSON.stringify(json));
     res.end();
   } else if (pathname.match(String.raw`/gimme/encode`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: `${ TEXT_PLAIN }; charset=utf-16be` });
-    res.write(new TextEncoder().encode('got text'));
+    res.write(new TextEncoder().encode('message'));
     res.end();
   } else if (pathname.match(String.raw`/gimme/json`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });
-    res.write(JSON.stringify({
-      got: 'json',
-    }));
+    res.write(JSON.stringify(json));
     res.end();
   } else if (pathname.match(String.raw`/gimme/kaboom`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_INTERNAL_SERVER_ERROR, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });
@@ -75,8 +89,30 @@ export default (baseURL) => (req, res) => {
   } else if (pathname.match(String.raw`/gimme/redirect`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_MOVED_PERMANENTLY, {
       [HTTP2_HEADER_LOCATION]: '/gimme/json',
+      ...retryAfter ? Number(retryAfter) ? {
+        [HTTP2_HEADER_RETRY_AFTER]: JSON.parse(retryAfter),
+      } : {
+        [HTTP2_HEADER_RETRY_AFTER]: sentinel(new Date(), retryAfter),
+      } : {},
       [HTTP2_HEADER_SET_COOKIE]: 'crack=duck; SameParty; SameSite=Lax',
     });
+    res.end();
+  } else if (pathname.match(String.raw`/gimme/retry`) && req.method === HTTP2_METHOD_GET) {
+    const retry = stowage.get(href);
+
+    res.writeHead(retry ? HTTP_STATUS_TOO_MANY_REQUESTS : HTTP_STATUS_OK, {
+      ...!retry && { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON },
+      ...retryAfter ? Number(retryAfter) ? {
+        [HTTP2_HEADER_RETRY_AFTER]: JSON.parse(retryAfter),
+      } : {
+        [HTTP2_HEADER_RETRY_AFTER]: sentinel(new Date(), retryAfter),
+      } : {},
+    });
+    if (!retry) {
+      res.write(JSON.stringify(json));
+      stowage.delete(href);
+    }
+
     res.end();
   } else if (pathname.match(String.raw`/gimme/redirect`) && req.method === HTTP2_METHOD_POST) {
     res.writeHead(HTTP_STATUS_FOUND, {
@@ -136,7 +172,7 @@ export default (baseURL) => (req, res) => {
        })).pipe(compressor()).pipe(res);
   } else if (pathname.match(String.raw`/gimme/text`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: TEXT_PLAIN });
-    res.write('got text');
+    res.write('message');
     res.end();
   } else {
     res.end();
