@@ -125,7 +125,7 @@ console.log(res.body);
     Uint8Array | URLSearchParams}** The body to send with the request
   * `cookies` **{boolean | Array<[k, v]> | Cookies | Object | URLSearchParams}** `Default: true` The cookies to add to
     the request
-  * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or just add a mixin
+  * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or simply add a mixin
   * `follow` **{number}** `Default: 20` The number of redirects to follow
   * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol
   * `headers` **{Object}** The headers to add to the request
