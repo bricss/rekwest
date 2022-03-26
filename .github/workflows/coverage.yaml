@@ -3,7 +3,10 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '0 5 1 */2 *'
+    - cron: 0 5 1 */2 *
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
 env:
   NODE_ENV: development
 jobs:
@@ -17,9 +20,9 @@ jobs:
         os: [ ubuntu-latest ]
     steps:
       - name: Clone repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
       - name: Install deps
