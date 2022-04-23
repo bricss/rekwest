@@ -7,7 +7,7 @@ and [http2.request](https://nodejs.org/api/http2.html#http2_clienthttp2session_r
 ## Abstract
 
 * Fetch-alike
-* Cool-beans config options (with defaults)
+* Cool-beans 🫐 config options (with defaults)
 * Automatic HTTP/2 support (ALPN negotiation)
 * Automatic or opt-in body parse (with non-UTF-8 charset decoding)
 * Automatic and simplistic `Cookies` treatment (with built-in jar)

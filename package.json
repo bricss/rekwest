@@ -9,13 +9,13 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.17.6",
-    "@babel/core": "^7.17.5",
+    "@babel/core": "^7.17.9",
     "@babel/eslint-parser": "^7.17.0",
     "@babel/preset-env": "^7.16.11",
-    "c8": "^7.11.0",
-    "eslint": "^8.10.0",
-    "eslint-config-ultra-refined": "^2.4.1",
-    "mocha": "^9.2.1"
+    "c8": "^7.11.2",
+    "eslint": "^8.14.0",
+    "eslint-config-ultra-refined": "^2.5.0",
+    "mocha": "^9.2.2"
   },
   "description": "The robust request library that humanity deserves 🌐",
   "engines": {
@@ -31,6 +31,7 @@
   ],
   "homepage": "https://github.com/bricss/rekwest#readme",
   "keywords": [
+    "backoff",
     "fetch",
     "fetch-alike",
     "formdata",
@@ -40,7 +41,8 @@
     "h2c",
     "http2",
     "multipart",
-    "request"
+    "request",
+    "retry"
   ],
   "license": "MIT",
   "main": "./dist/index.js",
@@ -60,5 +62,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "3.1.1"
+  "version": "3.2.0"
 }

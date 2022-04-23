@@ -295,7 +295,7 @@ export default ({ baseURL, httpVersion }) => {
           body: Readable.from('zqiygyxz'),
           method: HTTP2_METHOD_POST,
         }), (err) => {
-          assert.equal(err.message, 'Unable to follow redirect with body as readable stream.');
+          assert.equal(err.message, 'Unable to follow redirect with streamable body.');
           assert.equal(err.name, 'RequestError');
 
           return true;

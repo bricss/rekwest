@@ -149,7 +149,7 @@ export default async function rekwest(url, options = {}) {
 
       if (follow && /^3\d{2}$/.test(res.statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
         if (redirect === redirects.error) {
-          res.emit('error', new RequestError(`Unexpected redirect, redirect mode is set to '${ redirect }'.`));
+          return res.emit('error', new RequestError(`Unexpected redirect, redirect mode is set to '${ redirect }'.`));
         }
 
         if (redirect === redirects.follow) {
@@ -157,7 +157,7 @@ export default async function rekwest(url, options = {}) {
 
           if (res.statusCode !== HTTP_STATUS_SEE_OTHER
             && body === Object(body) && body.pipe?.constructor === Function) {
-            res.emit('error', new RequestError(`Unable to ${ redirect } redirect with body as readable stream.`));
+            return res.emit('error', new RequestError(`Unable to ${ redirect } redirect with streamable body.`));
           }
 
           options.follow--;
@@ -176,7 +176,7 @@ export default async function rekwest(url, options = {}) {
             interval = Number(interval) * 1000 || new Date(interval) - Date.now();
 
             if (interval > options.maxRetryAfter) {
-              res.emit('error', maxRetryAfterError(interval, { cause: mixin(res, options) }));
+              return res.emit('error', maxRetryAfterError(interval, { cause: mixin(res, options) }));
             }
 
             return setTimeoutPromise(interval).then(() => rekwest(options.url, options).then(resolve, reject));
