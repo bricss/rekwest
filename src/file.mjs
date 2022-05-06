@@ -1,6 +1,6 @@
-import { Blob } from 'buffer';
+import { Blob } from 'node:buffer';
 
-export { Blob } from 'buffer';
+export { Blob } from 'node:buffer';
 
 export class File extends Blob {
 

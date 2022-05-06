@@ -71,7 +71,7 @@ import rekwest, {
   File,
   FormData,
 } from 'rekwest';
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
 
 const {
   HTTP2_HEADER_AUTHORIZATION,
@@ -141,6 +141,8 @@ console.log(res.body);
     * `statusCodes` **{number[]}** `Default: [429, 503]` The list of status codes to retry on
   * `thenable` **{boolean}** `Default: false` Controls the promise resolutions
   * `timeout` **{number}** `Default: 3e5` The number of milliseconds a request can take before termination
+  * `trimTrailingSlashes` **{boolean}** `Default: false` Controls whether to trim trailing slashes in the URL before
+    proceed with the request
 * **Returns:** Promise that resolves to
   extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage)
   or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#http2_class_clienthttp2stream) which is respectively

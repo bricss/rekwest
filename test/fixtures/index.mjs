@@ -1,7 +1,7 @@
-import { once } from 'events';
-import { readFileSync } from 'fs';
-import { createServer } from 'http';
-import { createSecureServer } from 'http2';
+import { once } from 'node:events';
+import { readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { createSecureServer } from 'node:http2';
 import routes from './routes.mjs';
 
 const baseH1URL = new URL('http://localhost:3000');

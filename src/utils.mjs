@@ -1,14 +1,14 @@
-import { Blob } from 'buffer';
-import http2 from 'http2';
+import { Blob } from 'node:buffer';
+import http2 from 'node:http2';
 import {
   PassThrough,
   Readable,
-} from 'stream';
+} from 'node:stream';
 import {
   promisify,
   types,
-} from 'util';
-import zlib from 'zlib';
+} from 'node:util';
+import zlib from 'node:zlib';
 import { Cookies } from './cookies.mjs';
 import { TimeoutError } from './errors.mjs';
 import { File } from './file.mjs';
@@ -84,6 +84,12 @@ export const affix = (client, req, options) => {
       value: trailers,
     });
   });
+};
+
+export const collate = (entity, primordial) => {
+  if (!(entity instanceof primordial)) {
+    throw new TypeError('Illegal invocation');
+  }
 };
 
 export const compress = (buf, encoding, { async = false } = {}) => {
@@ -163,7 +169,8 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
     Object.defineProperties(res, {
       arrayBuffer: {
         enumerable: true,
-        value: function () {
+        value() {
+          collate(this, res?.constructor);
           parse &&= false;
 
           return this.body().then(({ buffer, byteLength, byteOffset }) => buffer.slice(
@@ -174,19 +181,25 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
       },
       blob: {
         enumerable: true,
-        value: function () {
+        value() {
+          collate(this, res?.constructor);
+
           return this.arrayBuffer().then((res) => new Blob([res]));
         },
       },
       json: {
         enumerable: true,
-        value: function () {
+        value() {
+          collate(this, res?.constructor);
+
           return this.text().then((res) => JSON.parse(res));
         },
       },
       text: {
         enumerable: true,
-        value: function () {
+        value() {
+          collate(this, res?.constructor);
+
           return this.blob().then((blob) => blob.text());
         },
       },
@@ -197,8 +210,10 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
     body: {
       enumerable: true,
       value: async function () {
+        collate(this, res?.constructor);
+
         if (this.bodyUsed) {
-          throw new TypeError('Response stream already read.');
+          throw new TypeError('Response stream already read');
         }
 
         let spool = [];
@@ -239,7 +254,7 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
     },
     bodyUsed: {
       enumerable: true,
-      get: function () {
+      get() {
         return this.readableEnded;
       },
     },
@@ -247,8 +262,7 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
 };
 
 export const preflight = (options) => {
-  const url = options.url = new URL(options.url);
-  const { cookies, h2 = false, method = HTTP2_METHOD_GET, headers, redirected } = options;
+  const { cookies, h2 = false, headers, method = HTTP2_METHOD_GET, redirected, url } = options;
 
   if (h2) {
     options.endStream = [
@@ -314,6 +328,16 @@ export const redirects = {
   error: 'error',
   follow: 'follow',
   manual: 'manual',
+};
+
+export const revise = ({ url, options }) => {
+  if (options.trimTrailingSlashes) {
+    url = `${ url }`.replace(/(?<!:)\/+/gi, '/');
+  }
+
+  url = new URL(url);
+
+  return Object.assign(options, { url });
 };
 
 export async function* tap(value) {

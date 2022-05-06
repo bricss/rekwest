@@ -1,4 +1,4 @@
-import { connect } from 'tls';
+import { connect } from 'node:tls';
 
 export const ackn = (options) => new Promise((resolve, reject) => {
   const { url } = options;

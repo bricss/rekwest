@@ -1,3 +1,5 @@
+import { collate } from './utils.mjs';
+
 export class Cookies extends URLSearchParams {
 
   static jar = new Map();
@@ -18,6 +20,8 @@ export class Cookies extends URLSearchParams {
   }
 
   toString() {
+    collate(this, Cookies);
+
     return super.toString().split('&').join('; ').trim();
   }
 

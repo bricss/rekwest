@@ -1,7 +1,7 @@
-import { strict as assert } from 'assert';
-import { Blob } from 'buffer';
-import { Readable } from 'stream';
-import { types } from 'util';
+import { strict as assert } from 'node:assert';
+import { Blob } from 'node:buffer';
+import { Readable } from 'node:stream';
+import { types } from 'node:util';
 import rekwest, {
   constants,
   Cookies,
@@ -873,7 +873,7 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and must read response via 'buffer' method`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and must read response via 'body' method`,
       async () => {
         const url = new URL('/gimme/text', baseURL);
         const res = await rekwest(url, options);
@@ -931,7 +931,7 @@ export default ({ baseURL, httpVersion }) => {
         assert.ok(Buffer.isBuffer(await res.body()));
 
         await assert.rejects(res.body(), (err) => {
-          assert.equal(err.message, 'Response stream already read.');
+          assert.equal(err.message, 'Response stream already read');
           assert.equal(err.name, 'TypeError');
 
           return true;

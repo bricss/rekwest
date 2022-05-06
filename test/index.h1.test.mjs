@@ -1,6 +1,6 @@
-import { strict as assert } from 'assert';
-import { once } from 'events';
-import { Readable } from 'stream';
+import { strict as assert } from 'node:assert';
+import { once } from 'node:events';
+import { Readable } from 'node:stream';
 import rekwest, {
   constants,
   mixin,

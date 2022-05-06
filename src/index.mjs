@@ -1,10 +1,11 @@
-import http from 'http';
-import http2 from 'http2';
-import https from 'https';
-import { setTimeout as setTimeoutPromise } from 'timers/promises';
+import http from 'node:http';
+import http2 from 'node:http2';
+import https from 'node:https';
+import { setTimeout as setTimeoutPromise } from 'node:timers/promises';
 import { ackn } from './ackn.mjs';
 import { Cookies } from './cookies.mjs';
 import { RequestError } from './errors.mjs';
+import { APPLICATION_OCTET_STREAM } from './mediatypes.mjs';
 import {
   admix,
   affix,
@@ -13,18 +14,18 @@ import {
   mixin,
   preflight,
   redirects,
+  revise,
   transform,
-} from './helpers.mjs';
-import { APPLICATION_OCTET_STREAM } from './mediatypes.mjs';
+} from './utils.mjs';
 
-export { constants } from 'http2';
+export { constants } from 'node:http2';
 
 export * from './ackn.mjs';
 export * from './cookies.mjs';
 export * from './errors.mjs';
 export * from './file.mjs';
 export * from './formdata.mjs';
-export * from './helpers.mjs';
+export * from './utils.mjs';
 
 const {
   HTTP2_HEADER_CONTENT_LENGTH,
@@ -69,7 +70,7 @@ let defaults = {
 };
 
 export default async function rekwest(url, options = {}) {
-  url = options.url = new URL(url);
+  ({ url } = revise({ options, url }));
   if (!options.redirected) {
     options = merge(rekwest.defaults, options);
   }
@@ -98,8 +99,8 @@ export default async function rekwest(url, options = {}) {
 
   options = preflight(options);
 
-  const { cookies, digest, follow, h2, redirect, redirected, thenable, url: { protocol } } = options;
-  const { request } = (protocol === 'http:' ? http : https);
+  const { cookies, digest, follow, h2, redirect, redirected, thenable } = options;
+  const { request } = (url.protocol === 'http:' ? http : https);
   let { body } = options;
 
   const promise = new Promise((resolve, reject) => {
@@ -240,24 +241,24 @@ export default async function rekwest(url, options = {}) {
 
 Reflect.defineProperty(rekwest, 'stream', {
   enumerable: true,
-  value: function (url, options = {}) {
+  value(url, options = {}) {
+    ({ url } = revise({ options, url }));
     options = preflight({
-      url,
       ...merge(rekwest.defaults, {
         headers: { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_OCTET_STREAM },
       }, options),
       redirect: redirects.manual,
     });
 
-    const { h2, url: { protocol } } = options;
-    const { request } = (protocol === 'http:' ? http : https);
+    const { h2 } = options;
+    const { request } = (url.protocol === 'http:' ? http : https);
     let client, req;
 
     if (h2) {
       client = http2.connect(url.origin, options);
       req = client.request(options.headers, options);
     } else {
-      req = request(options.url, options);
+      req = request(url, options);
     }
 
     affix(client, req, options);

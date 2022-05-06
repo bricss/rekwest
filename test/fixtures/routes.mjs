@@ -1,9 +1,9 @@
-import { constants } from 'http2';
+import { constants } from 'node:http2';
 import {
   PassThrough,
   Transform,
-} from 'stream';
-import zlib from 'zlib';
+} from 'node:stream';
+import zlib from 'node:zlib';
 import {
   APPLICATION_JSON,
   TEXT_PLAIN,
