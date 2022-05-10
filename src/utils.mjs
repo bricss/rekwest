@@ -87,7 +87,7 @@ export const affix = (client, req, options) => {
 };
 
 export const collate = (entity, primordial) => {
-  if (!(entity instanceof primordial)) {
+  if (entity?.constructor !== primordial) {
     throw new TypeError('Illegal invocation');
   }
 };

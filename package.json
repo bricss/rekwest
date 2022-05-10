@@ -13,7 +13,7 @@
     "@babel/eslint-parser": "^7.17.0",
     "@babel/preset-env": "^7.17.10",
     "c8": "^7.11.2",
-    "eslint": "^8.14.0",
+    "eslint": "^8.15.0",
     "eslint-config-ultra-refined": "^2.5.0",
     "mocha": "^10.0.0"
   },
@@ -32,6 +32,8 @@
   "homepage": "https://github.com/bricss/rekwest#readme",
   "keywords": [
     "backoff",
+    "compression",
+    "cookie",
     "fetch",
     "fetch-alike",
     "formdata",
@@ -42,6 +44,7 @@
     "http2",
     "multipart",
     "request",
+    "redirect",
     "retry"
   ],
   "license": "MIT",
@@ -62,5 +65,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "3.3.0"
+  "version": "3.3.1"
 }
