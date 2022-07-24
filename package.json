@@ -8,12 +8,12 @@
     "url": "https://github.com/bricss/rekwest/issues"
   },
   "devDependencies": {
-    "@babel/cli": "^7.17.10",
-    "@babel/core": "^7.17.10",
-    "@babel/eslint-parser": "^7.17.0",
-    "@babel/preset-env": "^7.17.10",
-    "c8": "^7.11.2",
-    "eslint": "^8.15.0",
+    "@babel/cli": "^7.18.9",
+    "@babel/core": "^7.18.9",
+    "@babel/eslint-parser": "^7.18.9",
+    "@babel/preset-env": "^7.18.9",
+    "c8": "^7.12.0",
+    "eslint": "^8.20.0",
     "eslint-config-ultra-refined": "^2.5.0",
     "mocha": "^10.0.0"
   },
