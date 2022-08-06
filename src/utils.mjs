@@ -169,38 +169,39 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
     Object.defineProperties(res, {
       arrayBuffer: {
         enumerable: true,
-        value() {
+        value: async function () {
           collate(this, res?.constructor);
           parse &&= false;
+          const { buffer, byteLength, byteOffset } = await this.body();
 
-          return this.body().then(({ buffer, byteLength, byteOffset }) => buffer.slice(
-            byteOffset,
-            byteOffset + byteLength,
-          ));
+          return buffer.slice(byteOffset, byteOffset + byteLength);
         },
       },
       blob: {
         enumerable: true,
-        value() {
+        value: async function () {
           collate(this, res?.constructor);
+          const val = await this.arrayBuffer();
 
-          return this.arrayBuffer().then((res) => new Blob([res]));
+          return new Blob([val]);
         },
       },
       json: {
         enumerable: true,
-        value() {
+        value: async function () {
           collate(this, res?.constructor);
+          const val = await this.text();
 
-          return this.text().then((res) => JSON.parse(res));
+          return JSON.parse(val);
         },
       },
       text: {
         enumerable: true,
-        value() {
+        value: async function () {
           collate(this, res?.constructor);
+          const blob = await this.blob();
 
-          return this.blob().then((blob) => blob.text());
+          return blob.text();
         },
       },
     });
