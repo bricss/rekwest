@@ -21,7 +21,7 @@ and [http2.request](https://nodejs.org/api/http2.html#http2_clienthttp2session_r
 
 ## Prerequisites
 
-* Node.js `>= 16.x`
+* Node.js `>= 16.5.x`
 
 ## Installation
 

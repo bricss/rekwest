@@ -19,7 +19,7 @@ describe('rekwest', () => {
 
   shared({ baseURL, httpVersion });
 
-  describe('and stream withal', () => {
+  describe('withal stream', () => {
 
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request and must pipe throughout it`, async () => {
       const url = new URL('/gimme/squash', baseURL);

@@ -9,17 +9,17 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.18.10",
-    "@babel/core": "^7.18.10",
-    "@babel/eslint-parser": "^7.18.9",
-    "@babel/preset-env": "^7.18.10",
+    "@babel/core": "^7.19.1",
+    "@babel/eslint-parser": "^7.19.1",
+    "@babel/preset-env": "^7.19.1",
     "c8": "^7.12.0",
-    "eslint": "^8.21.0",
+    "eslint": "^8.23.1",
     "eslint-config-ultra-refined": "^2.5.0",
     "mocha": "^10.0.0"
   },
   "description": "The robust request library that humanity deserves 🌐",
   "engines": {
-    "node": ">=16.x"
+    "node": ">=16.5.x"
   },
   "exports": {
     "import": "./src/index.mjs",
@@ -45,7 +45,8 @@
     "multipart",
     "request",
     "redirect",
-    "retry"
+    "retry",
+    "retry-after"
   ],
   "license": "MIT",
   "main": "./dist/index.js",
@@ -65,5 +66,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "3.3.2"
+  "version": "3.3.3"
 }
