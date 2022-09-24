@@ -25,6 +25,7 @@ export * from './cookies.mjs';
 export * from './errors.mjs';
 export * from './file.mjs';
 export * from './formdata.mjs';
+export * as mediatypes from './mediatypes.mjs';
 export * from './utils.mjs';
 
 const {
