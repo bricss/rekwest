@@ -1,13 +1,13 @@
 import { constants } from 'node:http2';
-import {
-  PassThrough,
-  Transform,
-} from 'node:stream';
-import zlib from 'node:zlib';
+import { Transform } from 'node:stream';
 import {
   APPLICATION_JSON,
   TEXT_PLAIN,
 } from '../../src/mediatypes.mjs';
+import {
+  compress,
+  decompress,
+} from '../../src/utils.mjs';
 
 const {
   HTTP2_HEADER_CONTENT_ENCODING,
@@ -35,17 +35,17 @@ const json = {
   message: 'json',
 };
 const sentinel = (date, lapse = '1') => new Date(date.getTime() + (lapse.split(':').pop() * 1e3)).toUTCString();
-const stowage = new Map();
+const stash = new Map();
 
 export default (baseURL) => (req, res) => {
   const { href, pathname, searchParams } = new URL(req.url, baseURL);
   const retryAfter = searchParams.get(HTTP2_HEADER_RETRY_AFTER);
 
   if (searchParams.has(attempts)) {
-    if (stowage.has(href)) {
-      stowage.set(href, stowage.get(href) - 1);
+    if (stash.has(href)) {
+      stash.set(href, stash.get(href) - 1);
     } else {
-      stowage.set(href, +searchParams.get(attempts));
+      stash.set(href, +searchParams.get(attempts));
     }
   }
 
@@ -71,7 +71,7 @@ export default (baseURL) => (req, res) => {
     res.end();
   } else if (pathname.match(String.raw`/gimme/encode`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: `${ TEXT_PLAIN }; charset=utf-16be` });
-    res.write(Buffer.from('\ufeff😀😮😎', 'utf16le').swap16());
+    res.write(Buffer.from('\ufeff😀😋🧐', 'utf16le').swap16());
     res.end();
   } else if (pathname.match(String.raw`/gimme/json`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });
@@ -98,7 +98,7 @@ export default (baseURL) => (req, res) => {
     });
     res.end();
   } else if (pathname.match(String.raw`/gimme/retry`) && req.method === HTTP2_METHOD_GET) {
-    const retry = stowage.get(href);
+    const retry = stash.get(href);
 
     res.writeHead(retry ? HTTP_STATUS_TOO_MANY_REQUESTS : HTTP_STATUS_OK, {
       ...!retry && { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON },
@@ -110,7 +110,7 @@ export default (baseURL) => (req, res) => {
     });
     if (!retry) {
       res.write(JSON.stringify(json));
-      stowage.delete(href);
+      stash.delete(href);
     }
 
     res.end();
@@ -134,42 +134,33 @@ export default (baseURL) => (req, res) => {
     res.statusCode = HTTP_STATUS_OK;
     req.pipe(res);
   } else if (pathname.match(String.raw`/gimme/squash`) && req.method === HTTP2_METHOD_POST) {
-    const compressor = {
-      br: zlib.createBrotliCompress,
-      deflate: zlib.createDeflate,
-      gzip: zlib.createGzip,
-    }[req.headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
-    const decompressor = {
-      br: zlib.createBrotliDecompress,
-      deflate: zlib.createInflate,
-      gzip: zlib.createUnzip,
-    }[req.headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
+    const encodings = req.headers[HTTP2_HEADER_CONTENT_ENCODING];
 
     res.writeHead(
       HTTP_STATUS_OK,
       Object.fromEntries(Object.entries(req.headers).filter(([key]) => !key.startsWith(':'))),
     );
-    req.pipe(decompressor()).setEncoding('utf-8')
-       .pipe(new Transform({
-         construct(cb) {
-           this.data = '';
-           cb();
-         },
-         decodeStrings: false,
-         flush(cb) {
-           try {
-             this.push(this.data.split('').reverse().join(''));
-           } catch (ex) {
-             cb(ex);
-           } finally {
-             cb();
-           }
-         },
-         transform(chunk, encoding, cb) {
-           this.data += chunk;
-           cb();
-         },
-       })).pipe(compressor()).pipe(res);
+
+    compress(decompress(req, encodings)
+      .pipe(new Transform({
+        construct(cb) {
+          this.data = [];
+          cb();
+        },
+        flush(cb) {
+          try {
+            this.push(Buffer.concat(this.data).reverse());
+          } catch (ex) {
+            cb(ex);
+          } finally {
+            cb();
+          }
+        },
+        transform(chunk, encoding, cb) {
+          this.data.push(chunk);
+          cb();
+        },
+      })), encodings).pipe(res);
   } else if (pathname.match(String.raw`/gimme/text`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: TEXT_PLAIN });
     res.write('message');

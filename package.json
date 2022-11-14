@@ -8,18 +8,18 @@
     "url": "https://github.com/bricss/rekwest/issues"
   },
   "devDependencies": {
-    "@babel/cli": "^7.18.10",
-    "@babel/core": "^7.19.1",
+    "@babel/cli": "^7.19.3",
+    "@babel/core": "^7.20.2",
     "@babel/eslint-parser": "^7.19.1",
-    "@babel/preset-env": "^7.19.1",
+    "@babel/preset-env": "^7.20.2",
     "c8": "^7.12.0",
-    "eslint": "^8.24.0",
-    "eslint-config-ultra-refined": "^2.6.0",
-    "mocha": "^10.0.0"
+    "eslint": "^8.27.0",
+    "eslint-config-ultra-refined": "^2.10.0",
+    "mocha": "^10.1.0"
   },
   "description": "The robust request library that humanity deserves 🌐",
   "engines": {
-    "node": ">=16.5.x"
+    "node": ">=16.7.x"
   },
   "exports": {
     "import": "./src/index.mjs",
@@ -32,11 +32,12 @@
   "homepage": "https://github.com/bricss/rekwest#readme",
   "keywords": [
     "backoff",
-    "compression",
+    "brotli",
     "cookie",
+    "deflate",
     "fetch",
-    "fetch-alike",
     "formdata",
+    "gzip",
     "http",
     "https",
     "h2",
@@ -46,10 +47,10 @@
     "request",
     "redirect",
     "retry",
-    "retry-after"
+    "retry-after",
+    "stream"
   ],
   "license": "MIT",
-  "main": "./dist/index.js",
   "name": "rekwest",
   "repository": {
     "type": "git",
@@ -66,5 +67,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "3.3.4"
+  "version": "4.0.0"
 }

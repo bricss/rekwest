@@ -71,7 +71,7 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL('/gimme/encode', baseURL);
       const res = await rekwest(url);
 
-      assert.equal(res.body, '😀😮😎');
+      assert.equal(res.body, '😀😋🧐');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
       assert.equal(res.ok, true);
@@ -111,7 +111,7 @@ export default ({ baseURL, httpVersion }) => {
           },
         });
 
-        assert.equal(res.body.length, 0);
+        assert.equal(res.body, null);
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies.get('aux'), 'baz');
         assert.equal(res.cookies.get('dot'), 'com');
@@ -128,7 +128,7 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL('/gimme/nothing', baseURL);
       const res = await rekwest(url, { cookies: false });
 
-      assert.equal(res.body.length, 0);
+      assert.equal(res.body, null);
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
       assert.equal(res.httpVersion, httpVersion);
@@ -235,7 +235,7 @@ export default ({ baseURL, httpVersion }) => {
         const url = new URL('/gimme/redirect', baseURL);
         const res = await rekwest(url, { redirect: redir.manual });
 
-        assert.equal(res.body.length, 0);
+        assert.equal(res.body, null);
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies.get('crack'), 'duck');
         assert.equal(res.httpVersion, httpVersion);
@@ -435,7 +435,7 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL('/gimme/puff', baseURL);
 
       await assert.rejects(rekwest(url), (res) => {
-        assert.equal(res.body.length, 0);
+        assert.equal(res.body, null);
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies.get('crack'), 'duck');
         assert.equal(res.httpVersion, httpVersion);
@@ -450,6 +450,7 @@ export default ({ baseURL, httpVersion }) => {
     [
       'br',
       'deflate',
+      'deflate-raw',
       'gzip',
       'identity',
     ].forEach((item) => {
@@ -481,6 +482,7 @@ export default ({ baseURL, httpVersion }) => {
     [
       'br',
       'deflate',
+      'deflate-raw',
       'gzip',
       'identity',
     ].forEach((item) => {
@@ -509,6 +511,22 @@ export default ({ baseURL, httpVersion }) => {
       );
     });
 
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with nullish body`, async () => {
+      const payload = null;
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: payload,
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body, payload);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as an Array`, async () => {
       const payload = [{ eldritch: 'symbols' }];
       const url = new URL('/gimme/repulse', baseURL);
@@ -525,7 +543,7 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.statusCode, HTTP_STATUS_OK);
     });
 
-    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a ArrayBuffer`, async () => {
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as an ArrayBuffer`, async () => {
       const payload = 'message';
       const url = new URL('/gimme/repulse', baseURL);
       const res = await rekwest(url, {
@@ -541,7 +559,7 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.statusCode, HTTP_STATUS_OK);
     });
 
-    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a ArrayBufferView`, async () => {
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as an ArrayBufferView`, async () => {
       const payload = 'message';
       const url = new URL('/gimme/repulse', baseURL);
       const res = await rekwest(url, {
@@ -570,15 +588,15 @@ export default ({ baseURL, httpVersion }) => {
         method: HTTP2_METHOD_POST,
       });
 
-      assert.equal(res.body.toString(), (await async function () {
-        const coil = [];
+      assert.equal(res.body.toString(), await async function () {
+        const chunks = [];
 
-        for await (const it of payload) {
-          coil.push(it);
+        for await (const chunk of payload) {
+          chunks.push(chunk);
         }
 
-        return coil.join('');
-      }()));
+        return chunks.join('');
+      }());
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
       assert.equal(res.ok, true);
@@ -594,7 +612,7 @@ export default ({ baseURL, httpVersion }) => {
         method: HTTP2_METHOD_POST,
       });
 
-      assert.equal(res.body.toString(), (await payload.text()));
+      assert.equal(res.body.toString(), await payload.text());
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
       assert.equal(res.ok, true);
@@ -635,14 +653,14 @@ export default ({ baseURL, httpVersion }) => {
     });
 
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a File`, async () => {
-      const payload = new File(['bits']);
+      const payload = new File(['bits'], 'file.dab');
       const url = new URL('/gimme/repulse', baseURL);
       const res = await rekwest(url, {
         body: payload,
         method: HTTP2_METHOD_POST,
       });
 
-      assert.equal(res.body.toString(), (await payload.text()));
+      assert.equal(res.body.toString(), await payload.text());
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
       assert.equal(res.ok, true);
@@ -729,7 +747,7 @@ export default ({ baseURL, httpVersion }) => {
       const payload = {
         * [Symbol.iterator]() {
           yield 'eldritch';
-          yield 'iterator';
+          yield 'symbols';
         },
       };
       const url = new URL('/gimme/repulse', baseURL);
@@ -799,13 +817,14 @@ export default ({ baseURL, httpVersion }) => {
       async () => {
         const payload = 'message';
         const data = encoder.encode(payload);
-        const datum = new SharedArrayBuffer(data.length);
-        const die = new Uint8Array(datum);
+        const sab = new SharedArrayBuffer(data.length);
+        const tie = new Uint8Array(sab);
 
-        die.set(data, 0);
+        tie.set(data, 0);
+
         const url = new URL('/gimme/repulse', baseURL);
         const res = await rekwest(url, {
-          body: datum,
+          body: sab,
           method: HTTP2_METHOD_POST,
         });
 

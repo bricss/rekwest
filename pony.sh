@@ -3,5 +3,5 @@
 
 for file in dist/*.js; do
   echo "$file"
-  sed -i -e 's/.\bmjs\b/.js/g' "$file"
+  sed -e 's/.\bmjs\b//g' -i "$file"
 done

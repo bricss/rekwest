@@ -1,4 +1,5 @@
 import { Blob } from 'node:buffer';
+import { toUSVString } from 'node:util';
 
 export { Blob } from 'node:buffer';
 
@@ -26,15 +27,23 @@ export class File extends Blob {
     return this.#name;
   }
 
-  constructor(bits, name = 'blob', options = {}) {
+  constructor(...args) {
+    const len = args.length;
+
+    if (len < 2) {
+      throw new TypeError(`Failed to construct '${
+        File.name
+      }': 2 arguments required, but only ${ len } present.`);
+    }
+
+    const [bits, name, options = {}] = args;
     const {
-      name: filename,
       lastModified = Date.now(),
     } = options;
 
     super(bits, options);
-    this.#lastModified = lastModified;
-    this.#name = filename || name;
+    this.#lastModified = +lastModified ? lastModified : 0;
+    this.#name = toUSVString(name);
   }
 
 }

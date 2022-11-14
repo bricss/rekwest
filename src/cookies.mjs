@@ -11,7 +11,7 @@ export class Cookies extends URLSearchParams {
   constructor(input) {
     if (Array.isArray(input) && input.every((it) => !Array.isArray(it))) {
       input = input.join(';').split(';')
-                   .filter((it) => !/\b(Domain|Expires|HttpOnly|Max-Age|Path|SameParty|SameSite|Secure)\b/i.test(it))
+                   .filter((it) => !/\b(?:Domain|Expires|HttpOnly|Max-Age|Path|SameParty|SameSite|Secure)\b/i.test(it))
                    .map((it) => it.trim())
                    .join('&');
     }

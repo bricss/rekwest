@@ -64,9 +64,10 @@ export class FormData {
     filename &&= toUSVString(filename);
 
     if (File.alike(value)) {
+      filename ??= value.name || 'blob';
       value = new File([value], filename, value);
     } else if (this.#ensureInstance(value)) {
-      value.name = filename || value.name;
+      value.name = filename;
     } else {
       value = toUSVString(value);
     }
@@ -129,7 +130,7 @@ export class FormData {
       if (args.length === 3 && !this.constructor.#ensureInstance(args[1])) {
         throw new TypeError(`Failed to execute '${ method }' on '${
           this[Symbol.toStringTag]
-        }': parameter ${ expected } is not of type 'Blob', 'File' or async iterable.`);
+        }': parameter ${ expected } is not of type 'Blob'.`);
       }
     }
 

@@ -34,7 +34,6 @@ describe('rekwest { h2 } mode', () => {
       const req = Readable.from('zqiygyxz').pipe(rekwest.stream(url, { h2: true, method: HTTP2_METHOD_POST }));
       const [headers] = await once(req, 'response');
 
-      assert.ok(req.ok);
       assert.equal(req.headers, headers);
       assert.equal(req.statusCode, HTTP_STATUS_OK);
       assert.equal((await mixin(req).body()).toString(), 'zqiygyxz'.split('').reverse().join(''));

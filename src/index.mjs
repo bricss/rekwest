@@ -14,7 +14,7 @@ import {
   mixin,
   preflight,
   redirects,
-  revise,
+  sanitize,
   transform,
 } from './utils.mjs';
 
@@ -70,8 +70,10 @@ let defaults = {
   timeout: 3e5,
 };
 
-export default async function rekwest(url, options = {}) {
-  ({ url } = revise({ options, url }));
+export default async function rekwest(...args) {
+  let options = sanitize(...args);
+  const { url } = options;
+
   if (!options.redirected) {
     options = merge(rekwest.defaults, options);
   }
@@ -98,16 +100,13 @@ export default async function rekwest(url, options = {}) {
     ].forEach((it) => Reflect.deleteProperty(options, it));
   }
 
-  options = preflight(options);
+  options = await transform(preflight(options));
 
   const { cookies, digest, follow, h2, redirect, redirected, thenable } = options;
   const { request } = (url.protocol === 'http:' ? http : https);
-  let { body } = options;
 
   const promise = new Promise((resolve, reject) => {
     let client, req;
-
-    body &&= transform(body, options);
 
     if (h2) {
       client = http2.connect(url.origin, options);
@@ -157,8 +156,7 @@ export default async function rekwest(url, options = {}) {
         if (redirect === redirects.follow) {
           options.url = new URL(res.headers[HTTP2_HEADER_LOCATION], url).href;
 
-          if (res.statusCode !== HTTP_STATUS_SEE_OTHER
-            && body === Object(body) && body.pipe?.constructor === Function) {
+          if (res.statusCode !== HTTP_STATUS_SEE_OTHER && options?.body?.pipe?.constructor === Function) {
             return res.emit('error', new RequestError(`Unable to ${ redirect } redirect with streamable body.`));
           }
 
@@ -195,7 +193,7 @@ export default async function rekwest(url, options = {}) {
       resolve(mixin(res, options));
     });
 
-    dispatch(req, { ...options, body });
+    dispatch(options, req);
   });
 
   try {
@@ -242,16 +240,15 @@ export default async function rekwest(url, options = {}) {
 
 Reflect.defineProperty(rekwest, 'stream', {
   enumerable: true,
-  value(url, options = {}) {
-    ({ url } = revise({ options, url }));
-    options = preflight({
+  value(...args) {
+    const options = preflight({
       ...merge(rekwest.defaults, {
         headers: { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_OCTET_STREAM },
-      }, options),
+      }, sanitize(...args)),
       redirect: redirects.manual,
     });
 
-    const { h2 } = options;
+    const { h2, url } = options;
     const { request } = (url.protocol === 'http:' ? http : https);
     let client, req;
 

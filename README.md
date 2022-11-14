@@ -21,7 +21,7 @@ and [http2.request](https://nodejs.org/api/http2.html#http2_clienthttp2session_r
 
 ## Prerequisites
 
-* Node.js `>= 16.5.x`
+* Node.js `>= 16.7.x`
 
 ## Installation
 
@@ -122,7 +122,8 @@ console.log(res.body);
   and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback)
   for HTTP/2 attunes
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
-    FormData | Iterator | Object | Readable | SharedArrayBuffer | URLSearchParams}** The body to send with the request
+    FormData | Iterator | Object | Readable | ReadableStream | SharedArrayBuffer | URLSearchParams}** The body to send
+    with the request
   * `cookies` **{boolean | Array<[k, v]> | Cookies | Object | URLSearchParams}** `Default: true` The cookies to add to
     the request
   * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or simply add a mixin
@@ -179,7 +180,7 @@ The method with limited functionality to use with streams and/or pipes
 * No automata
 * No redirects
 * Pass `h2: true` in options to use HTTP/2 protocol
-  * Or use `ackn({ url: URL })` method in advance to probe the available protocols
+  * Use `ackn({ url: URL })` method beforehand to check the available protocols
 
 ---
 

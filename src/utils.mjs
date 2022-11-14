@@ -1,13 +1,11 @@
 import { Blob } from 'node:buffer';
 import http2 from 'node:http2';
 import {
-  PassThrough,
+  pipeline,
   Readable,
 } from 'node:stream';
-import {
-  promisify,
-  types,
-} from 'node:util';
+import { buffer } from 'node:stream/consumers';
+import { types } from 'node:util';
 import zlib from 'node:zlib';
 import { Cookies } from './cookies.mjs';
 import { TimeoutError } from './errors.mjs';
@@ -37,12 +35,7 @@ const {
   HTTP2_METHOD_HEAD,
 } = http2.constants;
 
-const brotliCompress = promisify(zlib.brotliCompress);
-const brotliDecompress = promisify(zlib.brotliDecompress);
-const gzip = promisify(zlib.gzip);
-const gunzip = promisify(zlib.gunzip);
-const deflate = promisify(zlib.deflate);
-const inflate = promisify(zlib.inflate);
+const unwind = (encodings) => encodings.split(',').map((it) => it.trim());
 
 export const admix = (res, headers, options) => {
   const { h2 } = options;
@@ -92,42 +85,53 @@ export const collate = (entity, primordial) => {
   }
 };
 
-export const compress = (buf, encoding, { async = false } = {}) => {
-  encoding &&= encoding.match(/(?<encoding>\bbr\b|\bdeflate\b|\bgzip\b)/i)?.groups.encoding.toLowerCase();
-  const compressor = {
-    br: async ? brotliCompress : zlib.brotliCompressSync,
-    deflate: async ? deflate : zlib.deflateSync,
-    gzip: async ? gzip : zlib.gzipSync,
-  }[encoding];
+export const compress = (readable, encodings = '') => {
+  const encoders = [];
 
-  return compressor?.(buf) ?? (async ? Promise.resolve(buf) : buf);
-};
+  encodings = unwind(encodings);
 
-export const decompress = (buf, encoding, { async = false } = {}) => {
-  encoding &&= encoding.match(/(?<encoding>\bbr\b|\bdeflate\b|\bgzip\b)/i)?.groups.encoding.toLowerCase();
-  const decompressor = {
-    br: async ? brotliDecompress : zlib.brotliDecompressSync,
-    deflate: async ? inflate : zlib.inflateSync,
-    gzip: async ? gunzip : zlib.gunzipSync,
-  }[encoding];
-
-  return decompressor?.(buf) ?? (async ? Promise.resolve(buf) : buf);
-};
-
-export const dispatch = (req, { body, headers }) => {
-  if (body === Object(body) && !Buffer.isBuffer(body)) {
-    if (body.pipe?.constructor !== Function
-      && (Reflect.has(body, Symbol.asyncIterator) || Reflect.has(body, Symbol.iterator))) {
-      body = Readable.from(body);
+  for (const encoding of encodings) {
+    if (/\bbr\b/i.test(encoding)) {
+      encoders.push(zlib.createBrotliCompress());
+    } else if (/\bdeflate(?!-(?:\w+)?)\b/i.test(encoding)) {
+      encoders.push(zlib.createDeflate());
+    } else if (/\bdeflate-raw\b/i.test(encoding)) {
+      encoders.push(zlib.createDeflateRaw());
+    } else if (/\bgzip\b/i.test(encoding)) {
+      encoders.push(zlib.createGzip());
+    } else {
+      return readable;
     }
+  }
 
-    const compressor = {
-      br: zlib.createBrotliCompress,
-      deflate: zlib.createDeflate,
-      gzip: zlib.createGzip,
-    }[headers[HTTP2_HEADER_CONTENT_ENCODING]] ?? PassThrough;
+  return pipeline(readable, ...encoders, () => void 0);
+};
 
-    body.pipe(compressor()).pipe(req);
+export const decompress = (readable, encodings = '') => {
+  const decoders = [];
+
+  encodings = unwind(encodings);
+
+  for (const encoding of encodings) {
+    if (/\bbr\b/i.test(encoding)) {
+      decoders.push(zlib.createBrotliDecompress());
+    } else if (/\bdeflate(?!-(?:\w+)?)\b/i.test(encoding)) {
+      decoders.push(zlib.createInflate());
+    } else if (/\bdeflate-raw\b/i.test(encoding)) {
+      decoders.push(zlib.createInflateRaw());
+    } else if (/\bgzip\b/i.test(encoding)) {
+      decoders.push(zlib.createGunzip());
+    } else {
+      return readable;
+    }
+  }
+
+  return pipeline(readable, ...decoders, () => void 0);
+};
+
+export const dispatch = ({ body }, req) => {
+  if (body?.pipe?.constructor === Function) {
+    body.pipe(req);
   } else {
     req.end(body);
   }
@@ -217,19 +221,19 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
           throw new TypeError('Response stream already read');
         }
 
-        let spool = [];
+        let body = [];
 
-        for await (const chunk of this) {
-          spool.push(chunk);
+        for await (const chunk of decompress(this, this.headers[HTTP2_HEADER_CONTENT_ENCODING])) {
+          body.push(chunk);
         }
 
-        spool = Buffer.concat(spool);
+        body = Buffer.concat(body);
 
-        if (spool.length) {
-          spool = await decompress(spool, this.headers[HTTP2_HEADER_CONTENT_ENCODING], { async: true });
+        if (!body.length && parse) {
+          return null;
         }
 
-        if (spool.length && parse) {
+        if (body.length && parse) {
           const contentType = this.headers[HTTP2_HEADER_CONTENT_TYPE] ?? '';
           const charset = contentType.split(';')
                                      .find((it) => /charset=/i.test(it))
@@ -239,17 +243,17 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
                                      .trim() || 'utf-8';
 
           if (/\bjson\b/i.test(contentType)) {
-            spool = JSON.parse(spool.toString(charset));
-          } else if (/\b(text|xml)\b/i.test(contentType)) {
-            if (/\b(latin1|ucs-2|utf-(8|16le))\b/.test(charset)) {
-              spool = spool.toString(charset);
+            body = JSON.parse(body.toString(charset));
+          } else if (/\b(?:text|xml)\b/i.test(contentType)) {
+            if (/\b(?:latin1|ucs-2|utf-(?:8|16le))\b/.test(charset)) {
+              body = body.toString(charset);
             } else {
-              spool = new TextDecoder(charset).decode(spool);
+              body = new TextDecoder(charset).decode(body);
             }
           }
         }
 
-        return spool;
+        return body;
       },
       writable: true,
     },
@@ -297,7 +301,7 @@ export const preflight = (options) => {
   options.h2 ??= h2;
   options.headers = {
     [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
-    [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, gzip, identity',
+    [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, deflate-raw, gzip, identity',
     ...Object.entries(options.headers ?? {})
              .reduce((acc, [key, val]) => (acc[key.toLowerCase()] = val, acc), {}),
     ...h2 && {
@@ -331,7 +335,7 @@ export const redirects = {
   manual: 'manual',
 };
 
-export const revise = ({ url, options }) => {
+export const sanitize = (url, options = {}) => {
   if (options.trimTrailingSlashes) {
     url = `${ url }`.replace(/(?<!:)\/+/gi, '/');
   }
@@ -351,13 +355,11 @@ export async function* tap(value) {
   }
 }
 
-export const transform = (body, options) => {
-  let headers = {};
+export const transform = async (options) => {
+  let { body, headers } = options;
 
-  if (types.isAnyArrayBuffer(body) && !Buffer.isBuffer(body)) {
-    body = Buffer.from(body);
-  } else if (types.isArrayBufferView(body) && !Buffer.isBuffer(body)) {
-    body = Buffer.from(body.buffer, body.byteOffset, body.byteLength);
+  if (!body) {
+    return options;
   }
 
   if (File.alike(body)) {
@@ -365,30 +367,37 @@ export const transform = (body, options) => {
       [HTTP2_HEADER_CONTENT_LENGTH]: body.size,
       [HTTP2_HEADER_CONTENT_TYPE]: body.type || APPLICATION_OCTET_STREAM,
     };
-    body = body.stream?.() ?? Readable.from(tap(body));
+    body = body.stream();
   } else if (FormData.alike(body)) {
     body = FormData.actuate(body);
     headers = { [HTTP2_HEADER_CONTENT_TYPE]: body.contentType };
-  } else if (body === Object(body) && !Reflect.has(body, Symbol.asyncIterator)) {
-    if (body.constructor === URLSearchParams) {
-      headers = { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_FORM_URLENCODED };
-      body = body.toString();
-    } else if (!Buffer.isBuffer(body)
-      && !(!Array.isArray(body) && Reflect.has(body, Symbol.iterator))) {
-      headers = { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON };
-      body = JSON.stringify(body);
-    }
-
-    if (Buffer.isBuffer(body) || body !== Object(body)) {
-      if (options.headers[HTTP2_HEADER_CONTENT_ENCODING]) {
-        body = compress(body, options.headers[HTTP2_HEADER_CONTENT_ENCODING]);
+  } else if (!Buffer.isBuffer(body)) {
+    if (types.isAnyArrayBuffer(body)) {
+      body = Buffer.from(body);
+    } else if (types.isArrayBufferView(body)) {
+      body = Buffer.from(body.buffer, body.byteOffset, body.byteLength);
+    } else if (body === Object(body) && !Reflect.has(body, Symbol.asyncIterator)) {
+      if (body.constructor === URLSearchParams) {
+        headers = { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_FORM_URLENCODED };
+        body = body.toString();
+      } else if (!(!Array.isArray(body) && Reflect.has(body, Symbol.iterator))) {
+        headers = { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON };
+        body = JSON.stringify(body);
       }
-
-      headers = {
-        ...headers,
-        [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body),
-      };
     }
+  }
+
+  const encodings = options.headers[HTTP2_HEADER_CONTENT_ENCODING];
+
+  if (encodings) {
+    if (Reflect.has(body, Symbol.asyncIterator)) {
+      body = compress(Readable.from(body), encodings);
+    } else {
+      body = await buffer(compress(Readable.from(body), encodings));
+    }
+  } else if (body === Object(body)
+    && (Reflect.has(body, Symbol.asyncIterator) || (!Array.isArray(body) && Reflect.has(body, Symbol.iterator)))) {
+    body = Readable.from(body);
   }
 
   Object.assign(options.headers, {
@@ -398,5 +407,8 @@ export const transform = (body, options) => {
     },
   });
 
-  return body;
+  return {
+    ...options,
+    body,
+  };
 };
