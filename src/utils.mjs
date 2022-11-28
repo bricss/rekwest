@@ -7,6 +7,7 @@ import {
 import { buffer } from 'node:stream/consumers';
 import { types } from 'node:util';
 import zlib from 'node:zlib';
+import { redirectModes } from './constants.mjs';
 import { Cookies } from './cookies.mjs';
 import { TimeoutError } from './errors.mjs';
 import { File } from './file.mjs';
@@ -79,8 +80,8 @@ export const affix = (client, req, options) => {
   });
 };
 
-export const collate = (entity, primordial) => {
-  if (entity?.constructor !== primordial) {
+export const brandCheck = (value, ctor) => {
+  if (!(value instanceof ctor)) {
     throw new TypeError('Illegal invocation');
   }
 };
@@ -174,7 +175,7 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
       arrayBuffer: {
         enumerable: true,
         value: async function () {
-          collate(this, res?.constructor);
+          brandCheck(this, res?.constructor);
           parse &&= false;
           const { buffer, byteLength, byteOffset } = await this.body();
 
@@ -184,7 +185,7 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
       blob: {
         enumerable: true,
         value: async function () {
-          collate(this, res?.constructor);
+          brandCheck(this, res?.constructor);
           const val = await this.arrayBuffer();
 
           return new Blob([val]);
@@ -193,7 +194,7 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
       json: {
         enumerable: true,
         value: async function () {
-          collate(this, res?.constructor);
+          brandCheck(this, res?.constructor);
           const val = await this.text();
 
           return JSON.parse(val);
@@ -202,7 +203,7 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
       text: {
         enumerable: true,
         value: async function () {
-          collate(this, res?.constructor);
+          brandCheck(this, res?.constructor);
           const blob = await this.blob();
 
           return blob.text();
@@ -215,7 +216,7 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
     body: {
       enumerable: true,
       value: async function () {
-        collate(this, res?.constructor);
+        brandCheck(this, res?.constructor);
 
         if (this.bodyUsed) {
           throw new TypeError('Response stream already read');
@@ -314,9 +315,9 @@ export const preflight = (options) => {
 
   options.method ??= method;
   options.parse ??= true;
-  options.redirect ??= redirects.follow;
+  options.redirect ??= redirectModes.follow;
 
-  if (!Object.values(redirects).includes(options.redirect)) {
+  if (!Reflect.has(redirectModes, options.redirect)) {
     options.createConnection?.().destroy();
     throw new TypeError(`Failed to read the 'redirect' property from 'options': The provided value '${
       options.redirect
@@ -329,12 +330,6 @@ export const preflight = (options) => {
   return options;
 };
 
-export const redirects = {
-  error: 'error',
-  follow: 'follow',
-  manual: 'manual',
-};
-
 export const sanitize = (url, options = {}) => {
   if (options.trimTrailingSlashes) {
     url = `${ url }`.replace(/(?<!:)\/+/gi, '/');
@@ -344,6 +339,8 @@ export const sanitize = (url, options = {}) => {
 
   return Object.assign(options, { url });
 };
+
+export const sameOrigin = (a, b) => a.protocol === b.protocol && a.hostname === b.hostname && a.port === b.port;
 
 export async function* tap(value) {
   if (Reflect.has(value, Symbol.asyncIterator)) {
@@ -389,19 +386,18 @@ export const transform = async (options) => {
 
   const encodings = options.headers[HTTP2_HEADER_CONTENT_ENCODING];
 
-  if (encodings) {
-    if (Reflect.has(body, Symbol.asyncIterator)) {
-      body = compress(Readable.from(body), encodings);
-    } else {
-      body = await buffer(compress(Readable.from(body), encodings));
-    }
-  } else if (body === Object(body)
+  if (body === Object(body)
     && (Reflect.has(body, Symbol.asyncIterator) || (!Array.isArray(body) && Reflect.has(body, Symbol.iterator)))) {
-    body = Readable.from(body);
+    body = encodings ? compress(Readable.from(body), encodings) : Readable.from(body);
+  } else if (encodings) {
+    body = await buffer(compress(Readable.from(body), encodings));
   }
 
   Object.assign(options.headers, {
     ...headers,
+    ...!body[Symbol.asyncIterator] && {
+      [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body),
+    },
     ...options.headers[HTTP2_HEADER_CONTENT_TYPE] && {
       [HTTP2_HEADER_CONTENT_TYPE]: options.headers[HTTP2_HEADER_CONTENT_TYPE],
     },

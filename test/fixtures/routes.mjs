@@ -87,8 +87,11 @@ export default (baseURL) => (req, res) => {
     res.statusCode = HTTP_STATUS_NO_CONTENT;
     res.end();
   } else if (pathname.match(String.raw`/gimme/redirect`) && req.method === HTTP2_METHOD_GET) {
-    res.writeHead(HTTP_STATUS_MOVED_PERMANENTLY, {
-      [HTTP2_HEADER_LOCATION]: '/gimme/json',
+    const location = searchParams.has('location') ? searchParams.get('location') : '/gimme/json';
+    const statusCode = searchParams.has('statusCode') ? +searchParams.get('statusCode') : HTTP_STATUS_MOVED_PERMANENTLY;
+
+    res.writeHead(statusCode, {
+      [HTTP2_HEADER_LOCATION]: location,
       ...retryAfter ? Number(retryAfter) ? {
         [HTTP2_HEADER_RETRY_AFTER]: JSON.parse(retryAfter),
       } : {

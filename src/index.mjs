@@ -3,6 +3,10 @@ import http2 from 'node:http2';
 import https from 'node:https';
 import { setTimeout as setTimeoutPromise } from 'node:timers/promises';
 import { ackn } from './ackn.mjs';
+import {
+  redirectModes,
+  redirectStatusCodes,
+} from './constants.mjs';
 import { Cookies } from './cookies.mjs';
 import { RequestError } from './errors.mjs';
 import { APPLICATION_OCTET_STREAM } from './mediatypes.mjs';
@@ -13,7 +17,7 @@ import {
   merge,
   mixin,
   preflight,
-  redirects,
+  sameOrigin,
   sanitize,
   transform,
 } from './utils.mjs';
@@ -21,6 +25,7 @@ import {
 export { constants } from 'node:http2';
 
 export * from './ackn.mjs';
+export * from './constants.mjs';
 export * from './cookies.mjs';
 export * from './errors.mjs';
 export * from './file.mjs';
@@ -29,14 +34,16 @@ export * as mediatypes from './mediatypes.mjs';
 export * from './utils.mjs';
 
 const {
-  HTTP2_HEADER_CONTENT_LENGTH,
+  HTTP2_HEADER_AUTHORIZATION,
   HTTP2_HEADER_CONTENT_TYPE,
   HTTP2_HEADER_LOCATION,
   HTTP2_HEADER_RETRY_AFTER,
   HTTP2_HEADER_SET_COOKIE,
   HTTP2_METHOD_GET,
   HTTP2_METHOD_HEAD,
+  HTTP2_METHOD_POST,
   HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_FOUND,
   HTTP_STATUS_MOVED_PERMANENTLY,
   HTTP_STATUS_SEE_OTHER,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
@@ -148,29 +155,53 @@ export default async function rekwest(...args) {
                : void 0,
       });
 
-      if (follow && /^3\d{2}$/.test(res.statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
-        if (redirect === redirects.error) {
+      const { statusCode } = res;
+
+      if (follow && /3\d{2}/.test(statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
+        if (!redirectStatusCodes.includes(statusCode)) {
+          return res.emit('error', new RangeError(`Invalid status code: ${ statusCode }`));
+        }
+
+        if (redirect === redirectModes.error) {
           return res.emit('error', new RequestError(`Unexpected redirect, redirect mode is set to '${ redirect }'.`));
         }
 
-        if (redirect === redirects.follow) {
-          options.url = new URL(res.headers[HTTP2_HEADER_LOCATION], url).href;
+        if (redirect === redirectModes.follow) {
+          const location = new URL(res.headers[HTTP2_HEADER_LOCATION], url);
 
-          if (res.statusCode !== HTTP_STATUS_SEE_OTHER && options?.body?.pipe?.constructor === Function) {
+          if (!/^https?:/.test(location.protocol)) {
+            return res.emit('error', new RequestError('URL scheme must be "http" or "https".'));
+          }
+
+          if (!sameOrigin(location, url)) {
+            Reflect.deleteProperty(options.headers, HTTP2_HEADER_AUTHORIZATION);
+            location.password = location.username = '';
+          }
+
+          options.url = location;
+
+          if (statusCode !== HTTP_STATUS_SEE_OTHER && options?.body?.pipe?.constructor === Function) {
             return res.emit('error', new RequestError(`Unable to ${ redirect } redirect with streamable body.`));
           }
 
           options.follow--;
 
-          if (res.statusCode === HTTP_STATUS_SEE_OTHER) {
-            Reflect.deleteProperty(options.headers, HTTP2_HEADER_CONTENT_LENGTH);
-            options.method = HTTP2_METHOD_GET;
+          if (([
+            HTTP_STATUS_MOVED_PERMANENTLY,
+            HTTP_STATUS_FOUND,
+          ].includes(statusCode) && request.method === HTTP2_METHOD_POST) || (statusCode === HTTP_STATUS_SEE_OTHER && ![
+            HTTP2_METHOD_GET,
+            HTTP2_METHOD_HEAD,
+          ].includes(options.method))) {
+            Object.keys(options.headers).filter((it) => /^content-/i.test(it))
+                  .forEach((it) => Reflect.deleteProperty(options.headers, it));
             options.body = null;
+            options.method = HTTP2_METHOD_GET;
           }
 
           Reflect.set(options, 'redirected', true);
 
-          if (res.statusCode === HTTP_STATUS_MOVED_PERMANENTLY && res.headers[HTTP2_HEADER_RETRY_AFTER]) {
+          if (statusCode === HTTP_STATUS_MOVED_PERMANENTLY && res.headers[HTTP2_HEADER_RETRY_AFTER]) {
             let interval = res.headers[HTTP2_HEADER_RETRY_AFTER];
 
             interval = Number(interval) * 1000 || new Date(interval) - Date.now();
@@ -186,7 +217,7 @@ export default async function rekwest(...args) {
         }
       }
 
-      if (res.statusCode >= HTTP_STATUS_BAD_REQUEST) {
+      if (statusCode >= HTTP_STATUS_BAD_REQUEST) {
         return reject(mixin(res, options));
       }
 
@@ -245,7 +276,7 @@ Reflect.defineProperty(rekwest, 'stream', {
       ...merge(rekwest.defaults, {
         headers: { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_OCTET_STREAM },
       }, sanitize(...args)),
-      redirect: redirects.manual,
+      redirect: redirectModes.manual,
     });
 
     const { h2, url } = options;

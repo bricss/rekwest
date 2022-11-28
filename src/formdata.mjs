@@ -7,7 +7,7 @@ import {
   MULTIPART_FORM_DATA,
 } from './mediatypes.mjs';
 import {
-  collate,
+  brandCheck,
   tap,
 } from './utils.mjs';
 
@@ -46,7 +46,10 @@ export class FormData {
               value.type || APPLICATION_OCTET_STREAM
             }${ CRLF.repeat(2) }`);
             yield* tap(value);
-            yield encoder.encode(CRLF);
+            yield new Uint8Array([
+              13,
+              10,
+            ]);
           }
         }
 
@@ -144,13 +147,13 @@ export class FormData {
   }
 
   append(...args) {
-    collate(this, FormData);
+    brandCheck(this, FormData);
     this.#ensureArgs(args, 2, 'append');
     this.#entries.push(this.constructor.#enfoldEntry(...args));
   }
 
   delete(...args) {
-    collate(this, FormData);
+    brandCheck(this, FormData);
     this.#ensureArgs(args, 1, 'delete');
     const name = toUSVString(args[0]);
 
@@ -158,7 +161,7 @@ export class FormData {
   }
 
   forEach(...args) {
-    collate(this, FormData);
+    brandCheck(this, FormData);
     this.#ensureArgs(args, 1, 'forEach');
     const [callback, thisArg] = args;
 
@@ -171,7 +174,7 @@ export class FormData {
   }
 
   get(...args) {
-    collate(this, FormData);
+    brandCheck(this, FormData);
     this.#ensureArgs(args, 1, 'get');
     const name = toUSVString(args[0]);
 
@@ -179,7 +182,7 @@ export class FormData {
   }
 
   getAll(...args) {
-    collate(this, FormData);
+    brandCheck(this, FormData);
     this.#ensureArgs(args, 1, 'getAll');
     const name = toUSVString(args[0]);
 
@@ -187,7 +190,7 @@ export class FormData {
   }
 
   has(...args) {
-    collate(this, FormData);
+    brandCheck(this, FormData);
     this.#ensureArgs(args, 1, 'has');
     const name = toUSVString(args[0]);
 
@@ -195,7 +198,7 @@ export class FormData {
   }
 
   set(...args) {
-    collate(this, FormData);
+    brandCheck(this, FormData);
     this.#ensureArgs(args, 2, 'set');
     const entry = this.constructor.#enfoldEntry(...args);
     const idx = this.#entries.findIndex((it) => it.name === entry.name);
@@ -208,7 +211,7 @@ export class FormData {
   }
 
   * entries() {
-    collate(this, FormData);
+    brandCheck(this, FormData);
     for (const { name, value } of this.#entries) {
       yield [
         name,
@@ -218,21 +221,21 @@ export class FormData {
   }
 
   * keys() {
-    collate(this, FormData);
+    brandCheck(this, FormData);
     for (const [name] of this) {
       yield name;
     }
   }
 
   * values() {
-    collate(this, FormData);
+    brandCheck(this, FormData);
     for (const [, value] of this) {
       yield value;
     }
   }
 
   [Symbol.iterator]() {
-    collate(this, FormData);
+    brandCheck(this, FormData);
 
     return this.entries();
   }

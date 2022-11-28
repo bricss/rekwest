@@ -2,12 +2,12 @@ import { strict as assert } from 'node:assert';
 import { Blob } from 'node:buffer';
 import { Readable } from 'node:stream';
 import { types } from 'node:util';
+import { redirectModes } from '../src/constants.mjs';
 import rekwest, {
   constants,
   Cookies,
   File,
   FormData,
-  redirects as redir,
 } from '../src/index.mjs';
 import { TEXT_PLAIN } from '../src/mediatypes.mjs';
 
@@ -31,6 +31,7 @@ const {
   HTTP_STATUS_SEE_OTHER,
   HTTP_STATUS_TOO_MANY_REQUESTS,
   HTTP_STATUS_UNAUTHORIZED,
+  HTTP_STATUS_USE_PROXY,
 } = constants;
 
 const logarithmic = 'logarithmic';
@@ -138,7 +139,7 @@ export default ({ baseURL, httpVersion }) => {
     });
 
     it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request with body and must catch the error`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request with body and must catch an error`,
       async () => {
         const url = new URL('/gimme/text', baseURL);
 
@@ -154,63 +155,52 @@ export default ({ baseURL, httpVersion }) => {
       },
     );
 
-    it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { follow: 0 } and must catch the error`,
-      async () => {
-        const url = new URL('/gimme/redirect', baseURL);
+    it(`should make ${
+      HTTP2_METHOD_GET
+    } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { follow: 0 } and must catch an error`, async () => {
+      const url = new URL('/gimme/redirect', baseURL);
 
-        await assert.rejects(rekwest(url, { follow: 0 }), (err) => {
-          assert.match(err.message, /Maximum redirect reached at:/);
-          assert.equal(err.name, 'RequestError');
+      await assert.rejects(rekwest(url, { follow: 0 }), (err) => {
+        assert.match(err.message, /Maximum redirect reached at:/);
+        assert.equal(err.name, 'RequestError');
 
-          return true;
-        });
-      },
-    );
+        return true;
+      });
+    });
 
-    it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { mode: ${ redir.error } } and must catch the error`,
-      async () => {
-        const url = new URL('/gimme/redirect', baseURL);
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_MOVED_PERMANENTLY
+    }] request with redirect { mode: ${ redirectModes.error } } and must catch an error`, async () => {
+      const url = new URL('/gimme/redirect', baseURL);
 
-        await assert.rejects(rekwest(url, { redirect: redir.error }), (err) => {
-          assert.equal(err.message, 'Unexpected redirect, redirect mode is set to \'error\'.');
-          assert.equal(err.name, 'RequestError');
+      await assert.rejects(rekwest(url, { redirect: redirectModes.error }), (err) => {
+        assert.equal(err.message, 'Unexpected redirect, redirect mode is set to \'error\'.');
+        assert.equal(err.name, 'RequestError');
 
-          return true;
-        });
-      },
-    );
+        return true;
+      });
+    });
 
-    it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { mode: false } and must catch the error`,
-      async () => {
-        const url = new URL('/gimme/redirect', baseURL);
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_MOVED_PERMANENTLY
+    }] request with redirect { mode: false } and must catch an error`, async () => {
+      const url = new URL('/gimme/redirect', baseURL);
 
-        await assert.rejects(rekwest(url, { redirect: false }), (err) => {
-          assert.equal(
-            err.message,
-            'Failed to read the \'redirect\' property from \'options\': The provided value \'false\' is not a valid enum value.',
-          );
-          assert.equal(err.name, 'TypeError');
+      await assert.rejects(rekwest(url, { redirect: false }), (err) => {
+        assert.equal(
+          err.message,
+          'Failed to read the \'redirect\' property from \'options\': The provided value \'false\' is not a valid enum value.',
+        );
+        assert.equal(err.name, 'TypeError');
 
-          return true;
-        });
-      },
-    );
+        return true;
+      });
+    });
 
     it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_MOVED_PERMANENTLY }->${ HTTP_STATUS_OK }] request with redirect { mode: ${
-        redir.follow
-      } } and must retain the cookies`,
+      `should make ${ HTTP2_METHOD_GET } [${
+        HTTP_STATUS_MOVED_PERMANENTLY
+      }] request with redirect { mode: ${ redirectModes.follow } } and must retain a cookies`,
       async () => {
         const url = new URL('/gimme/redirect', baseURL);
         const res = await rekwest(url);
@@ -225,52 +215,66 @@ export default ({ baseURL, httpVersion }) => {
       },
     );
 
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_MOVED_PERMANENTLY
+    }] request with redirect { mode: ${ redirectModes.manual } } and must get new cookies`, async () => {
+      const url = new URL('/gimme/redirect', baseURL);
+      const res = await rekwest(url, { redirect: redirectModes.manual });
+
+      assert.equal(res.body, null);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies.get('crack'), 'duck');
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, false);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_MOVED_PERMANENTLY);
+    });
+
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_SEE_OTHER
+    }] request with redirect and must catch an error on invalid protocol`, async () => {
+      const url = new URL(`/gimme/redirect?location=wss://${ baseURL.host }`, baseURL);
+
+      await assert.rejects(rekwest(url), (err) => {
+        assert.equal(err.message, 'URL scheme must be "http" or "https".');
+        assert.equal(err.name, 'RequestError');
+
+        return true;
+      });
+    });
+
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_USE_PROXY
+    }] request with redirect and must catch an error on inapt status code`, async () => {
+      const url = new URL(`/gimme/redirect?statusCode=${ HTTP_STATUS_USE_PROXY }`, baseURL);
+
+      await assert.rejects(rekwest(url), (err) => {
+        assert.equal(err.message, `Invalid status code: ${ HTTP_STATUS_USE_PROXY }`);
+        assert.equal(err.name, 'RangeError');
+
+        return true;
+      });
+    });
+
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_MOVED_PERMANENTLY
+    }] request with redirect and must respect '${ HTTP2_HEADER_RETRY_AFTER }' header`, async () => {
+      const url = new URL(`/gimme/redirect?${ HTTP2_HEADER_RETRY_AFTER }=0.25`, baseURL);
+      const res = await rekwest(url);
+
+      assert.equal(res.body.message, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies.get('crack'), 'duck');
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, true);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
     it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect { mode: ${
-        redir.manual
-      } } and must get new cookies`,
-      async () => {
-        const url = new URL('/gimme/redirect', baseURL);
-        const res = await rekwest(url, { redirect: redir.manual });
-
-        assert.equal(res.body, null);
-        assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies.get('crack'), 'duck');
-        assert.equal(res.httpVersion, httpVersion);
-        assert.equal(res.ok, false);
-        assert.equal(res.redirected, false);
-        assert.equal(res.statusCode, HTTP_STATUS_MOVED_PERMANENTLY);
-      },
-    );
-
-    it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_MOVED_PERMANENTLY }->${ HTTP_STATUS_OK }] request with redirect and must respect '${
-        HTTP2_HEADER_RETRY_AFTER
-      }' header`,
-      async () => {
-        const url = new URL(`/gimme/redirect?${ HTTP2_HEADER_RETRY_AFTER }=0.25`, baseURL);
-        const res = await rekwest(url);
-
-        assert.equal(res.body.message, 'json');
-        assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies.get('crack'), 'duck');
-        assert.equal(res.httpVersion, httpVersion);
-        assert.equal(res.ok, true);
-        assert.equal(res.redirected, true);
-        assert.equal(res.statusCode, HTTP_STATUS_OK);
-      },
-    );
-
-    it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_MOVED_PERMANENTLY }] request with redirect and must catch the error if max '${
-        HTTP2_HEADER_RETRY_AFTER
-      }' limit is exceeded`,
+      `should make ${ HTTP2_METHOD_GET } [${
+        HTTP_STATUS_MOVED_PERMANENTLY
+      }] request with redirect and must catch an error if max '${ HTTP2_HEADER_RETRY_AFTER }' limit is exceeded`,
       async () => {
         const url = new URL(`/gimme/redirect?${ HTTP2_HEADER_RETRY_AFTER }=3.5e5`, baseURL);
 
@@ -284,136 +288,110 @@ export default ({ baseURL, httpVersion }) => {
       },
     );
 
-    it(
-      `should make ${
-        HTTP2_METHOD_POST
-      } [${ HTTP_STATUS_FOUND }] request with redirect { body: stream } and must catch the error`,
-      async () => {
-        const url = new URL('/gimme/redirect', baseURL);
+    it(`should make ${ HTTP2_METHOD_POST } [${
+      HTTP_STATUS_FOUND
+    }] request with redirect { body: stream } and must catch an error`, async () => {
+      const url = new URL('/gimme/redirect', baseURL);
 
-        await assert.rejects(rekwest(url, {
-          body: Readable.from('zqiygyxz'),
-          method: HTTP2_METHOD_POST,
-        }), (err) => {
-          assert.equal(err.message, 'Unable to follow redirect with streamable body.');
-          assert.equal(err.name, 'RequestError');
+      await assert.rejects(rekwest(url, {
+        body: Readable.from('zqiygyxz'),
+        method: HTTP2_METHOD_POST,
+      }), (err) => {
+        assert.equal(err.message, 'Unable to follow redirect with streamable body.');
+        assert.equal(err.name, 'RequestError');
 
-          return true;
-        });
-      },
-    );
+        return true;
+      });
+    });
 
-    it(
-      `should make ${
-        HTTP2_METHOD_PUT
-      } [${ HTTP_STATUS_SEE_OTHER }->${ HTTP_STATUS_OK }] request with redirect { body: json }`,
-      async () => {
-        const url = new URL('/gimme/redirect', baseURL);
-        const res = await rekwest(url, {
-          body: { eldritch: 'symbols' },
-          method: HTTP2_METHOD_PUT,
-        });
+    it(`should make ${ HTTP2_METHOD_PUT } [${
+      HTTP_STATUS_SEE_OTHER
+    }] request with redirect { body: json }`, async () => {
+      const url = new URL('/gimme/redirect', baseURL);
+      const res = await rekwest(url, {
+        body: { eldritch: 'symbols' },
+        method: HTTP2_METHOD_PUT,
+      });
 
-        assert.equal(res.body.message, 'json');
-        assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies.get('crack'), 'duck');
-        assert.equal(res.httpVersion, httpVersion);
-        assert.equal(res.ok, true);
-        assert.equal(res.redirected, true);
-        assert.equal(res.statusCode, HTTP_STATUS_OK);
-      },
-    );
+      assert.equal(res.body.message, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies.get('crack'), 'duck');
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, true);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
 
-    it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_TOO_MANY_REQUESTS }->${ HTTP_STATUS_OK }] request and must succeed after a '${
-        HTTP2_HEADER_RETRY_AFTER
-      }' with date interval retry`,
-      async () => {
-        const url = new URL(
-          `/gimme/retry?attempts=2&${ HTTP2_HEADER_RETRY_AFTER }=date:0.5&ver=${ httpVersion }`,
-          baseURL,
-        );
-        const res = await rekwest(url, { retry: { attempts: 2 } });
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_TOO_MANY_REQUESTS
+    }] request and must succeed after '${ HTTP2_HEADER_RETRY_AFTER }' with date interval retry`, async () => {
+      const url = new URL(
+        `/gimme/retry?attempts=2&${ HTTP2_HEADER_RETRY_AFTER }=date:0.5&ver=${ httpVersion }`,
+        baseURL,
+      );
+      const res = await rekwest(url, { retry: { attempts: 2 } });
 
-        assert.equal(res.body.message, 'json');
-        assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies.get('crack'), 'duck');
-        assert.equal(res.httpVersion, httpVersion);
-        assert.equal(res.ok, true);
-        assert.equal(res.redirected, false);
-        assert.equal(res.statusCode, HTTP_STATUS_OK);
-      },
-    );
+      assert.equal(res.body.message, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies.get('crack'), 'duck');
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
 
-    it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_TOO_MANY_REQUESTS }->${ HTTP_STATUS_OK }] request and must succeed after a '${
-        HTTP2_HEADER_RETRY_AFTER
-      }' with seconds interval retry`,
-      async () => {
-        const url = new URL(
-          `/gimme/retry?attempts=2&${ HTTP2_HEADER_RETRY_AFTER }=0.25&ver=${ httpVersion }`,
-          baseURL,
-        );
-        const res = await rekwest(url, { retry: { attempts: 2 } });
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_TOO_MANY_REQUESTS
+    }] request and must succeed after '${ HTTP2_HEADER_RETRY_AFTER }' with seconds interval retry`, async () => {
+      const url = new URL(
+        `/gimme/retry?attempts=2&${ HTTP2_HEADER_RETRY_AFTER }=0.25&ver=${ httpVersion }`,
+        baseURL,
+      );
+      const res = await rekwest(url, { retry: { attempts: 2 } });
 
-        assert.equal(res.body.message, 'json');
-        assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies.get('crack'), 'duck');
-        assert.equal(res.httpVersion, httpVersion);
-        assert.equal(res.ok, true);
-        assert.equal(res.redirected, false);
-        assert.equal(res.statusCode, HTTP_STATUS_OK);
-      },
-    );
+      assert.equal(res.body.message, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies.get('crack'), 'duck');
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
 
-    it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_TOO_MANY_REQUESTS }] request and must catch the error if max '${
-        HTTP2_HEADER_RETRY_AFTER
-      }' limit is exceeded`,
-      async () => {
-        const url = new URL(
-          `/gimme/retry?attempts=2&${ HTTP2_HEADER_RETRY_AFTER }=3.5e5&ver=${ httpVersion }`,
-          baseURL,
-        );
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_TOO_MANY_REQUESTS
+    }] request and must catch an error if max '${ HTTP2_HEADER_RETRY_AFTER }' limit is exceeded`, async () => {
+      const url = new URL(
+        `/gimme/retry?attempts=2&${ HTTP2_HEADER_RETRY_AFTER }=3.5e5&ver=${ httpVersion }`,
+        baseURL,
+      );
 
-        await assert.rejects(rekwest(url, { retry: { attempts: 2 } }), (err) => {
-          assert.ok(err.cause);
-          assert.match(err.message, new RegExp(`Maximum '${ HTTP2_HEADER_RETRY_AFTER }' limit exceeded:`));
-          assert.equal(err.name, 'RequestError');
+      await assert.rejects(rekwest(url, { retry: { attempts: 2 } }), (err) => {
+        assert.ok(err.cause);
+        assert.match(err.message, new RegExp(`Maximum '${ HTTP2_HEADER_RETRY_AFTER }' limit exceeded:`));
+        assert.equal(err.name, 'RequestError');
 
-          return true;
-        });
-      },
-    );
+        return true;
+      });
+    });
+
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_TOO_MANY_REQUESTS
+    }] request and must succeed after a ${ logarithmic } interval retry`, async () => {
+      const url = new URL(`/gimme/retry?attempts=2&${ logarithmic }=true&ver=${ httpVersion }`, baseURL);
+      const res = await rekwest(url, { retry: { attempts: 2, interval: 100 } });
+
+      assert.equal(res.body.message, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies.get('crack'), 'duck');
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
 
     it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_TOO_MANY_REQUESTS }->${ HTTP_STATUS_OK }] request and must succeed after a ${
-        logarithmic
-      } interval retry`,
-      async () => {
-        const url = new URL(`/gimme/retry?attempts=2&${ logarithmic }=true&ver=${ httpVersion }`, baseURL);
-        const res = await rekwest(url, { retry: { attempts: 2, interval: 100 } });
-
-        assert.equal(res.body.message, 'json');
-        assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies.get('crack'), 'duck');
-        assert.equal(res.httpVersion, httpVersion);
-        assert.equal(res.ok, true);
-        assert.equal(res.redirected, false);
-        assert.equal(res.statusCode, HTTP_STATUS_OK);
-      },
-    );
-
-    it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_UNAUTHORIZED }] request and must catch the error`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_UNAUTHORIZED }] request and must catch an error`,
       async () => {
         const url = new URL('/gimme/refusal', baseURL);
 
@@ -431,7 +409,7 @@ export default ({ baseURL, httpVersion }) => {
       },
     );
 
-    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_NOT_FOUND }] request and must catch the error`, async () => {
+    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_NOT_FOUND }] request and must catch an error`, async () => {
       const url = new URL('/gimme/puff', baseURL);
 
       await assert.rejects(rekwest(url), (res) => {
@@ -654,6 +632,9 @@ export default ({ baseURL, httpVersion }) => {
 
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a File`, async () => {
       const payload = new File(['bits'], 'file.dab');
+
+      assert.throws(() => new File([]), TypeError);
+
       const url = new URL('/gimme/repulse', baseURL);
       const res = await rekwest(url, {
         body: payload,
@@ -940,9 +921,9 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(
-      `should make ${
-        HTTP2_METHOD_GET
-      } [${ HTTP_STATUS_OK }] request and must catch the error in attempt to re-read the response`,
+      `should make ${ HTTP2_METHOD_GET } [${
+        HTTP_STATUS_OK
+      }] request and must catch an error in attempt to re-read the response`,
       async () => {
         const url = new URL('/gimme/text', baseURL);
         const res = await rekwest(url, options);
@@ -963,7 +944,7 @@ export default ({ baseURL, httpVersion }) => {
   describe('with abort { signal }', () => {
 
     it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and must catch the error after the abort signal`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and must catch an error after the abort signal`,
       async () => {
         const ac = new AbortController();
         const url = new URL('/gimme/nothing', baseURL);
@@ -984,7 +965,7 @@ export default ({ baseURL, httpVersion }) => {
   describe('with { thenable: true }', () => {
 
     it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_INTERNAL_SERVER_ERROR }] request and must slip the error`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_INTERNAL_SERVER_ERROR }] request and must slip an error`,
       async () => {
         const url = new URL('/gimme/kaboom', baseURL);
         const res = await rekwest(url, { thenable: true });

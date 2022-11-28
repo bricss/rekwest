@@ -1,4 +1,4 @@
-import { collate } from './utils.mjs';
+import { brandCheck } from './utils.mjs';
 
 export class Cookies extends URLSearchParams {
 
@@ -20,7 +20,7 @@ export class Cookies extends URLSearchParams {
   }
 
   toString() {
-    collate(this, Cookies);
+    brandCheck(this, Cookies);
 
     return super.toString().split('&').join('; ').trim();
   }
