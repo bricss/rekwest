@@ -4,8 +4,8 @@ import { createServer } from 'node:http';
 import { createSecureServer } from 'node:http2';
 import routes from './routes.mjs';
 
-const baseB1URL = new URL('http://localhost:1000');
-const baseB2URL = new URL('https://localhost:1443');
+const baseB1URL = new URL('http://localhost:1081');
+const baseB2URL = new URL('https://localhost:1083');
 const baseH1URL = new URL('http://localhost:3000');
 const baseH2URL = new URL('https://localhost:3443');
 
