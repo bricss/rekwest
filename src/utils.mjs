@@ -1,42 +1,44 @@
 import { Blob } from 'node:buffer';
+import http from 'node:http';
 import http2 from 'node:http2';
+import https from 'node:https';
 import {
   pipeline,
   Readable,
 } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
+import { setTimeout as setTimeoutPromise } from 'node:timers/promises';
 import { types } from 'node:util';
 import zlib from 'node:zlib';
-import { redirectModes } from './constants.mjs';
-import { Cookies } from './cookies.mjs';
-import { TimeoutError } from './errors.mjs';
+import { ackn } from './ackn.mjs';
+import {
+  requestCredentials,
+  requestRedirect,
+} from './constants.mjs';
+import {
+  RequestError,
+  TimeoutError,
+} from './errors.mjs';
 import { File } from './file.mjs';
 import { FormData } from './formdata.mjs';
+import rekwest from './index.mjs';
 import {
   APPLICATION_FORM_URLENCODED,
   APPLICATION_JSON,
   APPLICATION_OCTET_STREAM,
-  TEXT_PLAIN,
-  WILDCARD,
 } from './mediatypes.mjs';
+import { postflight } from './postflight.mjs';
+import { preflight } from './preflight.mjs';
 
 const {
-  HTTP2_HEADER_ACCEPT,
-  HTTP2_HEADER_ACCEPT_ENCODING,
-  HTTP2_HEADER_AUTHORITY,
   HTTP2_HEADER_CONTENT_ENCODING,
   HTTP2_HEADER_CONTENT_LENGTH,
   HTTP2_HEADER_CONTENT_TYPE,
-  HTTP2_HEADER_COOKIE,
-  HTTP2_HEADER_METHOD,
-  HTTP2_HEADER_PATH,
-  HTTP2_HEADER_SCHEME,
+  HTTP2_HEADER_RETRY_AFTER,
   HTTP2_HEADER_STATUS,
   HTTP2_METHOD_GET,
   HTTP2_METHOD_HEAD,
 } = http2.constants;
-
-const unwind = (encodings) => encodings.split(',').map((it) => it.trim());
 
 export const admix = (res, headers, options) => {
   const { h2 } = options;
@@ -137,6 +139,13 @@ export const dispatch = ({ body }, req) => {
     req.end(body);
   }
 };
+
+export const maxRetryAfter = Symbol('maxRetryAfter');
+
+export const maxRetryAfterError = (
+  interval,
+  options,
+) => new RequestError(`Maximum '${ HTTP2_HEADER_RETRY_AFTER }' limit exceeded: ${ interval } ms.`, options);
 
 export const merge = (target = {}, ...rest) => {
   target = JSON.parse(JSON.stringify(target));
@@ -246,7 +255,7 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
           if (/\bjson\b/i.test(contentType)) {
             body = JSON.parse(body.toString(charset));
           } else if (/\b(?:text|xml)\b/i.test(contentType)) {
-            if (/\b(?:latin1|ucs-2|utf-(?:8|16le))\b/.test(charset)) {
+            if (/\b(?:latin1|ucs-2|utf-(?:8|16le))\b/i.test(charset)) {
               body = body.toString(charset);
             } else {
               body = new TextDecoder(charset).decode(body);
@@ -267,72 +276,9 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
   });
 };
 
-export const preflight = (options) => {
-  const { cookies, h2 = false, headers, method = HTTP2_METHOD_GET, redirected, url } = options;
-
-  if (h2) {
-    options.endStream = [
-      HTTP2_METHOD_GET,
-      HTTP2_METHOD_HEAD,
-    ].includes(method);
-  }
-
-  if (cookies !== false) {
-    let cookie = Cookies.jar.get(url.origin);
-
-    if (cookies === Object(cookies) && !redirected) {
-      if (cookie) {
-        new Cookies(cookies).forEach(function (val, key) {
-          this.set(key, val);
-        }, cookie);
-      } else {
-        cookie = new Cookies(cookies);
-        Cookies.jar.set(url.origin, cookie);
-      }
-    }
-
-    options.headers = {
-      ...cookie && { [HTTP2_HEADER_COOKIE]: cookie },
-      ...headers,
-    };
-  }
-
-  options.digest ??= true;
-  options.follow ??= 20;
-  options.h2 ??= h2;
-  options.headers = {
-    [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
-    [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, deflate-raw, gzip, identity',
-    ...Object.entries(options.headers ?? {})
-             .reduce((acc, [key, val]) => (acc[key.toLowerCase()] = val, acc), {}),
-    ...h2 && {
-      [HTTP2_HEADER_AUTHORITY]: url.host,
-      [HTTP2_HEADER_METHOD]: method,
-      [HTTP2_HEADER_PATH]: `${ url.pathname }${ url.search }`,
-      [HTTP2_HEADER_SCHEME]: url.protocol.replace(/\p{Punctuation}/gu, ''),
-    },
-  };
-
-  options.method ??= method;
-  options.parse ??= true;
-  options.redirect ??= redirectModes.follow;
-
-  if (!Reflect.has(redirectModes, options.redirect)) {
-    options.createConnection?.().destroy();
-    throw new TypeError(`Failed to read the 'redirect' property from 'options': The provided value '${
-      options.redirect
-    }' is not a valid enum value.`);
-  }
-
-  options.redirected ??= false;
-  options.thenable ??= false;
-
-  return options;
-};
-
 export const sanitize = (url, options = {}) => {
   if (options.trimTrailingSlashes) {
-    url = `${ url }`.replace(/(?<!:)\/+/gi, '/');
+    url = `${ url }`.replace(/(?<!:)\/+/g, '/');
   }
 
   url = new URL(url);
@@ -351,6 +297,99 @@ export async function* tap(value) {
     yield await value.arrayBuffer();
   }
 }
+
+export const transfer = async (options) => {
+  const { url } = options;
+
+  if (options.follow === 0) {
+    throw new RequestError(`Maximum redirect reached at: ${ url.href }`);
+  }
+
+  if (url.protocol === 'https:') {
+    options = await ackn(options);
+  } else if (Reflect.has(options, 'alpnProtocol')) {
+    [
+      'alpnProtocol',
+      'createConnection',
+      'h2',
+      'protocol',
+    ].forEach((it) => Reflect.deleteProperty(options, it));
+  }
+
+  try {
+    options = await transform(preflight(options));
+  } catch (ex) {
+    options.createConnection?.().destroy();
+    throw ex;
+  }
+
+  const { digest, h2, redirected, thenable } = options;
+  const { request } = (url.protocol === 'http:' ? http : https);
+
+  const promise = new Promise((resolve, reject) => {
+    let client, req;
+
+    if (h2) {
+      client = http2.connect(url.origin, options);
+      req = client.request(options.headers, options);
+    } else {
+      req = request(url, options);
+    }
+
+    affix(client, req, options);
+
+    req.once('error', reject);
+    req.once('frameError', reject);
+    req.once('goaway', reject);
+    req.once('response', (res) => postflight(req, res, options, {
+      reject,
+      resolve,
+    }));
+
+    dispatch(options, req);
+  });
+
+  try {
+    const res = await promise;
+
+    if (digest && !redirected) {
+      res.body = await res.body();
+    }
+
+    return res;
+  } catch (ex) {
+    const { maxRetryAfter, retry } = options;
+
+    if (retry?.attempts && retry?.statusCodes.includes(ex.statusCode)) {
+      let { interval } = retry;
+
+      if (retry.retryAfter && ex.headers[HTTP2_HEADER_RETRY_AFTER]) {
+        interval = ex.headers[HTTP2_HEADER_RETRY_AFTER];
+        interval = Number(interval) * 1000 || new Date(interval) - Date.now();
+        if (interval > maxRetryAfter) {
+          throw maxRetryAfterError(interval, { cause: ex });
+        }
+      } else {
+        interval = new Function('interval', `return Math.ceil(${ retry.backoffStrategy });`)(interval);
+      }
+
+      retry.attempts--;
+      retry.interval = interval;
+
+      return setTimeoutPromise(interval).then(() => rekwest(url, options));
+    }
+
+    if (digest && !redirected && ex.body) {
+      ex.body = await ex.body();
+    }
+
+    if (!thenable) {
+      throw ex;
+    } else {
+      return ex;
+    }
+  }
+};
 
 export const transform = async (options) => {
   let { body, headers } = options;
@@ -407,4 +446,29 @@ export const transform = async (options) => {
     ...options,
     body,
   };
+};
+
+export const unwind = (encodings) => encodings.split(',').map((it) => it.trim());
+
+export const validation = (options = {}) => {
+  if (options.body && [
+    HTTP2_METHOD_GET,
+    HTTP2_METHOD_HEAD,
+  ].includes(options.method)) {
+    throw new TypeError(`Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body.`);
+  }
+
+  if (!Object.values(requestCredentials).includes(options.credentials)) {
+    throw new TypeError(`Failed to read the 'credentials' property from 'options': The provided value '${
+      options.credentials
+    }' is not a valid enum value.`);
+  }
+
+  if (!Reflect.has(requestRedirect, options.redirect)) {
+    throw new TypeError(`Failed to read the 'redirect' property from 'options': The provided value '${
+      options.redirect
+    }' is not a valid enum value.`);
+  }
+
+  return options;
 };

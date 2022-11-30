@@ -2,7 +2,10 @@ import { strict as assert } from 'node:assert';
 import { Blob } from 'node:buffer';
 import { Readable } from 'node:stream';
 import { types } from 'node:util';
-import { redirectModes } from '../src/constants.mjs';
+import {
+  requestCredentials,
+  requestRedirect,
+} from '../src/constants.mjs';
 import rekwest, {
   constants,
   Cookies,
@@ -143,7 +146,7 @@ export default ({ baseURL, httpVersion }) => {
       async () => {
         const url = new URL('/gimme/text', baseURL);
 
-        await assert.rejects(rekwest(url, { body: 'zqiygyxz' }), (err) => {
+        await assert.throws(() => rekwest(url, { body: 'zqiygyxz' }), (err) => {
           assert.equal(
             err.message,
             `Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body.`,
@@ -154,6 +157,22 @@ export default ({ baseURL, httpVersion }) => {
         });
       },
     );
+
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_MOVED_PERMANENTLY
+    }] request with redirect { credentials: false } and must catch an error`, async () => {
+      const url = new URL('/gimme/redirect', baseURL);
+
+      await assert.throws(() => rekwest(url, { credentials: false }), (err) => {
+        assert.equal(
+          err.message,
+          'Failed to read the \'credentials\' property from \'options\': The provided value \'false\' is not a valid enum value.',
+        );
+        assert.equal(err.name, 'TypeError');
+
+        return true;
+      });
+    });
 
     it(`should make ${
       HTTP2_METHOD_GET
@@ -170,10 +189,10 @@ export default ({ baseURL, httpVersion }) => {
 
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_MOVED_PERMANENTLY
-    }] request with redirect { mode: ${ redirectModes.error } } and must catch an error`, async () => {
+    }] request with redirect { mode: ${ requestRedirect.error } } and must catch an error`, async () => {
       const url = new URL('/gimme/redirect', baseURL);
 
-      await assert.rejects(rekwest(url, { redirect: redirectModes.error }), (err) => {
+      await assert.rejects(rekwest(url, { redirect: requestRedirect.error }), (err) => {
         assert.equal(err.message, 'Unexpected redirect, redirect mode is set to \'error\'.');
         assert.equal(err.name, 'RequestError');
 
@@ -186,7 +205,7 @@ export default ({ baseURL, httpVersion }) => {
     }] request with redirect { mode: false } and must catch an error`, async () => {
       const url = new URL('/gimme/redirect', baseURL);
 
-      await assert.rejects(rekwest(url, { redirect: false }), (err) => {
+      await assert.throws(() => rekwest(url, { redirect: false }), (err) => {
         assert.equal(
           err.message,
           'Failed to read the \'redirect\' property from \'options\': The provided value \'false\' is not a valid enum value.',
@@ -200,7 +219,7 @@ export default ({ baseURL, httpVersion }) => {
     it(
       `should make ${ HTTP2_METHOD_GET } [${
         HTTP_STATUS_MOVED_PERMANENTLY
-      }] request with redirect { mode: ${ redirectModes.follow } } and must retain a cookies`,
+      }] request with redirect { mode: ${ requestRedirect.follow } } and must retain a cookies`,
       async () => {
         const url = new URL('/gimme/redirect', baseURL);
         const res = await rekwest(url);
@@ -217,9 +236,25 @@ export default ({ baseURL, httpVersion }) => {
 
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_MOVED_PERMANENTLY
-    }] request with redirect { mode: ${ redirectModes.manual } } and must get new cookies`, async () => {
+    }] request with redirect { mode: ${ requestRedirect.follow } } and must omit all cookies`, async () => {
+      const base = baseURL.protocol === 'http:' ? globalThis.baseB1URL : globalThis.baseB2URL;
+      const url = new URL(`/gimme/redirect?location=${ base.origin }/gimme/json`, baseURL);
+      const res = await rekwest(url, { credentials: requestCredentials.omit, redirect: requestRedirect.follow });
+
+      assert.equal(res.body.message, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies, undefined);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, true);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_MOVED_PERMANENTLY
+    }] request with redirect { mode: ${ requestRedirect.manual } } and must get new cookies`, async () => {
       const url = new URL('/gimme/redirect', baseURL);
-      const res = await rekwest(url, { redirect: redirectModes.manual });
+      const res = await rekwest(url, { redirect: requestRedirect.manual });
 
       assert.equal(res.body, null);
       assert.equal(res.bodyUsed, true);
@@ -437,7 +472,7 @@ export default ({ baseURL, httpVersion }) => {
         async () => {
           const url = new URL('/gimme/squash', baseURL);
           const res = await rekwest(url, {
-            body: Buffer.from('zqiygyxz'),
+            body: 'zqiygyxz',
             headers: {
               [HTTP2_HEADER_ACCEPT_ENCODING]: item,
               [HTTP2_HEADER_CONTENT_ENCODING]: item,

@@ -23,7 +23,7 @@ export const ackn = (options) => new Promise((resolve, reject) => {
       createConnection() {
         return socket;
       },
-      h2: /h2c?/.test(alpnProtocol),
+      h2: /h2c?/i.test(alpnProtocol),
       protocol: url.protocol,
     });
   });

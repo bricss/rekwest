@@ -8,13 +8,19 @@ const {
   HTTP_STATUS_TEMPORARY_REDIRECT,
 } = http2.constants;
 
-export const redirectModes = {
+export const requestCredentials = {
+  include: 'include',
+  omit: 'omit',
+  sameOrigin: 'same-origin',
+};
+
+export const requestRedirect = {
   error: 'error',
   follow: 'follow',
   manual: 'manual',
 };
 
-export const redirectStatusCodes = [
+export const requestRedirectCodes = [
   HTTP_STATUS_MOVED_PERMANENTLY,
   HTTP_STATUS_FOUND,
   HTTP_STATUS_SEE_OTHER,

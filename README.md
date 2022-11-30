@@ -85,7 +85,7 @@ const file = new File(['bits'], 'file.dab');
 const readable = Readable.from('bits');
 
 const fd = new FormData({
-  aux: Date.now(),  // either [[key, value]], or kv sequenceable
+  aux: Date.now(),  // either [[key, value]] or kv sequenceable
 });
 
 fd.append('celestial', 'payload');
@@ -122,10 +122,11 @@ console.log(res.body);
   and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback)
   for HTTP/2 attunes
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
-    FormData | Iterator | Object | Readable | ReadableStream | SharedArrayBuffer | URLSearchParams}** The body to send
-    with the request
+    FormData | Iterator | Object | Readable | SharedArrayBuffer | URLSearchParams}** The body to send with the request
   * `cookies` **{boolean | Array<[k, v]> | Cookies | Object | URLSearchParams}** `Default: true` The cookies to add to
     the request
+  * `credentials` **{include | omit | same-origin}** `Default: same-origin` Controls credentials in case of cross-origin
+    redirects
   * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or simply add a mixin
   * `follow` **{number}** `Default: 20` The number of redirects to follow
   * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol
