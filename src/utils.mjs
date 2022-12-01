@@ -299,14 +299,18 @@ export async function* tap(value) {
 }
 
 export const transfer = async (options) => {
-  const { url } = options;
+  const { digest, h2, redirected, thenable, url } = options;
 
   if (options.follow === 0) {
     throw new RequestError(`Maximum redirect reached at: ${ url.href }`);
   }
 
   if (url.protocol === 'https:') {
-    options = await ackn(options);
+    options = !h2 ? await ackn(options) : {
+      ...options,
+      createConnection: null,
+      protocol: url.protocol,
+    };
   } else if (Reflect.has(options, 'alpnProtocol')) {
     [
       'alpnProtocol',
@@ -323,16 +327,15 @@ export const transfer = async (options) => {
     throw ex;
   }
 
-  const { digest, h2, redirected, thenable } = options;
-  const { request } = (url.protocol === 'http:' ? http : https);
-
   const promise = new Promise((resolve, reject) => {
     let client, req;
 
-    if (h2) {
+    if (options.h2) {
       client = http2.connect(url.origin, options);
       req = client.request(options.headers, options);
     } else {
+      const { request } = (url.protocol === 'http:' ? http : https);
+
       req = request(url, options);
     }
 

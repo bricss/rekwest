@@ -50,13 +50,14 @@ Reflect.defineProperty(rekwest, 'stream', {
     });
 
     const { h2, url } = options;
-    const { request } = (url.protocol === 'http:' ? http : https);
     let client, req;
 
     if (h2) {
       client = http2.connect(url.origin, options);
       req = client.request(options.headers, options);
     } else {
+      const { request } = (url.protocol === 'http:' ? http : https);
+
       req = request(url, options);
     }
 

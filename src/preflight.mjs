@@ -20,7 +20,7 @@ const {
 } = http2.constants;
 
 export const preflight = (options) => {
-  const { cookies, credentials, h2 = false, headers, method, url } = options;
+  const { cookies, credentials, h2, headers, method, url } = options;
 
   if (h2) {
     options.endStream = [
@@ -52,7 +52,6 @@ export const preflight = (options) => {
     };
   }
 
-  options.h2 ??= h2;
   options.headers = {
     [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
     [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, deflate-raw, gzip, identity',

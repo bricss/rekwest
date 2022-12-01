@@ -109,6 +109,7 @@ export const postflight = (req, res, options, { reject, resolve }) => {
         options.method = HTTP2_METHOD_GET;
       }
 
+      Reflect.set(options, 'h2', false);
       Reflect.set(options, 'redirected', true);
 
       if (statusCode === HTTP_STATUS_MOVED_PERMANENTLY && res.headers[HTTP2_HEADER_RETRY_AFTER]) {
