@@ -15,6 +15,7 @@ const stash = {
   credentials: requestCredentials.sameOrigin,
   digest: true,
   follow: 20,
+  h2: false,
   get maxRetryAfter() {
     return this[maxRetryAfter] ?? this.timeout;
   },
@@ -37,6 +38,7 @@ const stash = {
   },
   thenable: false,
   timeout: 3e5,
+  trimTrailingSlashes: false,
 };
 
 export default {

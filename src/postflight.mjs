@@ -77,14 +77,17 @@ export const postflight = (req, res, options, { reject, resolve }) => {
         return res.emit('error', new RequestError('URL scheme must be "http" or "https".'));
       }
 
-      if (!sameOrigin(location, url) && [
-        requestCredentials.omit,
-        requestCredentials.sameOrigin,
-      ].includes(credentials)) {
-        Reflect.deleteProperty(options.headers, HTTP2_HEADER_AUTHORIZATION);
-        location.password = location.username = '';
-        if (credentials === requestCredentials.omit) {
-          options.cookies = false;
+      if (!sameOrigin(location, url)) {
+        Reflect.set(options, 'h2', false);
+        if ([
+          requestCredentials.omit,
+          requestCredentials.sameOrigin,
+        ].includes(credentials)) {
+          Reflect.deleteProperty(options.headers, HTTP2_HEADER_AUTHORIZATION);
+          location.password = location.username = '';
+          if (credentials === requestCredentials.omit) {
+            options.cookies = false;
+          }
         }
       }
 
@@ -109,7 +112,6 @@ export const postflight = (req, res, options, { reject, resolve }) => {
         options.method = HTTP2_METHOD_GET;
       }
 
-      Reflect.set(options, 'h2', false);
       Reflect.set(options, 'redirected', true);
 
       if (statusCode === HTTP_STATUS_MOVED_PERMANENTLY && res.headers[HTTP2_HEADER_RETRY_AFTER]) {
