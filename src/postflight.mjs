@@ -83,7 +83,8 @@ export const postflight = (req, res, options, { reject, resolve }) => {
           requestCredentials.omit,
           requestCredentials.sameOrigin,
         ].includes(credentials)) {
-          Reflect.deleteProperty(options.headers, HTTP2_HEADER_AUTHORIZATION);
+          Object.keys(options.headers).filter((it) => new RegExp(HTTP2_HEADER_AUTHORIZATION, 'i').test(it))
+                .forEach((it) => Reflect.deleteProperty(options.headers, it));
           location.password = location.username = '';
           if (credentials === requestCredentials.omit) {
             options.cookies = false;
