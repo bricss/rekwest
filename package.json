@@ -8,14 +8,14 @@
     "url": "https://github.com/bricss/rekwest/issues"
   },
   "devDependencies": {
-    "@babel/cli": "^7.19.3",
-    "@babel/core": "^7.20.5",
+    "@babel/cli": "^7.20.7",
+    "@babel/core": "^7.20.12",
     "@babel/eslint-parser": "^7.19.1",
     "@babel/preset-env": "^7.20.2",
     "c8": "^7.12.0",
-    "eslint": "^8.29.0",
+    "eslint": "^8.33.0",
     "eslint-config-ultra-refined": "^2.10.0",
-    "mocha": "^10.1.0"
+    "mocha": "^10.2.0"
   },
   "description": "The robust request library that humanity deserves 🌐",
   "engines": {
@@ -67,5 +67,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "4.2.3"
+  "version": "4.3.0"
 }

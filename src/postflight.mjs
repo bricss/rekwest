@@ -8,10 +8,10 @@ import {
 import { Cookies } from './cookies.mjs';
 import { RequestError } from './errors.mjs';
 import rekwest from './index.mjs';
+import { mixin } from './mixin.mjs';
 import {
   admix,
   maxRetryAfterError,
-  mixin,
   sameOrigin,
 } from './utils.mjs';
 

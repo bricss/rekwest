@@ -25,7 +25,7 @@ export class FormData {
     const prefix = `--${ boundary }${ CRLF }${ HTTP2_HEADER_CONTENT_DISPOSITION }: form-data`;
 
     const escape = (str) => str.replace(/\n/g, '%0A').replace(/\r/g, '%0D').replace(/"/g, '%22');
-    const normalize = (value) => value.replace(/\r?\n|\r/g, CRLF);
+    const redress = (value) => value.replace(/\r?\n|\r/g, CRLF);
 
     return {
       contentType,
@@ -35,11 +35,11 @@ export class FormData {
         for (const [name, value] of fd) {
           if (value.constructor === String) {
             yield encoder.encode(`${ prefix }; name="${
-              escape(normalize(name))
-            }"${ CRLF.repeat(2) }${ normalize(value) }${ CRLF }`);
+              escape(redress(name))
+            }"${ CRLF.repeat(2) }${ redress(value) }${ CRLF }`);
           } else {
             yield encoder.encode(`${ prefix }; name="${
-              escape(normalize(name))
+              escape(redress(name))
             }"${ value.name ? `; filename="${ escape(value.name) }"` : '' }${ CRLF }${
               HTTP2_HEADER_CONTENT_TYPE
             }: ${

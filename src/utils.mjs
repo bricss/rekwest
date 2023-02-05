@@ -1,4 +1,3 @@
-import { Blob } from 'node:buffer';
 import http from 'node:http';
 import http2 from 'node:http2';
 import https from 'node:https';
@@ -11,10 +10,6 @@ import { setTimeout as setTimeoutPromise } from 'node:timers/promises';
 import { types } from 'node:util';
 import zlib from 'node:zlib';
 import { ackn } from './ackn.mjs';
-import {
-  requestCredentials,
-  requestRedirect,
-} from './constants.mjs';
 import {
   RequestError,
   TimeoutError,
@@ -36,8 +31,6 @@ const {
   HTTP2_HEADER_CONTENT_TYPE,
   HTTP2_HEADER_RETRY_AFTER,
   HTTP2_HEADER_STATUS,
-  HTTP2_METHOD_GET,
-  HTTP2_METHOD_HEAD,
 } = http2.constants;
 
 export const admix = (res, headers, options) => {
@@ -178,110 +171,12 @@ export const merge = (target = {}, ...rest) => {
   return target;
 };
 
-export const mixin = (res, { digest = false, parse = false } = {}) => {
-  if (!digest) {
-    Object.defineProperties(res, {
-      arrayBuffer: {
-        enumerable: true,
-        value: async function () {
-          brandCheck(this, res?.constructor);
-          parse &&= false;
-          const { buffer, byteLength, byteOffset } = await this.body();
-
-          return buffer.slice(byteOffset, byteOffset + byteLength);
-        },
-      },
-      blob: {
-        enumerable: true,
-        value: async function () {
-          brandCheck(this, res?.constructor);
-          const val = await this.arrayBuffer();
-
-          return new Blob([val]);
-        },
-      },
-      json: {
-        enumerable: true,
-        value: async function () {
-          brandCheck(this, res?.constructor);
-          const val = await this.text();
-
-          return JSON.parse(val);
-        },
-      },
-      text: {
-        enumerable: true,
-        value: async function () {
-          brandCheck(this, res?.constructor);
-          const blob = await this.blob();
-
-          return blob.text();
-        },
-      },
-    });
-  }
-
-  return Object.defineProperties(res, {
-    body: {
-      enumerable: true,
-      value: async function () {
-        brandCheck(this, res?.constructor);
-
-        if (this.bodyUsed) {
-          throw new TypeError('Response stream already read');
-        }
-
-        let body = [];
-
-        for await (const chunk of decompress(this, this.headers[HTTP2_HEADER_CONTENT_ENCODING])) {
-          body.push(chunk);
-        }
-
-        body = Buffer.concat(body);
-
-        if (!body.length && parse) {
-          return null;
-        }
-
-        if (body.length && parse) {
-          const contentType = this.headers[HTTP2_HEADER_CONTENT_TYPE] ?? '';
-          const charset = contentType.split(';')
-                                     .find((it) => /charset=/i.test(it))
-                                     ?.toLowerCase()
-                                     .replace('charset=', '')
-                                     .replace('iso-8859-1', 'latin1')
-                                     .trim() || 'utf-8';
-
-          if (/\bjson\b/i.test(contentType)) {
-            body = JSON.parse(body.toString(charset));
-          } else if (/\b(?:text|xml)\b/i.test(contentType)) {
-            if (/\b(?:latin1|ucs-2|utf-(?:8|16le))\b/i.test(charset)) {
-              body = body.toString(charset);
-            } else {
-              body = new TextDecoder(charset).decode(body);
-            }
-          }
-        }
-
-        return body;
-      },
-      writable: true,
-    },
-    bodyUsed: {
-      enumerable: true,
-      get() {
-        return this.readableEnded;
-      },
-    },
-  });
-};
-
-export const sanitize = (url, options = {}) => {
+export const normalize = (url, options = {}) => {
   if (options.trimTrailingSlashes) {
     url = `${ url }`.replace(/(?<!:)\/+/g, '/');
   }
 
-  url = new URL(url);
+  url = new URL(url, options.baseURL);
 
   return Object.assign(options, { url });
 };
@@ -452,26 +347,3 @@ export const transform = async (options) => {
 };
 
 export const unwind = (encodings) => encodings.split(',').map((it) => it.trim());
-
-export const validation = (options = {}) => {
-  if (options.body && [
-    HTTP2_METHOD_GET,
-    HTTP2_METHOD_HEAD,
-  ].includes(options.method)) {
-    throw new TypeError(`Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body.`);
-  }
-
-  if (!Object.values(requestCredentials).includes(options.credentials)) {
-    throw new TypeError(`Failed to read the 'credentials' property from 'options': The provided value '${
-      options.credentials
-    }' is not a valid enum value.`);
-  }
-
-  if (!Reflect.has(requestRedirect, options.redirect)) {
-    throw new TypeError(`Failed to read the 'redirect' property from 'options': The provided value '${
-      options.redirect
-    }' is not a valid enum value.`);
-  }
-
-  return options;
-};

@@ -9,10 +9,10 @@ import {
   admix,
   affix,
   merge,
-  sanitize,
+  normalize,
   transfer,
-  validation,
 } from './utils.mjs';
+import { validation } from './validation.mjs';
 
 export { constants } from 'node:http2';
 
@@ -23,14 +23,16 @@ export * from './errors.mjs';
 export * from './file.mjs';
 export * from './formdata.mjs';
 export * as mediatypes from './mediatypes.mjs';
+export * from './mixin.mjs';
 export * from './utils.mjs';
+export * from './validation.mjs';
 
 const {
   HTTP2_HEADER_CONTENT_TYPE,
 } = http2.constants;
 
 export default function rekwest(...args) {
-  let options = sanitize(...args);
+  let options = normalize(...args);
 
   if (!options.redirected) {
     options = merge(rekwest.defaults, options);
@@ -45,7 +47,7 @@ Reflect.defineProperty(rekwest, 'stream', {
     const options = preflight({
       ...validation(merge(rekwest.defaults, {
         headers: { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_OCTET_STREAM },
-      }, sanitize(...args))),
+      }, normalize(...args))),
       redirect: requestRedirect.manual,
     });
 
