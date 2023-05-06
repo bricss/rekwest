@@ -172,6 +172,10 @@ export const merge = (target = {}, ...rest) => {
 };
 
 export const normalize = (url, options = {}) => {
+  if (!options.redirected) {
+    options = merge(rekwest.defaults, options);
+  }
+
   if (options.trimTrailingSlashes) {
     url = `${ url }`.replace(/(?<!:)\/+/g, '/');
   }
@@ -194,14 +198,14 @@ export async function* tap(value) {
 }
 
 export const transfer = async (options) => {
-  const { digest, h2, redirected, thenable, url } = options;
+  const { digest, redirected, thenable, url } = options;
 
   if (options.follow === 0) {
     throw new RequestError(`Maximum redirect reached at: ${ url.href }`);
   }
 
   if (url.protocol === 'https:') {
-    options = !h2 ? await ackn(options) : {
+    options = !options.h2 ? await ackn(options) : {
       ...options,
       createConnection: null,
       protocol: url.protocol,
@@ -229,7 +233,7 @@ export const transfer = async (options) => {
       client = http2.connect(url.origin, options);
       req = client.request(options.headers, options);
     } else {
-      const { request } = (url.protocol === 'http:' ? http : https);
+      const { request } = url.protocol === 'http:' ? http : https;
 
       req = request(url, options);
     }

@@ -31,36 +31,33 @@ const {
   HTTP2_HEADER_CONTENT_TYPE,
 } = http2.constants;
 
-export default function rekwest(...args) {
-  let options = normalize(...args);
-
-  if (!options.redirected) {
-    options = merge(rekwest.defaults, options);
-  }
-
-  return transfer(validation(options));
+export default function rekwest(url, options) {
+  return transfer(validation(normalize(url, options)));
 }
+
+Reflect.defineProperty(rekwest, 'extend', {
+  enumerable: true,
+  value(options) {
+    return (url, opts) => rekwest(url, merge(options, opts));
+  },
+});
 
 Reflect.defineProperty(rekwest, 'stream', {
   enumerable: true,
-  value(...args) {
-    const options = preflight({
-      ...validation(merge(rekwest.defaults, {
-        headers: { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_OCTET_STREAM },
-      }, normalize(...args))),
+  value(url, options) {
+    options = preflight(validation(normalize(url, merge(options, {
+      headers: { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_OCTET_STREAM },
       redirect: requestRedirect.manual,
-    });
-
-    const { h2, url } = options;
+    }))));
     let client, req;
 
-    if (h2) {
-      client = http2.connect(url.origin, options);
+    if (options.h2) {
+      client = http2.connect(options.url.origin, options);
       req = client.request(options.headers, options);
     } else {
-      const { request } = (url.protocol === 'http:' ? http : https);
+      const { request } = options.url.protocol === 'http:' ? http : https;
 
-      req = request(url, options);
+      req = request(options.url, options);
     }
 
     affix(client, req, options);
@@ -68,7 +65,7 @@ Reflect.defineProperty(rekwest, 'stream', {
     req.once('response', (res) => {
       let headers;
 
-      if (h2) {
+      if (options.h2) {
         headers = res;
         res = req;
       }

@@ -175,6 +175,35 @@ The object to fulfill with default [options](#rekwesturl-options)
 
 ---
 
+#### `rekwest.extend(options)`
+
+The method to extend default [options](#rekwesturl-options) per instance
+
+```javascript
+import rekwest, { constants } from 'rekwest';
+
+const {
+  HTTP_STATUS_OK,
+} = constants;
+
+const rk = rekwest.extend({
+  baseURL: 'https://somewhe.re'
+});
+
+const signal = AbortSignal.timeout(1e4);
+const url = '/somewhat/endpoint';
+
+const res = await rk(url, {
+  signal,
+});
+
+console.assert(res.statusCode === HTTP_STATUS_OK);
+console.info(res.headers);
+console.log(res.body);
+```
+
+---
+
 #### `rekwest.stream(url[, options])`
 
 The method with limited functionality to use with streams and/or pipes
