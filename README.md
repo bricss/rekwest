@@ -187,7 +187,7 @@ const {
 } = constants;
 
 const rk = rekwest.extend({
-  baseURL: 'https://somewhe.re'
+  baseURL: 'https://somewhe.re',
 });
 
 const signal = AbortSignal.timeout(1e4);

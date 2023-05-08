@@ -78,7 +78,7 @@ export const postflight = (req, res, options, { reject, resolve }) => {
       }
 
       if (!sameOrigin(location, url)) {
-        Reflect.set(options, 'h2', false);
+        options.h2 = false;
         if ([
           requestCredentials.omit,
           requestCredentials.sameOrigin,
@@ -92,13 +92,9 @@ export const postflight = (req, res, options, { reject, resolve }) => {
         }
       }
 
-      options.url = location;
-
       if (statusCode !== HTTP_STATUS_SEE_OTHER && options.body?.pipe?.constructor === Function) {
         return res.emit('error', new RequestError(`Unable to ${ redirect } redirect with streamable body.`));
       }
-
-      options.follow--;
 
       if (([
         HTTP_STATUS_MOVED_PERMANENTLY,
@@ -113,7 +109,9 @@ export const postflight = (req, res, options, { reject, resolve }) => {
         options.method = HTTP2_METHOD_GET;
       }
 
-      Reflect.set(options, 'redirected', true);
+      options.follow--;
+      options.redirected = true;
+      options.url = location;
 
       if (statusCode === HTTP_STATUS_MOVED_PERMANENTLY && res.headers[HTTP2_HEADER_RETRY_AFTER]) {
         let interval = res.headers[HTTP2_HEADER_RETRY_AFTER];
