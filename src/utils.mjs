@@ -10,13 +10,13 @@ import { setTimeout as setTimeoutPromise } from 'node:timers/promises';
 import { types } from 'node:util';
 import zlib from 'node:zlib';
 import { ackn } from './ackn.mjs';
+import defaults from './defaults.mjs';
 import {
   RequestError,
   TimeoutError,
 } from './errors.mjs';
 import { File } from './file.mjs';
 import { FormData } from './formdata.mjs';
-import rekwest from './index.mjs';
 import {
   APPLICATION_FORM_URLENCODED,
   APPLICATION_JSON,
@@ -173,7 +173,7 @@ export const merge = (target = {}, ...rest) => {
 
 export const normalize = (url, options = {}) => {
   if (!options.redirected) {
-    options = merge(rekwest.defaults, options);
+    options = merge(defaults.stash, options);
   }
 
   if (options.trimTrailingSlashes) {
@@ -197,7 +197,7 @@ export async function* tap(value) {
   }
 }
 
-export const transfer = async (options) => {
+export const transfer = async (options, overact) => {
   const { digest, redirected, thenable, url } = options;
 
   if (options.follow === 0) {
@@ -278,7 +278,7 @@ export const transfer = async (options) => {
       retry.attempts--;
       retry.interval = interval;
 
-      return setTimeoutPromise(interval).then(() => rekwest(url, options));
+      return setTimeoutPromise(interval).then(() => overact(url, options));
     }
 
     if (digest && !redirected && ex.body) {

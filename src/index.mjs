@@ -32,8 +32,14 @@ const {
 } = http2.constants;
 
 export default function rekwest(url, options) {
-  return transfer(validation(normalize(url, options)));
+  return transfer(validation(normalize(url, options)), rekwest);
 }
+
+Reflect.defineProperty(rekwest, 'defaults', {
+  enumerable: true,
+  get() { return defaults.stash; },
+  set(value) { defaults.stash = merge(defaults.stash, value); },
+});
 
 Reflect.defineProperty(rekwest, 'extend', {
   enumerable: true,
@@ -75,10 +81,4 @@ Reflect.defineProperty(rekwest, 'stream', {
 
     return req;
   },
-});
-
-Reflect.defineProperty(rekwest, 'defaults', {
-  enumerable: true,
-  get() { return defaults.stash; },
-  set(value) { defaults.stash = merge(defaults.stash, value); },
 });
