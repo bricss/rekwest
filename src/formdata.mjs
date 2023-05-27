@@ -235,6 +235,8 @@ export class FormData {
   }
 
   [Symbol.iterator]() {
+    brandCheck(this, FormData);
+
     return this.entries();
   }
 
