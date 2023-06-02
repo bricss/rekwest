@@ -1,34 +1,13 @@
-import http from 'node:http';
 import http2 from 'node:http2';
-import https from 'node:https';
-import {
-  pipeline,
-  Readable,
-} from 'node:stream';
-import { buffer } from 'node:stream/consumers';
-import { setTimeout as setTimeoutPromise } from 'node:timers/promises';
-import { types } from 'node:util';
+import { pipeline } from 'node:stream';
 import zlib from 'node:zlib';
-import { ackn } from './ackn.mjs';
 import defaults from './defaults.mjs';
 import {
   RequestError,
   TimeoutError,
 } from './errors.mjs';
-import { File } from './file.mjs';
-import { FormData } from './formdata.mjs';
-import {
-  APPLICATION_FORM_URLENCODED,
-  APPLICATION_JSON,
-  APPLICATION_OCTET_STREAM,
-} from './mediatypes.mjs';
-import { postflight } from './postflight.mjs';
-import { preflight } from './preflight.mjs';
 
 const {
-  HTTP2_HEADER_CONTENT_ENCODING,
-  HTTP2_HEADER_CONTENT_LENGTH,
-  HTTP2_HEADER_CONTENT_TYPE,
   HTTP2_HEADER_RETRY_AFTER,
   HTTP2_HEADER_STATUS,
 } = http2.constants;
@@ -180,6 +159,10 @@ export const normalize = (url, options = {}) => {
     url = `${ url }`.replace(/(?<!:)\/+/g, '/');
   }
 
+  if (options.stripTrailingSlash) {
+    url = `${ url }`.replace(/\/$|\/(?=#)|\/(?=\?)/g, '');
+  }
+
   url = new URL(url, options.baseURL);
 
   return Object.assign(options, { url });
@@ -197,157 +180,9 @@ export async function* tap(value) {
   }
 }
 
-export const transfer = async (options, overact) => {
-  const { digest, redirected, thenable, url } = options;
-
-  if (options.follow === 0) {
-    throw new RequestError(`Maximum redirect reached at: ${ url.href }`);
-  }
-
-  if (url.protocol === 'https:') {
-    options = !options.h2 ? await ackn(options) : {
-      ...options,
-      createConnection: null,
-      protocol: url.protocol,
-    };
-  } else if (Reflect.has(options, 'alpnProtocol')) {
-    [
-      'alpnProtocol',
-      'createConnection',
-      'h2',
-      'protocol',
-    ].forEach((it) => Reflect.deleteProperty(options, it));
-  }
-
-  try {
-    options = await transform(preflight(options));
-  } catch (ex) {
-    options.createConnection?.().destroy();
-    throw ex;
-  }
-
-  const promise = new Promise((resolve, reject) => {
-    let client, req;
-
-    if (options.h2) {
-      client = http2.connect(url.origin, options);
-      req = client.request(options.headers, options);
-    } else {
-      const { request } = url.protocol === 'http:' ? http : https;
-
-      req = request(url, options);
-    }
-
-    affix(client, req, options);
-
-    req.once('error', reject);
-    req.once('frameError', reject);
-    req.once('goaway', reject);
-    req.once('response', (res) => postflight(req, res, options, {
-      reject,
-      resolve,
-    }));
-
-    dispatch(options, req);
-  });
-
-  try {
-    const res = await promise;
-
-    if (digest && !redirected) {
-      res.body = await res.body();
-    }
-
-    return res;
-  } catch (ex) {
-    const { maxRetryAfter, retry } = options;
-
-    if (retry?.attempts && retry?.statusCodes.includes(ex.statusCode)) {
-      let { interval } = retry;
-
-      if (retry.retryAfter && ex.headers[HTTP2_HEADER_RETRY_AFTER]) {
-        interval = ex.headers[HTTP2_HEADER_RETRY_AFTER];
-        interval = Number(interval) * 1000 || new Date(interval) - Date.now();
-        if (interval > maxRetryAfter) {
-          throw maxRetryAfterError(interval, { cause: ex });
-        }
-      } else {
-        interval = new Function('interval', `return Math.ceil(${ retry.backoffStrategy });`)(interval);
-      }
-
-      retry.attempts--;
-      retry.interval = interval;
-
-      return setTimeoutPromise(interval).then(() => overact(url, options));
-    }
-
-    if (digest && !redirected && ex.body) {
-      ex.body = await ex.body();
-    }
-
-    if (!thenable) {
-      throw ex;
-    } else {
-      return ex;
-    }
-  }
-};
-
-export const transform = async (options) => {
-  let { body, headers } = options;
-
-  if (!body) {
-    return options;
-  }
-
-  if (File.alike(body)) {
-    headers = {
-      [HTTP2_HEADER_CONTENT_LENGTH]: body.size,
-      [HTTP2_HEADER_CONTENT_TYPE]: body.type || APPLICATION_OCTET_STREAM,
-    };
-    body = body.stream();
-  } else if (FormData.alike(body)) {
-    body = FormData.actuate(body);
-    headers = { [HTTP2_HEADER_CONTENT_TYPE]: body.contentType };
-  } else if (!Buffer.isBuffer(body)) {
-    if (types.isAnyArrayBuffer(body)) {
-      body = Buffer.from(body);
-    } else if (types.isArrayBufferView(body)) {
-      body = Buffer.from(body.buffer, body.byteOffset, body.byteLength);
-    } else if (body === Object(body) && !Reflect.has(body, Symbol.asyncIterator)) {
-      if (body.constructor === URLSearchParams) {
-        headers = { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_FORM_URLENCODED };
-        body = body.toString();
-      } else if (!(!Array.isArray(body) && Reflect.has(body, Symbol.iterator))) {
-        headers = { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON };
-        body = JSON.stringify(body);
-      }
-    }
-  }
-
-  const encodings = options.headers[HTTP2_HEADER_CONTENT_ENCODING];
-
-  if (body === Object(body)
-    && (Reflect.has(body, Symbol.asyncIterator) || (!Array.isArray(body) && Reflect.has(body, Symbol.iterator)))) {
-    body = encodings ? compress(Readable.from(body), encodings) : Readable.from(body);
-  } else if (encodings) {
-    body = await buffer(compress(Readable.from(body), encodings));
-  }
-
-  Object.assign(options.headers, {
-    ...headers,
-    ...!body[Symbol.asyncIterator] && {
-      [HTTP2_HEADER_CONTENT_LENGTH]: Buffer.byteLength(body),
-    },
-    ...options.headers[HTTP2_HEADER_CONTENT_TYPE] && {
-      [HTTP2_HEADER_CONTENT_TYPE]: options.headers[HTTP2_HEADER_CONTENT_TYPE],
-    },
-  });
-
-  return {
-    ...options,
-    body,
-  };
-};
+export const toCamelCase = (str) => str?.toLowerCase().replace(
+  /\p{Punctuation}.|\p{White_Space}./gu,
+  (val) => val.replace(/\p{Punctuation}+|\p{White_Space}+/gu, '').toUpperCase(),
+);
 
 export const unwind = (encodings) => encodings.split(',').map((it) => it.trim());

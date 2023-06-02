@@ -1,8 +1,8 @@
 The robust request library that humanity deserves 🌐
 ---
 This package provides highly likely functional and **easy-to-use** abstraction atop of
-native [http(s).request](https://nodejs.org/api/https.html#https_https_request_url_options_callback)
-and [http2.request](https://nodejs.org/api/http2.html#http2_clienthttp2session_request_headers_options).
+native [http(s).request](https://nodejs.org/api/https.html#httpsrequesturl-options-callback)
+and [http2.request](https://nodejs.org/api/http2.html#clienthttp2sessionrequestheaders-options).
 
 ## Abstract
 
@@ -10,7 +10,7 @@ and [http2.request](https://nodejs.org/api/http2.html#http2_clienthttp2session_r
 * Cool-beans 🫐 config options (with defaults)
 * Automatic HTTP/2 support (ALPN negotiation)
 * Automatic or opt-in body parse (with non-UTF-8 charset decoding)
-* Automatic and simplistic `Cookies` treatment (with built-in jar)
+* Automatic and simplistic `Cookies` treatment (with built-in **jar** & **ttl**)
 * Automatic decompression (with opt-in body compression)
 * Built-in streamable `File` & `FormData` interfaces
 * Support redirects & retries with fine-grained tune-ups
@@ -115,17 +115,17 @@ console.log(res.body);
 
 * `url` **{string | URL}** The URL to send the request to
 * `options` **{Object}**
-  Extends [https.RequestOptions](https://nodejs.org/api/https.html#https_https_request_url_options_callback)
-  along with
-  extra [http2.ClientSessionOptions](https://nodejs.org/api/http2.html#http2_http2_connect_authority_options_listener)
-  & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#http2_clienthttp2session_request_headers_options)
-  and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback)
+  Extends [http(s).RequestOptions](https://nodejs.org/api/https.html#httpsrequesturl-options-callback) along with
+  extra [http2.ClientSessionOptions](https://nodejs.org/api/http2.html#http2connectauthority-options-listener)
+  & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#clienthttp2sessionrequestheaders-options)
+  and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tlsconnectoptions-callback)
   for HTTP/2 attunes
   * `baseURL` **{string | URL}** The base URL to use in cases where `url` is a relative URL
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
     FormData | Iterator | Object | Readable | SharedArrayBuffer | URLSearchParams}** The body to send with the request
   * `cookies` **{boolean | Array<[k, v]> | Cookies | Object | URLSearchParams}** `Default: true` The cookies to add to
     the request
+  * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookies cache
   * `credentials` **{include | omit | same-origin}** `Default: same-origin` Controls credentials in case of cross-origin
     redirects
   * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or simply add a mixin
@@ -142,13 +142,13 @@ console.log(res.body);
     * `interval` **{number}** `Default: 1e3` The initial retry interval
     * `retryAfter` **{boolean}** `Default: true` Controls `retry-after` header receptiveness
     * `statusCodes` **{number[]}** `Default: [429, 503]` The list of status codes to retry on
+  * `stripTrailingSlash` **{boolean}** `Default: false` Controls whether to strip trailing slash at the end of the URL
   * `thenable` **{boolean}** `Default: false` Controls the promise resolutions
   * `timeout` **{number}** `Default: 3e5` The number of milliseconds a request can take before termination
-  * `trimTrailingSlashes` **{boolean}** `Default: false` Controls whether to trim trailing slashes in the URL before
-    proceed with the request
+  * `trimTrailingSlashes` **{boolean}** `Default: false` Controls whether to trim trailing slashes within the URL
 * **Returns:** Promise that resolves to
-  extended [http.IncomingMessage](https://nodejs.org/api/http.html#http_class_http_incomingmessage)
-  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#http2_class_clienthttp2stream) which is respectively
+  extended [http.IncomingMessage](https://nodejs.org/api/http.html#class-httpincomingmessage)
+  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#class-clienthttp2stream) which is respectively
   readable and duplex streams
   * if `degist: true` & `parse: true`
     * `body` **{string | Array | Buffer | Object}** The body based on its content type

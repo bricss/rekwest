@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { Blob } from 'node:buffer';
 import { Readable } from 'node:stream';
+import { scheduler } from 'node:timers/promises';
 import { types } from 'node:util';
 import {
   requestCredentials,
@@ -75,7 +76,7 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL('/gimme/encode', baseURL);
       const res = await rekwest(url);
 
-      assert.equal(res.body, '😀😋🧐');
+      assert.equal(res.body, '🙈🙉🙊');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
       assert.equal(res.ok, true);
@@ -106,21 +107,87 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(
+      `should make ${ HTTP2_METHOD_GET } [${
+        HTTP_STATUS_OK
+      }] request and must get new cookie with 'expires' attribute`,
+      async () => {
+        const url = new URL(`/gimme/cookies?expires=${ new Date(Date.now() + 1e3).toGMTString() }`, baseURL);
+        const res = await rekwest(url, {
+          cookiesTTL: true,
+        });
+
+        assert.equal(res.body.message, 'json');
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.cookies.get('ttl'), 'puff');
+        await scheduler.wait(1.1e3);
+        assert.equal(res.cookies.get('ttl'), null);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      },
+    );
+
+    it(
+      `should make ${ HTTP2_METHOD_GET } [${
+        HTTP_STATUS_OK
+      }] request and must get new cookie with positive (+) 'max-age' attribute`,
+      async () => {
+        const url = new URL(`/gimme/cookies?maxAge=${ 1 }`, baseURL);
+        const res = await rekwest(url, {
+          cookiesTTL: true,
+        });
+
+        assert.equal(res.body.message, 'json');
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.cookies.get('ttl'), 'puff');
+        await scheduler.wait(1.1e3);
+        assert.equal(res.cookies.get('ttl'), null);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      },
+    );
+
+    it(
+      `should make ${ HTTP2_METHOD_GET } [${
+        HTTP_STATUS_OK
+      }] request and must get new cookie with negative (-) 'max-age' attribute`,
+      async () => {
+        const url = new URL(`/gimme/cookies?maxAge=${ -1 }`, baseURL);
+        const res = await rekwest(url, {
+          cookiesTTL: true,
+        });
+
+        assert.equal(res.body.message, 'json');
+        assert.equal(res.bodyUsed, true);
+        await scheduler.wait(100);
+        assert.equal(res.cookies.get('ttl'), null);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      },
+    );
+
+    it(
       `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_NO_CONTENT }] request with new and preserved cookies`,
       async () => {
         const url = new URL('/gimme/nothing', baseURL);
         const res = await rekwest(url, {
           cookies: {
-            dot: 'com',
+            xen: 'wix',
           },
         });
 
         assert.equal(res.body, null);
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies.get('aux'), 'baz');
-        assert.equal(res.cookies.get('dot'), 'com');
         assert.equal(res.cookies.get('foo'), 'bar');
         assert.equal(res.cookies.get('qux'), 'zap');
+        assert.equal(res.cookies.get('ttl'), null);
+        assert.equal(res.cookies.get('xen'), 'wix');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, true);
         assert.equal(res.redirected, false);

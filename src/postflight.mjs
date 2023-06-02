@@ -44,11 +44,16 @@ export const postflight = (req, res, options, { reject, resolve }) => {
 
   if (cookies !== false && res.headers[HTTP2_HEADER_SET_COOKIE]) {
     if (Cookies.jar.has(url.origin)) {
-      new Cookies(res.headers[HTTP2_HEADER_SET_COOKIE]).forEach(function (val, key) {
-        this.set(key, val);
-      }, Cookies.jar.get(url.origin));
+      const cookie = new Cookies(res.headers[HTTP2_HEADER_SET_COOKIE], options);
+
+      Cookies.jar.get(url.origin).forEach((val, key) => {
+        if (!cookie.has(key)) {
+          cookie.set(key, val);
+        }
+      });
+      Cookies.jar.set(url.origin, cookie);
     } else {
-      Cookies.jar.set(url.origin, new Cookies(res.headers[HTTP2_HEADER_SET_COOKIE]));
+      Cookies.jar.set(url.origin, new Cookies(res.headers[HTTP2_HEADER_SET_COOKIE], options));
     }
   }
 

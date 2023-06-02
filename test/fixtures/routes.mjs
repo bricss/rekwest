@@ -54,6 +54,9 @@ export default (baseURL) => (req, res) => {
   });
   res.statusCode = HTTP_STATUS_NOT_FOUND;
   if (pathname.match(String.raw`/gimme/cookies`) && req.method === HTTP2_METHOD_GET) {
+    const expires = searchParams.has('expires') && searchParams.get('expires');
+    const maxAge = searchParams.has('maxAge') && searchParams.get('maxAge');
+
     res.writeHead(HTTP_STATUS_OK, [
       [
         HTTP2_HEADER_CONTENT_TYPE,
@@ -62,8 +65,10 @@ export default (baseURL) => (req, res) => {
       [
         HTTP2_HEADER_SET_COOKIE,
         [
-          'foo=bar; HttpOnly; Secure',
-          'qux=zap; Path=/',
+          ...expires ? [`ttl=puff; Expires=${ expires }`] : [],
+          ...maxAge ? [`ttl=puff; Max-Age=${ maxAge }`] : [],
+          'foo=bar; HttpOnly; SameSite=Lax; Secure',
+          'qux=zap; Partitioned; Path=/; SameSite=None; Secure',
         ],
       ],
     ]);
@@ -71,7 +76,7 @@ export default (baseURL) => (req, res) => {
     res.end();
   } else if (pathname.match(String.raw`/gimme/encode`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: `${ TEXT_PLAIN }; charset=utf-16be` });
-    res.write(Buffer.from('\ufeff😀😋🧐', 'utf16le').swap16());
+    res.write(Buffer.from('\ufeff🙈🙉🙊', 'utf16le').swap16());
     res.end();
   } else if (pathname.match(String.raw`/gimme/json`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });

@@ -30,18 +30,23 @@ export const preflight = (options) => {
   }
 
   if (cookies !== false) {
-    let cookie = Cookies.jar.get(url.origin);
+    let cookie = Cookies.jar.has(url.origin);
 
     if (cookies === Object(cookies) && [
       requestCredentials.include,
       requestCredentials.sameOrigin,
     ].includes(credentials)) {
       if (cookie) {
-        new Cookies(cookies).forEach(function (val, key) {
-          this.set(key, val);
-        }, cookie);
+        cookie = new Cookies(cookies, options);
+
+        Cookies.jar.get(url.origin).forEach((val, key) => {
+          if (!cookie.has(key)) {
+            cookie.set(key, val);
+          }
+        });
+        Cookies.jar.set(url.origin, cookie);
       } else {
-        cookie = new Cookies(cookies);
+        cookie = new Cookies(cookies, options);
         Cookies.jar.set(url.origin, cookie);
       }
     }

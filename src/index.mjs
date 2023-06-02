@@ -5,12 +5,12 @@ import { requestRedirect } from './constants.mjs';
 import defaults from './defaults.mjs';
 import { APPLICATION_OCTET_STREAM } from './mediatypes.mjs';
 import { preflight } from './preflight.mjs';
+import { transfer } from './transfer.mjs';
 import {
   admix,
   affix,
   merge,
   normalize,
-  transfer,
 } from './utils.mjs';
 import { validation } from './validation.mjs';
 

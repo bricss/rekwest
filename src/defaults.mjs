@@ -12,6 +12,7 @@ const {
 } = http2.constants;
 
 const stash = {
+  cookiesTTL: false,
   credentials: requestCredentials.sameOrigin,
   digest: true,
   follow: 20,
@@ -36,6 +37,7 @@ const stash = {
       HTTP_STATUS_SERVICE_UNAVAILABLE,
     ],
   },
+  stripTrailingSlash: false,
   thenable: false,
   timeout: 3e5,
   trimTrailingSlashes: false,
