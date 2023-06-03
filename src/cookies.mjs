@@ -5,7 +5,18 @@ import {
 
 export class Cookies extends URLSearchParams {
 
+  static #finalizers = new Set();
   static jar = new Map();
+
+  static #register(target, value) {
+    const finalizer = new FinalizationRegistry((heldValue) => {
+      clearTimeout(heldValue);
+      this.#finalizers.delete(finalizer);
+    });
+
+    finalizer.register(target, value);
+    this.#finalizers.add(finalizer);
+  }
 
   #chronometry = new Map();
 
@@ -54,10 +65,17 @@ export class Cookies extends URLSearchParams {
           maxAge,
           expires,
         ].filter((it) => Number.isInteger(it)).some((ms) => {
+          const ref = new WeakRef(this);
           const tid = setTimeout(() => {
-            this.#chronometry.delete(cookie);
-            this.delete(cookie);
+            const ctx = ref.deref();
+
+            if (ctx) {
+              ctx.#chronometry.delete(cookie);
+              ctx.delete(cookie);
+            }
           }, Math.max(ms, 0));
+
+          this.constructor.#register(this, tid);
 
           return this.#chronometry.set(cookie, tid);
         });

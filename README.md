@@ -123,7 +123,8 @@ console.log(res.body);
   * `baseURL` **{string | URL}** The base URL to use in cases where `url` is a relative URL
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
     FormData | Iterator | Object | Readable | SharedArrayBuffer | URLSearchParams}** The body to send with the request
-  * `cookies` **{boolean | Array<[k, v]> | Cookies | Object | URLSearchParams}** `Default: true` The cookies to add to
+  * `cookies` **{boolean | Array<[k, v]> | Array<string> | Cookies | Object | URLSearchParams}** `Default: true` The
+    cookies to add to
     the request
   * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookies cache
   * `credentials` **{include | omit | same-origin}** `Default: same-origin` Controls credentials in case of cross-origin
@@ -150,9 +151,9 @@ console.log(res.body);
   extended [http.IncomingMessage](https://nodejs.org/api/http.html#class-httpincomingmessage)
   or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#class-clienthttp2stream) which is respectively
   readable and duplex streams
-  * if `degist: true` & `parse: true`
+  * if `digest: true` & `parse: true`
     * `body` **{string | Array | Buffer | Object}** The body based on its content type
-  * if `degist: false`
+  * if `digest: false`
     * `arrayBuffer` **{AsyncFunction}** Reads the response and returns **ArrayBuffer**
     * `blob` **{AsyncFunction}** Reads the response and returns **Blob**
     * `body` **{AsyncFunction}** Reads the response and returns **Buffer** if `parse: false`
