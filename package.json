@@ -31,6 +31,7 @@
   ],
   "homepage": "https://github.com/bricss/rekwest#readme",
   "keywords": [
+    "alpn",
     "backoff",
     "brotli",
     "cookie",
@@ -48,7 +49,8 @@
     "redirect",
     "retry",
     "retry-after",
-    "stream"
+    "stream",
+    "upload"
   ],
   "license": "MIT",
   "name": "rekwest",
@@ -67,5 +69,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "4.5.1"
+  "version": "4.5.2"
 }

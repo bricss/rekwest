@@ -123,7 +123,7 @@ console.log(res.body);
   * `baseURL` **{string | URL}** The base URL to use in cases where `url` is a relative URL
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
     FormData | Iterator | Object | Readable | SharedArrayBuffer | URLSearchParams}** The body to send with the request
-  * `cookies` **{boolean | Array<[k, v]> | Array<string> | Cookies | Object | URLSearchParams}** `Default: true` The
+  * `cookies` **{boolean | Array<[k, v]> | Array<string\> | Cookies | Object | URLSearchParams}** `Default: true` The
     cookies to add to
     the request
   * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookies cache
