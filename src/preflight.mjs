@@ -49,6 +49,8 @@ export const preflight = (options) => {
         cookie = new Cookies(cookies, options);
         Cookies.jar.set(url.origin, cookie);
       }
+    } else {
+      cookie = Cookies.jar.get(url.origin);
     }
 
     options.headers = {
