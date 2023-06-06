@@ -11,6 +11,7 @@ const {
   HTTP2_HEADER_ACCEPT,
   HTTP2_HEADER_ACCEPT_ENCODING,
   HTTP2_HEADER_AUTHORITY,
+  HTTP2_HEADER_AUTHORIZATION,
   HTTP2_HEADER_COOKIE,
   HTTP2_HEADER_METHOD,
   HTTP2_HEADER_PATH,
@@ -29,7 +30,7 @@ export const preflight = (options) => {
     ].includes(method);
   }
 
-  if (cookies !== false) {
+  if (cookies !== false && credentials !== requestCredentials.omit) {
     let cookie = Cookies.jar.has(url.origin);
 
     if (cookies === Object(cookies) && [
@@ -50,13 +51,21 @@ export const preflight = (options) => {
         Cookies.jar.set(url.origin, cookie);
       }
     } else {
-      cookie = Cookies.jar.get(url.origin);
+      cookie &&= Cookies.jar.get(url.origin);
     }
 
     options.headers = {
       ...cookie && { [HTTP2_HEADER_COOKIE]: cookie },
       ...headers,
     };
+  }
+
+  if (credentials === requestCredentials.omit) {
+    options.cookies = false;
+    Object.keys(options.headers ?? {})
+          .filter((it) => new RegExp(`^${ HTTP2_HEADER_AUTHORIZATION }`, 'i').test(it))
+          .forEach((it) => Reflect.deleteProperty(options.headers, it));
+    url.password = url.username = '';
   }
 
   options.headers = {

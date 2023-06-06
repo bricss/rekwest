@@ -16,7 +16,6 @@ import {
 } from './utils.mjs';
 
 const {
-  HTTP2_HEADER_AUTHORIZATION,
   HTTP2_HEADER_LOCATION,
   HTTP2_HEADER_RETRY_AFTER,
   HTTP2_HEADER_SET_COOKIE,
@@ -83,18 +82,11 @@ export const postflight = (req, res, options, { reject, resolve }) => {
       }
 
       if (!sameOrigin(location, url)) {
-        options.h2 = false;
-        if ([
-          requestCredentials.omit,
-          requestCredentials.sameOrigin,
-        ].includes(credentials)) {
-          Object.keys(options.headers).filter((it) => new RegExp(HTTP2_HEADER_AUTHORIZATION, 'i').test(it))
-                .forEach((it) => Reflect.deleteProperty(options.headers, it));
-          location.password = location.username = '';
-          if (credentials === requestCredentials.omit) {
-            options.cookies = false;
-          }
+        if (credentials !== requestCredentials.include) {
+          options.credentials = requestCredentials.omit;
         }
+
+        options.h2 = false;
       }
 
       if (statusCode !== HTTP_STATUS_SEE_OTHER && options.body?.pipe?.constructor === Function) {

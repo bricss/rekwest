@@ -12,7 +12,6 @@ module.exports = function (api) {
         '@babel/preset-env',
         {
           bugfixes: true,
-          loose: true,
           ...{ modules: useESModules ? false : 'cjs' },
           shippedProposals: true,
           targets: { node: version },
