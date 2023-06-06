@@ -53,7 +53,7 @@ export default (baseURL) => (req, res) => {
     [HTTP2_HEADER_DATE]: new Date(),
   });
   res.statusCode = HTTP_STATUS_NOT_FOUND;
-  if (pathname.match(String.raw`/gimme/cookies`) && req.method === HTTP2_METHOD_GET) {
+  if (pathname.match(String.raw`^/gimme/cookies$`) && req.method === HTTP2_METHOD_GET) {
     const expires = searchParams.has('expires') && searchParams.get('expires');
     const maxAge = searchParams.has('maxAge') && searchParams.get('maxAge');
 
@@ -74,24 +74,24 @@ export default (baseURL) => (req, res) => {
     ]);
     res.write(JSON.stringify(json));
     res.end();
-  } else if (pathname.match(String.raw`/gimme/encode`) && req.method === HTTP2_METHOD_GET) {
+  } else if (pathname.match(String.raw`^/gimme/encode$`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: `${ TEXT_PLAIN }; charset=utf-16be` });
     res.write(Buffer.from('\ufeff🙈🙉🙊', 'utf16le').swap16());
     res.end();
-  } else if (pathname.match(String.raw`/gimme/json`) && req.method === HTTP2_METHOD_GET) {
+  } else if (pathname.match(String.raw`^/gimme/json$`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });
     res.write(JSON.stringify(json));
     res.end();
-  } else if (pathname.match(String.raw`/gimme/kaboom`) && req.method === HTTP2_METHOD_GET) {
+  } else if (pathname.match(String.raw`^/gimme/kaboom$`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_INTERNAL_SERVER_ERROR, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });
     res.write(JSON.stringify({
       message: 'kaboom',
     }));
     res.end();
-  } else if (pathname.match(String.raw`/gimme/nothing`) && req.method === HTTP2_METHOD_GET) {
+  } else if (pathname.match(String.raw`^/gimme/nothing$`) && req.method === HTTP2_METHOD_GET) {
     res.statusCode = HTTP_STATUS_NO_CONTENT;
     res.end();
-  } else if (pathname.match(String.raw`/gimme/redirect`) && req.method === HTTP2_METHOD_GET) {
+  } else if (pathname.match(String.raw`^/gimme/redirect$`) && req.method === HTTP2_METHOD_GET) {
     const location = searchParams.has('location') ? searchParams.get('location') : '/gimme/json';
     const statusCode = searchParams.has('statusCode') ? +searchParams.get('statusCode') : HTTP_STATUS_MOVED_PERMANENTLY;
 
@@ -102,10 +102,10 @@ export default (baseURL) => (req, res) => {
       } : {
         [HTTP2_HEADER_RETRY_AFTER]: sentinel(new Date(), retryAfter),
       } : {},
-      [HTTP2_HEADER_SET_COOKIE]: 'crack=duck; SameParty; SameSite=Lax',
+      [HTTP2_HEADER_SET_COOKIE]: 'crack=duck; Partitioned; SameSite=Lax; Secure',
     });
     res.end();
-  } else if (pathname.match(String.raw`/gimme/retry`) && req.method === HTTP2_METHOD_GET) {
+  } else if (pathname.match(String.raw`^/gimme/retry$`) && req.method === HTTP2_METHOD_GET) {
     const retry = stash.get(href);
 
     res.writeHead(retry ? HTTP_STATUS_TOO_MANY_REQUESTS : HTTP_STATUS_OK, {
@@ -122,26 +122,26 @@ export default (baseURL) => (req, res) => {
     }
 
     res.end();
-  } else if (pathname.match(String.raw`/gimme/redirect`) && req.method === HTTP2_METHOD_POST) {
+  } else if (pathname.match(String.raw`^/gimme/redirect$`) && req.method === HTTP2_METHOD_POST) {
     res.writeHead(HTTP_STATUS_FOUND, {
       [HTTP2_HEADER_LOCATION]: '/gimme/void',
     });
     res.end();
-  } else if (pathname.match(String.raw`/gimme/redirect`) && req.method === HTTP2_METHOD_PUT) {
+  } else if (pathname.match(String.raw`^/gimme/redirect$`) && req.method === HTTP2_METHOD_PUT) {
     res.writeHead(HTTP_STATUS_SEE_OTHER, {
       [HTTP2_HEADER_LOCATION]: '/gimme/json',
     });
     res.end();
-  } else if (pathname.match(String.raw`/gimme/refusal`) && req.method === HTTP2_METHOD_GET) {
+  } else if (pathname.match(String.raw`^/gimme/refusal$`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_UNAUTHORIZED, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });
     res.write(JSON.stringify({
       message: 'unauthorized',
     }));
     res.end();
-  } else if (pathname.match(String.raw`/gimme/repulse`) && req.method === HTTP2_METHOD_POST) {
+  } else if (pathname.match(String.raw`^/gimme/repulse$`) && req.method === HTTP2_METHOD_POST) {
     res.statusCode = HTTP_STATUS_OK;
     req.pipe(res);
-  } else if (pathname.match(String.raw`/gimme/squash`) && req.method === HTTP2_METHOD_POST) {
+  } else if (pathname.match(String.raw`^/gimme/squash$`) && req.method === HTTP2_METHOD_POST) {
     const encodings = req.headers[HTTP2_HEADER_CONTENT_ENCODING];
 
     res.writeHead(
@@ -169,7 +169,7 @@ export default (baseURL) => (req, res) => {
           cb();
         },
       })), encodings).pipe(res);
-  } else if (pathname.match(String.raw`/gimme/text`) && req.method === HTTP2_METHOD_GET) {
+  } else if (pathname.match(String.raw`^/gimme/text$`) && req.method === HTTP2_METHOD_GET) {
     res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: TEXT_PLAIN });
     res.write('message');
     res.end();

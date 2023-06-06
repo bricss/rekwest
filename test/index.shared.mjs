@@ -17,6 +17,7 @@ import { TEXT_PLAIN } from '../src/mediatypes.mjs';
 
 const {
   HTTP2_HEADER_ACCEPT_ENCODING,
+  HTTP2_HEADER_AUTHORIZATION,
   HTTP2_HEADER_CONTENT_DISPOSITION,
   HTTP2_HEADER_CONTENT_ENCODING,
   HTTP2_HEADER_CONTENT_TYPE,
@@ -306,7 +307,13 @@ export default ({ baseURL, httpVersion }) => {
     }] request with redirect { mode: ${ requestRedirect.follow } } and must omit all cookies`, async () => {
       const base = baseURL.protocol === 'http:' ? globalThis.baseB1URL : globalThis.baseB2URL;
       const url = new URL(`/gimme/redirect?location=${ base.origin }/gimme/json`, baseURL);
-      const res = await rekwest(url, { credentials: requestCredentials.omit, redirect: requestRedirect.follow });
+      const res = await rekwest(url, {
+        credentials: requestCredentials.omit,
+        headers: {
+          [HTTP2_HEADER_AUTHORIZATION]: 'token',
+        },
+        redirect: requestRedirect.follow,
+      });
 
       assert.equal(res.body.message, 'json');
       assert.equal(res.bodyUsed, true);
@@ -512,7 +519,7 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_NOT_FOUND }] request and must catch an error`, async () => {
-      const url = new URL('/gimme/puff', baseURL);
+      const url = new URL('/gimme/not/found', baseURL);
 
       await assert.rejects(rekwest(url), (res) => {
         assert.equal(res.body, null);
@@ -526,6 +533,27 @@ export default ({ baseURL, httpVersion }) => {
         return true;
       });
     });
+
+    it(
+      `should make ${ HTTP2_METHOD_GET } [${
+        HTTP_STATUS_NO_CONTENT
+      }] request and must strip & trim extra slashes from the URL`,
+      async () => {
+        const url = new URL('/gimme///nothing///#bang', baseURL);
+        const res = await rekwest(url, {
+          stripTrailingSlash: true,
+          trimTrailingSlashes: true,
+        });
+
+        assert.equal(res.body, null);
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.cookies.get('crack'), 'duck');
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_NO_CONTENT);
+      },
+    );
 
     [
       'br',
