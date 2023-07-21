@@ -9,7 +9,10 @@ import {
   APPLICATION_JSON,
   APPLICATION_OCTET_STREAM,
 } from './mediatypes.mjs';
-import { compress } from './utils.mjs';
+import {
+  compress,
+  tap,
+} from './utils.mjs';
 
 const {
   HTTP2_HEADER_CONTENT_ENCODING,
@@ -29,7 +32,7 @@ export const transform = async (options) => {
       [HTTP2_HEADER_CONTENT_LENGTH]: body.size,
       [HTTP2_HEADER_CONTENT_TYPE]: body.type || APPLICATION_OCTET_STREAM,
     };
-    body = body.stream();
+    body = tap(body);
   } else if (FormData.alike(body)) {
     body = FormData.actuate(body);
     headers = { [HTTP2_HEADER_CONTENT_TYPE]: body.contentType };
