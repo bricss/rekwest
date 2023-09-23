@@ -220,7 +220,6 @@ import { pipeline } from 'node:stream/promises';
 import rekwest, {
   ackn,
   constants,
-  normalize,
 } from 'rekwest';
 
 const {
