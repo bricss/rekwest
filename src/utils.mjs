@@ -1,3 +1,7 @@
+import {
+  Blob,
+  File,
+} from 'node:buffer';
 import http2 from 'node:http2';
 import { pipeline } from 'node:stream';
 import zlib from 'node:zlib';
@@ -82,6 +86,15 @@ export const compress = (readable, encodings = '') => {
   return pipeline(readable, ...encoders, () => void 0);
 };
 
+export const copyWithMerge = (target, ...rest) => {
+  target = structuredClone(target);
+  if (!rest.length) {
+    return target;
+  }
+
+  return merge(target, ...rest);
+};
+
 export const decompress = (readable, encodings = '') => {
   const decoders = [];
 
@@ -112,6 +125,17 @@ export const dispatch = ({ body }, req) => {
   }
 };
 
+export const isFileLike = (instance) => {
+  return [
+    Blob.name,
+    File.name,
+  ].includes(instance?.[Symbol.toStringTag]);
+};
+
+export const isReadableStream = (instance) => {
+  return ReadableStream.name === instance?.[Symbol.toStringTag];
+};
+
 export const maxRetryAfter = Symbol('maxRetryAfter');
 
 export const maxRetryAfterError = (
@@ -119,40 +143,28 @@ export const maxRetryAfterError = (
   options,
 ) => new RequestError(`Maximum '${ HTTP2_HEADER_RETRY_AFTER }' limit exceeded: ${ interval } ms.`, options);
 
-export const merge = (target = {}, ...rest) => {
-  target = JSON.parse(JSON.stringify(target));
-  if (!rest.length) {
-    return target;
-  }
+export const merge = (target, ...rest) => {
+  rest = rest.filter((it) => it === Object(it));
+  for (const source of rest) {
+    for (const key of Object.getOwnPropertyNames(source)) {
+      const sv = source[key];
+      const tv = target[key];
 
-  rest.filter((it) => it === Object(it)).forEach((it) => {
-    Object.entries(it).reduce((acc, [key, val]) => {
-      if ([
-        acc[key]?.constructor,
-        val?.constructor,
-      ].every((it) => [
-        Array,
-        Object,
-      ].includes(it))) {
-        if (acc[key]?.constructor === val.constructor) {
-          acc[key] = merge(acc[key], val);
-        } else {
-          acc[key] = val;
-        }
-      } else {
-        acc[key] = val;
+      if (Object(sv) === sv && Object(tv) === tv) {
+        target[key] = merge(tv, sv);
+        continue;
       }
 
-      return acc;
-    }, target);
-  });
+      target[key] = source[key];
+    }
+  }
 
   return target;
 };
 
 export const normalize = (url, options = {}) => {
   if (!options.redirected) {
-    options = merge(defaults.stash, options);
+    options = copyWithMerge(defaults.stash, options);
   }
 
   if (options.trimTrailingSlashes) {

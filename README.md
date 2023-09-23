@@ -12,7 +12,7 @@ and [http2.request](https://nodejs.org/api/http2.html#clienthttp2sessionrequesth
 * Automatic or opt-in body parse (with non-UTF-8 charset decoding)
 * Automatic and simplistic `Cookies` treatment (with built-in **jar** & **ttl**)
 * Automatic decompression (with opt-in body compression)
-* Built-in streamable `File` & `FormData` interfaces
+* Built-in streamable `FormData` interface
 * Support redirects & retries with fine-grained tune-ups
 * Support all legit request body types (include blobs & streams)
 * Support both CJS and ESM module systems
@@ -21,7 +21,7 @@ and [http2.request](https://nodejs.org/api/http2.html#clienthttp2sessionrequesth
 
 ## Prerequisites
 
-* Node.js `>= 16.7.x`
+* Node.js `>= 18.13.0`
 
 ## Installation
 
@@ -65,13 +65,13 @@ console.log(res.body);
 ---
 
 ```javascript
+import { Readable } from 'node:stream';
 import rekwest, {
   constants,
   Blob,
   File,
   FormData,
 } from 'rekwest';
-import { Readable } from 'node:stream';
 
 const {
   HTTP2_HEADER_AUTHORIZATION,
@@ -122,7 +122,8 @@ console.log(res.body);
   for HTTP/2 attunes
   * `baseURL` **{string | URL}** The base URL to use in cases where `url` is a relative URL
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
-    FormData | Iterator | Object | Readable | SharedArrayBuffer | URLSearchParams}** The body to send with the request
+    FormData | Iterator | Object | Readable | ReadableStream | SharedArrayBuffer | URLSearchParams}** The body to send
+    with the request
   * `cookies` **{boolean | Array<[k, v]> | Array<string\> | Cookies | Object | URLSearchParams}** `Default: true` The
     cookies to add to
     the request
@@ -172,13 +173,13 @@ console.log(res.body);
 
 #### `rekwest.defaults`
 
-The object to fulfill with default [options](#rekwesturl-options)
+The object to fulfill with default [options](#rekwesturl-options).
 
 ---
 
 #### `rekwest.extend(options)`
 
-The method to extend default [options](#rekwesturl-options) per instance
+The method to extend default [options](#rekwesturl-options) per instance.
 
 ```javascript
 import rekwest, { constants } from 'rekwest';
@@ -207,13 +208,35 @@ console.log(res.body);
 
 #### `rekwest.stream(url[, options])`
 
-The method with limited functionality to use with streams and/or pipes
+The method with limited functionality to use with streams and/or pipes.
 
-* No automata
-* No redirects
+* No automata (redirects & retries)
 * Pass `h2: true` in options to use HTTP/2 protocol
-  * Use `ackn({ url: URL })` method beforehand to check the available protocols
+  * Use `ackn({ url: URL })` method in advance to check the available protocols
+
+```javascript
+import fs from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import rekwest, {
+  ackn,
+  constants,
+  normalize,
+} from 'rekwest';
+
+const {
+  HTTP2_METHOD_POST,
+} = constants;
+
+const url = new URL('https://somewhe.re/somewhat/endpoint');
+const options = await ackn({ url });
+
+await pipeline(
+  fs.createReadStream('input.dab'),
+  rekwest.stream(url, { ...options, method: HTTP2_METHOD_POST }),
+  fs.createWriteStream('output.dab'),
+);
+```
 
 ---
 
-For more details, please check tests (coverage: **>97%**) in the repository
+For more details, please check tests (coverage: **>97%**) in the repository.

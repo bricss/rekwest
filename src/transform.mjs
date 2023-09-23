@@ -1,8 +1,10 @@
 import http2 from 'node:http2';
-import { Readable } from 'node:stream';
+import {
+  isReadable,
+  Readable,
+} from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 import { types } from 'node:util';
-import { File } from './file.mjs';
 import { FormData } from './formdata.mjs';
 import {
   APPLICATION_FORM_URLENCODED,
@@ -11,7 +13,8 @@ import {
 } from './mediatypes.mjs';
 import {
   compress,
-  tap,
+  isFileLike,
+  isReadableStream,
 } from './utils.mjs';
 
 const {
@@ -27,12 +30,12 @@ export const transform = async (options) => {
     return options;
   }
 
-  if (File.alike(body)) {
+  if (isFileLike(body)) {
     headers = {
       [HTTP2_HEADER_CONTENT_LENGTH]: body.size,
       [HTTP2_HEADER_CONTENT_TYPE]: body.type || APPLICATION_OCTET_STREAM,
     };
-    body = tap(body);
+    body = body.stream();
   } else if (FormData.alike(body)) {
     body = FormData.actuate(body);
     headers = { [HTTP2_HEADER_CONTENT_TYPE]: body.contentType };
@@ -56,7 +59,8 @@ export const transform = async (options) => {
 
   if (body === Object(body)
     && (Reflect.has(body, Symbol.asyncIterator) || (!Array.isArray(body) && Reflect.has(body, Symbol.iterator)))) {
-    body = encodings ? compress(Readable.from(body), encodings) : Readable.from(body);
+    body = isReadable(body) ? (isReadableStream(body) ? Readable.fromWeb(body) : body) : Readable.from(body);
+    body = encodings ? compress(body, encodings) : body;
   } else if (encodings) {
     body = await buffer(compress(Readable.from(body), encodings));
   }

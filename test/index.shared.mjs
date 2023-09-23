@@ -923,6 +923,27 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.statusCode, HTTP_STATUS_OK);
     });
 
+    it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a ReadableStream`, async () => {
+      const payload = 'zqiygyxz';
+      const url = new URL('/gimme/repulse', baseURL);
+      const res = await rekwest(url, {
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(payload);
+            controller.close();
+          },
+        }),
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.toString(), payload);
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
     it(
       `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a SharedArrayBuffer (Uint8Array)`,
       async () => {

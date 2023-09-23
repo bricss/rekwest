@@ -9,18 +9,21 @@ import { transfer } from './transfer.mjs';
 import {
   admix,
   affix,
-  merge,
+  copyWithMerge,
   normalize,
 } from './utils.mjs';
 import { validation } from './validation.mjs';
 
+export {
+  Blob,
+  File,
+} from 'node:buffer';
 export { constants } from 'node:http2';
 
 export * from './ackn.mjs';
 export * from './constants.mjs';
 export * from './cookies.mjs';
 export * from './errors.mjs';
-export * from './file.mjs';
 export * from './formdata.mjs';
 export * as mediatypes from './mediatypes.mjs';
 export * from './mixin.mjs';
@@ -38,20 +41,20 @@ export default function rekwest(url, options) {
 Reflect.defineProperty(rekwest, 'defaults', {
   enumerable: true,
   get() { return defaults.stash; },
-  set(value) { defaults.stash = merge(defaults.stash, value); },
+  set(value) { defaults.stash = copyWithMerge(defaults.stash, value); },
 });
 
 Reflect.defineProperty(rekwest, 'extend', {
   enumerable: true,
   value(options) {
-    return (url, opts) => rekwest(url, merge(options, opts));
+    return (url, opts) => rekwest(url, copyWithMerge(options, opts));
   },
 });
 
 Reflect.defineProperty(rekwest, 'stream', {
   enumerable: true,
   value(url, options) {
-    options = preflight(validation(normalize(url, merge(options, {
+    options = preflight(validation(normalize(url, copyWithMerge({}, options, {
       headers: { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_OCTET_STREAM },
       redirect: requestRedirect.manual,
     }))));

@@ -1,13 +1,14 @@
+import { File } from 'node:buffer';
 import { randomBytes } from 'node:crypto';
 import http2 from 'node:http2';
 import { toUSVString } from 'node:util';
-import { File } from './file.mjs';
 import {
   APPLICATION_OCTET_STREAM,
   MULTIPART_FORM_DATA,
 } from './mediatypes.mjs';
 import {
   brandCheck,
+  isFileLike,
   tap,
 } from './utils.mjs';
 
@@ -25,7 +26,7 @@ export class FormData {
     const prefix = `--${ boundary }${ CRLF }${ HTTP2_HEADER_CONTENT_DISPOSITION }: form-data`;
 
     const escape = (str) => str.replace(/\n/g, '%0A').replace(/\r/g, '%0D').replace(/"/g, '%22');
-    const redress = (value) => value.replace(/\r?\n|\r/g, CRLF);
+    const redress = (str) => str.replace(/\r?\n|\r/g, CRLF);
 
     return {
       contentType,
@@ -59,14 +60,14 @@ export class FormData {
   }
 
   static alike(instance) {
-    return instance?.constructor.name === FormData.name;
+    return FormData.name === instance?.[Symbol.toStringTag];
   }
 
   static #enfoldEntry(name, value, filename) {
     name = toUSVString(name);
     filename &&= toUSVString(filename);
 
-    if (File.alike(value)) {
+    if (isFileLike(value)) {
       filename ??= value.name || 'blob';
       value = new File([value], filename, value);
     } else if (this.#ensureInstance(value)) {
@@ -82,7 +83,7 @@ export class FormData {
   }
 
   static #ensureInstance(value) {
-    return File.alike(value) || (value === Object(value) && Reflect.has(value, Symbol.asyncIterator));
+    return isFileLike(value) || (value === Object(value) && Reflect.has(value, Symbol.asyncIterator));
   }
 
   #entries = [];
