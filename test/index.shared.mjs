@@ -696,7 +696,7 @@ export default ({ baseURL, httpVersion }) => {
         method: HTTP2_METHOD_POST,
       });
 
-      assert.equal(res.body.toString(), await async function () {
+      assert.equal(res.body.toString(), await (async function () {
         const chunks = [];
 
         for await (const chunk of payload) {
@@ -704,7 +704,7 @@ export default ({ baseURL, httpVersion }) => {
         }
 
         return chunks.join('');
-      }());
+      }()));
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
       assert.equal(res.ok, true);
