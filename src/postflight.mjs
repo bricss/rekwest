@@ -100,8 +100,10 @@ export const postflight = (req, res, options, { reject, resolve }) => {
         HTTP2_METHOD_GET,
         HTTP2_METHOD_HEAD,
       ].includes(options.method))) {
-        Object.keys(options.headers).filter((it) => /^content-/i.test(it))
-              .forEach((it) => Reflect.deleteProperty(options.headers, it));
+        for (const it of Object.keys(options.headers).filter((val) => /^content-/i.test(val))) {
+          Reflect.deleteProperty(options.headers, it);
+        }
+
         options.body = null;
         options.method = HTTP2_METHOD_GET;
       }

@@ -9,13 +9,13 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.23.0",
-    "@babel/core": "^7.23.2",
-    "@babel/eslint-parser": "^7.22.15",
-    "@babel/preset-env": "^7.23.2",
-    "@stylistic/eslint-plugin-js": "^1.0.0",
+    "@babel/core": "^7.23.3",
+    "@babel/eslint-parser": "^7.23.3",
+    "@babel/preset-env": "^7.23.3",
+    "@stylistic/eslint-plugin-js": "^1.1.0",
     "c8": "^8.0.1",
     "eslint": "^8.53.0",
-    "eslint-config-ultra-refined": "^2.19.0",
+    "eslint-config-ultra-refined": "^2.19.1",
     "mocha": "^10.2.0"
   },
   "description": "The robust request library that humanity deserves 🌐",
@@ -57,7 +57,7 @@
   "name": "rekwest",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bricss/rekwest.git"
+    "url": "git+https://github.com/bricss/rekwest.git"
   },
   "scripts": {
     "build": "rm -rf dist && npx babel src -d dist",
@@ -70,5 +70,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "5.0.2"
+  "version": "5.0.3"
 }

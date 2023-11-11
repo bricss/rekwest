@@ -31,12 +31,12 @@ export const transfer = async (options, overact) => {
       protocol: url.protocol,
     };
   } else if (Reflect.has(options, 'alpnProtocol')) {
-    [
+    for (const it of [
       'alpnProtocol',
       'createConnection',
       'h2',
       'protocol',
-    ].forEach((it) => Reflect.deleteProperty(options, it));
+    ]) { Reflect.deleteProperty(options, it); }
   }
 
   try {

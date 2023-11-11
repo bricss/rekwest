@@ -230,9 +230,9 @@ const url = new URL('https://somewhe.re/somewhat/endpoint');
 const options = await ackn({ url });
 
 await pipeline(
-  fs.createReadStream('/var/tmp/vent/inlet.dab'),
+  fs.createReadStream('/var/tmp/vent/inlet.xyz'),
   rekwest.stream(url, { ...options, method: HTTP2_METHOD_POST }),
-  fs.createWriteStream('/var/tmp/vent/outlet.dab'),
+  fs.createWriteStream('/var/tmp/vent/outlet.xyz'),
 );
 ```
 

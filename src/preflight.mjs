@@ -62,11 +62,11 @@ export const preflight = (options) => {
 
   if (credentials === requestCredentials.omit) {
     options.cookies = false;
-    Object.keys(options.headers ?? {})
-          .filter((it) => new RegExp(`^(${
-            HTTP2_HEADER_AUTHORIZATION }|${ HTTP2_HEADER_COOKIE
-          })$`, 'i').test(it))
-          .forEach((it) => Reflect.deleteProperty(options.headers, it));
+    for (const it of Object.keys(options.headers ?? {})
+                           .filter((val) => new RegExp(`^(${
+                              HTTP2_HEADER_AUTHORIZATION }|${ HTTP2_HEADER_COOKIE
+                            })$`, 'i').test(val))) { Reflect.deleteProperty(options.headers, it); }
+
     url.password = url.username = '';
   }
 

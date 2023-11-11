@@ -32,15 +32,15 @@ export class Cookies extends URLSearchParams {
         }
 
         const [cookie, ...attrs] = it.split(';').map((it) => it.trim());
-        const ttl = attrs.reduce((acc, val) => {
+        const ttl = {};
+
+        for (const val of attrs) {
           if (/(?:Expires|Max-Age)=/i.test(val)) {
             const [key, value] = val.toLowerCase().split('=');
 
-            acc[toCamelCase(key)] = !Number.isNaN(Number(value)) ? value * 1e3 : Date.parse(value) - Date.now();
+            ttl[toCamelCase(key)] = !Number.isNaN(Number(value)) ? value * 1e3 : Date.parse(value) - Date.now();
           }
-
-          return acc;
-        }, {});
+        }
 
         return [
           cookie.replace(/\u0022/g, ''),
@@ -52,34 +52,39 @@ export class Cookies extends URLSearchParams {
     super(Array.isArray(input) ? input.map((it) => it.at(0)).join('&') : input);
 
     if (Array.isArray(input) && cookiesTTL) {
-      input.filter((it) => it.at(1)).forEach(([cookie, ttl]) => {
-        cookie = cookie.split('=').at(0);
-        if (this.#chronometry.has(cookie)) {
-          clearTimeout(this.#chronometry.get(cookie));
-          this.#chronometry.delete(cookie);
+      for (const [cookie, ttl] of input.filter((it) => it.at(1))) {
+        const key = cookie.split('=').at(0);
+
+        if (this.#chronometry.has(key)) {
+          clearTimeout(this.#chronometry.get(key));
+          this.#chronometry.delete(key);
         }
 
         const { expires, maxAge } = ttl;
 
-        [
+        for (const ms of [
           maxAge,
           expires,
-        ].filter((it) => Number.isInteger(it)).some((ms) => {
+        ]) {
+          if (!Number.isInteger(ms)) {
+            continue;
+          }
+
           const ref = new WeakRef(this);
           const tid = setTimeout(() => {
             const ctx = ref.deref();
 
             if (ctx) {
-              ctx.#chronometry.delete(cookie);
-              ctx.delete(cookie);
+              ctx.#chronometry.delete(key);
+              ctx.delete(key);
             }
           }, Math.max(ms, 0));
 
           this.constructor.#register(this, tid);
-
-          return this.#chronometry.set(cookie, tid);
-        });
-      });
+          this.#chronometry.set(key, tid);
+          break;
+        }
+      }
     }
   }
 
