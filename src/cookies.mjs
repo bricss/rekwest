@@ -3,6 +3,8 @@ import {
   toCamelCase,
 } from './utils.mjs';
 
+const lifetimeCap = 3456e7; // 400 days
+
 export class Cookies extends URLSearchParams {
 
   static #finalizers = new Set();
@@ -37,8 +39,9 @@ export class Cookies extends URLSearchParams {
         for (const val of attrs) {
           if (/(?:Expires|Max-Age)=/i.test(val)) {
             const [key, value] = val.toLowerCase().split('=');
+            const ms = Number.isFinite(Number(value)) ? value * 1e3 : Date.parse(value) - Date.now();
 
-            ttl[toCamelCase(key)] = !Number.isNaN(Number(value)) ? value * 1e3 : Date.parse(value) - Date.now();
+            ttl[toCamelCase(key)] = Math.min(ms, lifetimeCap);
           }
         }
 
