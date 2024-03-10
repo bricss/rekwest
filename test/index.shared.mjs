@@ -432,6 +432,24 @@ export default ({ baseURL, httpVersion }) => {
     });
 
     it(`should make ${ HTTP2_METHOD_GET } [${
+      HTTP_STATUS_OK
+    }] request and must succeed after connection reset`, async () => {
+      const url = new URL(
+        '/gimme/reset?attempts=2',
+        baseURL,
+      );
+      const res = await rekwest(url, { retry: { attempts: 2, interval: 25 } });
+
+      assert.equal(res.body.message, 'json');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies.get('crack'), 'duck');
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, false);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_TOO_MANY_REQUESTS
     }] request and must succeed after '${ HTTP2_HEADER_RETRY_AFTER }' with date interval retry`, async () => {
       const url = new URL(

@@ -115,7 +115,7 @@ export const postflight = (req, res, options, { reject, resolve }) => {
       if (statusCode === HTTP_STATUS_MOVED_PERMANENTLY && res.headers[HTTP2_HEADER_RETRY_AFTER]) {
         let interval = res.headers[HTTP2_HEADER_RETRY_AFTER];
 
-        interval = Number(interval) * 1000 || new Date(interval) - Date.now();
+        interval = Number(interval) * 1e3 || new Date(interval) - Date.now();
 
         if (interval > options.maxRetryAfter) {
           return res.emit('error', maxRetryAfterError(interval, { cause: mixin(res, options) }));

@@ -105,6 +105,20 @@ export default (baseURL) => (req, res) => {
       [HTTP2_HEADER_SET_COOKIE]: 'crack=duck; Partitioned; SameSite=Lax; Secure',
     });
     res.end();
+  } else if (pathname.match(String.raw`^/gimme/reset$`) && req.method === HTTP2_METHOD_GET) {
+    const retry = stash.get(href);
+
+    if (!retry) {
+      res.writeHead(HTTP_STATUS_OK, { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON });
+      res.write(JSON.stringify(json));
+      stash.delete(href);
+    }
+
+    if (retry) {
+      res.destroy(new Error('☠️'));
+    } else {
+      res.end();
+    }
   } else if (pathname.match(String.raw`^/gimme/retry$`) && req.method === HTTP2_METHOD_GET) {
     const retry = stash.get(href);
 

@@ -141,9 +141,12 @@ console.log(res.body);
     * `attempts` **{number}** `Default: 0` The number of retry attempts
     * `backoffStrategy` **{string}** `Default: interval * Math.log(Math.random() * (Math.E * Math.E - Math.E) + Math.E)`
       The backoff strategy algorithm that increases logarithmically. To fixate set value to `interval * 1`
+    * `errorCodes` **{string[]}**
+      `Default: ['EAI_AGAIN', 'ECONNREFUSED', 'ECONNRESET', 'EHOSTDOWN', 'EHOSTUNREACH', 'ENETDOWN', 'ENETUNREACH', 'ENOTFOUND', 'EPIPE', 'ERR_HTTP2_STREAM_ERROR']`
+      The list of error codes to retry on
     * `interval` **{number}** `Default: 1e3` The initial retry interval
     * `retryAfter` **{boolean}** `Default: true` Controls `retry-after` header receptiveness
-    * `statusCodes` **{number[]}** `Default: [429, 503]` The list of status codes to retry on
+    * `statusCodes` **{number[]}** `Default: [429, 500, 502, 503, 504]` The list of status codes to retry on
   * `stripTrailingSlash` **{boolean}** `Default: false` Controls whether to strip trailing slash at the end of the URL
   * `thenable` **{boolean}** `Default: false` Controls the promise resolutions
   * `timeout` **{number}** `Default: 3e5` The number of milliseconds a request can take before termination
@@ -230,9 +233,9 @@ const url = new URL('https://somewhe.re/somewhat/endpoint');
 const options = await ackn({ url });
 
 await pipeline(
-  fs.createReadStream('/var/tmp/vent/inlet.xyz'),
+  fs.createReadStream('/path/to/read/inlet.xyz'),
   rekwest.stream(url, { ...options, method: HTTP2_METHOD_POST }),
-  fs.createWriteStream('/var/tmp/vent/outlet.xyz'),
+  fs.createWriteStream('/path/to/write/outlet.xyz'),
 );
 ```
 

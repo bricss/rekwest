@@ -60,6 +60,7 @@ export const transfer = async (options, overact) => {
 
     affix(client, req, options);
 
+    req.once('aborted', reject);
     req.once('error', reject);
     req.once('frameError', reject);
     req.once('goaway', reject);
@@ -82,23 +83,25 @@ export const transfer = async (options, overact) => {
   } catch (ex) {
     const { maxRetryAfter, retry } = options;
 
-    if (retry?.attempts && retry?.statusCodes.includes(ex.statusCode)) {
-      let { interval } = retry;
+    if (retry?.attempts > 0) {
+      if (retry.errorCodes?.includes(ex.code) || retry.statusCodes?.includes(ex.statusCode)) {
+        let { interval } = retry;
 
-      if (retry.retryAfter && ex.headers[HTTP2_HEADER_RETRY_AFTER]) {
-        interval = ex.headers[HTTP2_HEADER_RETRY_AFTER];
-        interval = Number(interval) * 1000 || new Date(interval) - Date.now();
-        if (interval > maxRetryAfter) {
-          throw maxRetryAfterError(interval, { cause: ex });
+        if (retry.retryAfter && ex.headers?.[HTTP2_HEADER_RETRY_AFTER]) {
+          interval = ex.headers[HTTP2_HEADER_RETRY_AFTER];
+          interval = Number(interval) * 1e3 || new Date(interval) - Date.now();
+          if (interval > maxRetryAfter) {
+            throw maxRetryAfterError(interval, { cause: ex });
+          }
+        } else {
+          interval = new Function('interval', `return Math.ceil(${ retry.backoffStrategy });`)(interval);
         }
-      } else {
-        interval = new Function('interval', `return Math.ceil(${ retry.backoffStrategy });`)(interval);
+
+        retry.attempts--;
+        retry.interval = interval;
+
+        return setTimeoutPromise(interval).then(() => overact(url, options));
       }
-
-      retry.attempts--;
-      retry.interval = interval;
-
-      return setTimeoutPromise(interval).then(() => overact(url, options));
     }
 
     if (digest && !redirected && ex.body) {

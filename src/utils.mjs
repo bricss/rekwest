@@ -48,6 +48,7 @@ export const admix = (res, headers, options) => {
 };
 
 export const affix = (client, req, options) => {
+  req.once('close', () => client?.close());
   req.once('end', () => client?.close());
   req.once('timeout', () => req.destroy(new TimeoutError(`Timed out after ${ options.timeout } ms.`)));
   req.once('trailers', (trailers) => {
