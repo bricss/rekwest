@@ -8,15 +8,15 @@
     "url": "https://github.com/bricss/rekwest/issues"
   },
   "devDependencies": {
-    "@babel/cli": "^7.23.9",
-    "@babel/core": "^7.24.0",
-    "@babel/eslint-parser": "^7.23.10",
-    "@babel/preset-env": "^7.24.0",
-    "@stylistic/eslint-plugin-js": "^1.6.3",
+    "@babel/cli": "^7.24.5",
+    "@babel/core": "^7.24.5",
+    "@babel/eslint-parser": "^7.24.5",
+    "@babel/preset-env": "^7.24.5",
+    "@stylistic/eslint-plugin-js": "^1.7.2",
     "c8": "^9.1.0",
-    "eslint": "^8.57.0",
-    "eslint-config-ultra-refined": "^2.20.0",
-    "mocha": "^10.3.0"
+    "eslint": "^9.1.1",
+    "eslint-config-ultra-refined": "^3.0.4",
+    "mocha": "^10.4.0"
   },
   "description": "The robust request library that humanity deserves 🌐",
   "engines": {
@@ -63,12 +63,12 @@
     "build": "rm -rf dist && npx babel src -d dist",
     "cert:gen": "openssl req -days 365 -keyout localhost.key -newkey ec -nodes -pkeyopt ec_paramgen_curve:prime256v1 -subj //SKIP=1/CN=localhost -out localhost.cert -x509",
     "cert:ken": "openssl x509 -in localhost.cert -noout -text",
-    "lint": "eslint . --ext .cjs,.js,.mjs",
+    "lint": "eslint",
     "prepack": "npm run build && sh pony.sh",
     "pretest": "rm -rf coverage && npm run cert:gen",
     "test": "mocha",
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "5.2.0"
+  "version": "5.2.1"
 }
