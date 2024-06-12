@@ -3,7 +3,7 @@ import {
   toCamelCase,
 } from './utils.mjs';
 
-const lifetimeCap = 3456e7; // 400 days
+const lifetimeCap = 3456e7; // pragma: 400 days
 
 export class Cookies extends URLSearchParams {
 
