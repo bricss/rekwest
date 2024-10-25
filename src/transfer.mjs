@@ -97,6 +97,10 @@ export const transfer = async (options, overact) => {
           interval = new Function('interval', `return Math.ceil(${ retry.backoffStrategy });`)(interval);
         }
 
+        if (interval < 0) {
+          interval = 0;
+        }
+
         retry.attempts--;
         retry.interval = interval;
 
