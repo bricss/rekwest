@@ -32,6 +32,14 @@ export const mixin = (res, { digest = false, parse = false } = {}) => {
           return new Blob([val]);
         },
       },
+      bytes: {
+        enumerable: true,
+        value: async function () {
+          brandCheck(this, res?.constructor);
+
+          return new Uint8Array(await this.arrayBuffer());
+        },
+      },
       json: {
         enumerable: true,
         value: async function () {

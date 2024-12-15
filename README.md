@@ -161,6 +161,7 @@ console.log(res.body);
     * `arrayBuffer` **{AsyncFunction}** Reads the response and returns **ArrayBuffer**
     * `blob` **{AsyncFunction}** Reads the response and returns **Blob**
     * `body` **{AsyncFunction}** Reads the response and returns **Buffer** if `parse: false`
+    * `bytes` **{AsyncFunction}** Reads the response and returns **Uint8Array**
     * `json` **{AsyncFunction}** Reads the response and returns **Object**
     * `text` **{AsyncFunction}** Reads the response and returns **String**
   * `bodyUsed` **{boolean}** Indicates whether the response were read or not

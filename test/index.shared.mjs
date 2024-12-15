@@ -1058,6 +1058,23 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and must read response via 'bytes' method`,
+      async () => {
+        const url = new URL('/gimme/text', baseURL);
+        const res = await rekwest(url, options);
+
+        assert.ok(types.isUint8Array(await res.bytes()));
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.cookies, undefined);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, false);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      },
+    );
+
+
+    it(
       `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and must read response via 'json' method`,
       async () => {
         const url = new URL('/gimme/json', baseURL);
