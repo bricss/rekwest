@@ -116,7 +116,9 @@ export class FormData {
         input = Object.entries(input);
       }
 
-      for (const [key, value] of input) { this.append(key, value); }
+      for (const [key, value] of input) {
+        this.append(key, value);
+      }
     }
   }
 
