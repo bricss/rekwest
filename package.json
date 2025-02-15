@@ -71,5 +71,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "5.4.0"
+  "version": "5.4.1"
 }

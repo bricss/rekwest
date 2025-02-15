@@ -32,7 +32,7 @@ const defaults = {
   h2: false,
   headers: {
     [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
-    [HTTP2_HEADER_ACCEPT_ENCODING]: `br, ${ isZstdSupported ? 'zstd,' : '' } gzip, deflate, deflate-raw`,
+    [HTTP2_HEADER_ACCEPT_ENCODING]: `br,${ isZstdSupported ? ' zstd, ' : ' ' }gzip, deflate, deflate-raw`,
   },
   get maxRetryAfter() {
     return this[maxRetryAfter] ?? this.timeout;
