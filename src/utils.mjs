@@ -5,7 +5,7 @@ import {
 import http2 from 'node:http2';
 import { pipeline } from 'node:stream';
 import zlib from 'node:zlib';
-import defaults from './defaults.mjs';
+import config, { isZstdSupported } from './config.mjs';
 import {
   RequestError,
   TimeoutError,
@@ -79,6 +79,8 @@ export const compress = (readable, encodings = '') => {
       encoders.push(zlib.createDeflateRaw());
     } else if (/\bgzip\b/i.test(encoding)) {
       encoders.push(zlib.createGzip());
+    } else if (isZstdSupported && /\bzstd\b/i.test(encoding)) {
+      encoders.push(zlib.createZstdCompress());
     } else {
       return readable;
     }
@@ -110,6 +112,8 @@ export const decompress = (readable, encodings = '') => {
       decoders.push(zlib.createInflateRaw());
     } else if (/\bgzip\b/i.test(encoding)) {
       decoders.push(zlib.createGunzip());
+    } else if (isZstdSupported && /\bzstd\b/i.test(encoding)) {
+      decoders.push(zlib.createZstdDecompress());
     } else {
       return readable;
     }
@@ -165,7 +169,7 @@ export const merge = (target, ...rest) => {
 
 export const normalize = (url, options = {}) => {
   if (!options.redirected) {
-    options = copyWithMerge(defaults.stash, options);
+    options = copyWithMerge(config.defaults, options);
   }
 
   if (options.trimTrailingSlashes) {

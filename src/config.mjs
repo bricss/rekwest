@@ -1,11 +1,19 @@
 import http2 from 'node:http2';
+import zlib from 'node:zlib';
 import {
   requestCredentials,
   requestRedirect,
 } from './constants.mjs';
+import {
+  APPLICATION_JSON,
+  TEXT_PLAIN,
+  WILDCARD,
+} from './mediatypes.mjs';
 import { maxRetryAfter } from './utils.mjs';
 
 const {
+  HTTP2_HEADER_ACCEPT,
+  HTTP2_HEADER_ACCEPT_ENCODING,
   HTTP2_METHOD_GET,
   HTTP_STATUS_BAD_GATEWAY,
   HTTP_STATUS_GATEWAY_TIMEOUT,
@@ -14,12 +22,18 @@ const {
   HTTP_STATUS_TOO_MANY_REQUESTS,
 } = http2.constants;
 
-const stash = {
+export const isZstdSupported = !!zlib.constants.ZSTD_CLEVEL_DEFAULT;
+
+const defaults = {
   cookiesTTL: false,
   credentials: requestCredentials.sameOrigin,
   digest: true,
   follow: 20,
   h2: false,
+  headers: {
+    [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
+    [HTTP2_HEADER_ACCEPT_ENCODING]: `br, ${ isZstdSupported ? 'zstd,' : '' } gzip, deflate, deflate-raw`,
+  },
   get maxRetryAfter() {
     return this[maxRetryAfter] ?? this.timeout;
   },
@@ -62,5 +76,5 @@ const stash = {
 };
 
 export default {
-  stash,
+  defaults,
 };

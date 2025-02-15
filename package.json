@@ -9,14 +9,13 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.26.4",
-    "@babel/core": "^7.26.0",
-    "@babel/eslint-parser": "^7.25.9",
-    "@babel/preset-env": "^7.26.0",
-    "@stylistic/eslint-plugin-js": "^2.12.1",
+    "@babel/core": "^7.26.9",
+    "@babel/eslint-parser": "^7.26.8",
+    "@babel/preset-env": "^7.26.9",
     "c8": "^10.1.3",
-    "eslint": "^9.17.0",
-    "eslint-config-ultra-refined": "^3.3.1",
-    "mocha": "^11.0.1"
+    "eslint": "^9.20.1",
+    "eslint-config-ultra-refined": "^3.4.2",
+    "mocha": "^11.1.0"
   },
   "description": "The robust request library that humanity deserves 🌐",
   "engines": {
@@ -37,6 +36,7 @@
     "brotli",
     "cookie",
     "deflate",
+    "deflate-raw",
     "fetch",
     "formdata",
     "gzip",
@@ -51,7 +51,8 @@
     "retry",
     "retry-after",
     "stream",
-    "upload"
+    "upload",
+    "zstd"
   ],
   "license": "MIT",
   "name": "rekwest",
@@ -70,5 +71,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "5.3.1"
+  "version": "5.4.0"
 }

@@ -578,7 +578,7 @@ export default ({ baseURL, httpVersion }) => {
       'deflate',
       'deflate-raw',
       'gzip',
-      'identity',
+      'zstd',
     ].forEach((item) => {
       it(
         `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with '${ item }' compressed body`,
@@ -610,7 +610,7 @@ export default ({ baseURL, httpVersion }) => {
       'deflate',
       'deflate-raw',
       'gzip',
-      'identity',
+      'zstd',
     ].forEach((item) => {
       it(
         `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with '${ item }' compressed body stream`,

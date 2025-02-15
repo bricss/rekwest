@@ -6,18 +6,18 @@ and [http2.request](https://nodejs.org/api/http2.html#clienthttp2sessionrequesth
 
 ## Abstract
 
-* Fetch-alike
+* Fetch-alike 🥏
 * Cool-beans 🫐 config options (with defaults)
-* Automatic HTTP/2 support (ALPN negotiation)
-* Automatic or opt-in body parse (with non-UTF-8 charset decoding)
-* Automatic and simplistic `Cookies` treatment (with built-in **jar** & **ttl**)
-* Automatic decompression (with opt-in body compression)
-* Built-in streamable `FormData` interface
-* Support redirects & retries with fine-grained tune-ups
-* Support all legit request body types (include blobs & streams)
-* Support both CJS and ESM module systems
-* Fully promise-able and pipe-able
-* Zero dependencies
+* Automatic HTTP/2 support (ALPN negotiation) 💼
+* Automatic or opt-in body parse (with non-UTF-8 charset decoding) 🉑
+* Automatic and simplistic `Cookies` treatment (with built-in **jar** & **ttl**) 🍪
+* Automatic decompression (with opt-in body compression) 🗜️
+* Built-in streamable `FormData` interface 🔌
+* Support redirects & retries with fine-grained tune-ups 🪛
+* Support all legit request body types (include blobs & streams) 📦
+* Support both CJS and ESM module systems 🧩
+* Fully promise-able and pipe-able 🔗
+* Zero dependencies 🗽
 
 ## Prerequisites
 
@@ -99,7 +99,7 @@ const res = await rekwest(url, {
   body: fd,
   headers: {
     [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
-    [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // enables: body compression
+    [HTTP2_HEADER_CONTENT_ENCODING]: 'zstd',  // enables: body compression
   },
   method: HTTP2_METHOD_POST,
 });

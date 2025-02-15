@@ -1,8 +1,8 @@
 import http from 'node:http';
 import http2 from 'node:http2';
 import https from 'node:https';
+import config from './config.mjs';
 import { requestRedirect } from './constants.mjs';
-import defaults from './defaults.mjs';
 import { APPLICATION_OCTET_STREAM } from './mediatypes.mjs';
 import { preflight } from './preflight.mjs';
 import { transfer } from './transfer.mjs';
@@ -40,8 +40,8 @@ export default function rekwest(url, options) {
 
 Reflect.defineProperty(rekwest, 'defaults', {
   enumerable: true,
-  get() { return defaults.stash; },
-  set(value) { defaults.stash = copyWithMerge(defaults.stash, value); },
+  get() { return config.defaults; },
+  set(value) { config.defaults = copyWithMerge(config.defaults, value); },
 });
 
 Reflect.defineProperty(rekwest, 'extend', {

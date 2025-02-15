@@ -1,14 +1,9 @@
 import http2 from 'node:http2';
+import { isZstdSupported } from './config.mjs';
 import { requestCredentials } from './constants.mjs';
 import { Cookies } from './cookies.mjs';
-import {
-  APPLICATION_JSON,
-  TEXT_PLAIN,
-  WILDCARD,
-} from './mediatypes.mjs';
 
 const {
-  HTTP2_HEADER_ACCEPT,
   HTTP2_HEADER_ACCEPT_ENCODING,
   HTTP2_HEADER_AUTHORITY,
   HTTP2_HEADER_AUTHORIZATION,
@@ -71,10 +66,19 @@ export const preflight = (options) => {
   }
 
   options.headers = {
-    [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
-    [HTTP2_HEADER_ACCEPT_ENCODING]: 'br, deflate, deflate-raw, gzip, identity',
     ...Object.entries(options.headers ?? {})
-             .reduce((acc, [key, val]) => (acc[key.toLowerCase()] = val, acc), {}),
+             .reduce((acc, [key, val]) => {
+               acc[key.toLowerCase()] = val;
+
+               if (acc[HTTP2_HEADER_ACCEPT_ENCODING]?.match(/\bzstd\b/i) && !isZstdSupported) {
+                 acc[HTTP2_HEADER_ACCEPT_ENCODING] = val.replace(/\s?zstd,?/i, '').trim();
+                 if (!acc[HTTP2_HEADER_ACCEPT_ENCODING]) {
+                   Reflect.deleteProperty(acc, HTTP2_HEADER_ACCEPT_ENCODING);
+                 }
+               }
+
+               return acc;
+             }, {}),
     ...h2 && {
       [HTTP2_HEADER_AUTHORITY]: url.host,
       [HTTP2_HEADER_METHOD]: method,
