@@ -71,7 +71,7 @@ export const preflight = (options) => {
                acc[key.toLowerCase()] = val;
 
                if (acc[HTTP2_HEADER_ACCEPT_ENCODING]?.match(/\bzstd\b/i) && !isZstdSupported) {
-                 acc[HTTP2_HEADER_ACCEPT_ENCODING] = val.replace(/\s?zstd,?/i, '').trim();
+                 acc[HTTP2_HEADER_ACCEPT_ENCODING] = val.replace(/\s?zstd,?/gi, '').trim();
                  if (!acc[HTTP2_HEADER_ACCEPT_ENCODING]) {
                    Reflect.deleteProperty(acc, HTTP2_HEADER_ACCEPT_ENCODING);
                  }
