@@ -1,8 +1,12 @@
 import ultraRefined from 'eslint-config-ultra-refined';
+import {
+  defineConfig,
+  globalIgnores,
+} from 'eslint/config';
 
-export default [
-  ...ultraRefined,
+export default defineConfig([
+  globalIgnores(['dist']),
   {
-    ignores: ['dist'],
+    extends: [ultraRefined],
   },
-];
+]);

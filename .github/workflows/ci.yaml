@@ -1,9 +1,10 @@
-name: Coverage
+name: CI
 on:
-  push:
-  pull_request:
   schedule:
     - cron: 0 5 1 */2 *
+  workflow_run:
+    types: [ completed ]
+    workflows: [ Lint ]
 concurrency:
   cancel-in-progress: true
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -11,6 +12,7 @@ env:
   NODE_ENV: development
 jobs:
   run:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     name: Node ${{ matrix.node }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
