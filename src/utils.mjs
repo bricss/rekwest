@@ -65,22 +65,22 @@ export const brandCheck = (value, ctor) => {
   }
 };
 
-export const compress = (readable, encodings = '') => {
+export const compress = (readable, encodings = '', { compression } = {}) => {
   const encoders = [];
 
   encodings = unwind(encodings);
 
   for (const encoding of encodings) {
     if (/\bbr\b/i.test(encoding)) {
-      encoders.push(zlib.createBrotliCompress());
+      encoders.push(zlib.createBrotliCompress(compression?.brotliOptions));
     } else if (/\bdeflate(?!-(?:\w+)?)\b/i.test(encoding)) {
-      encoders.push(zlib.createDeflate());
+      encoders.push(zlib.createDeflate(compression?.zlibOptions));
     } else if (/\bdeflate-raw\b/i.test(encoding)) {
-      encoders.push(zlib.createDeflateRaw());
+      encoders.push(zlib.createDeflateRaw(compression?.zlibOptions));
     } else if (/\bgzip\b/i.test(encoding)) {
-      encoders.push(zlib.createGzip());
+      encoders.push(zlib.createGzip(compression?.zlibOptions));
     } else if (isZstdSupported && /\bzstd\b/i.test(encoding)) {
-      encoders.push(zlib.createZstdCompress());
+      encoders.push(zlib.createZstdCompress(compression?.zstdOptions));
     } else {
       return readable;
     }
@@ -98,22 +98,22 @@ export const copyWithMerge = (target, ...rest) => {
   return merge(target, ...rest);
 };
 
-export const decompress = (readable, encodings = '') => {
+export const decompress = (readable, encodings = '', { compression } = {}) => {
   const decoders = [];
 
   encodings = unwind(encodings);
 
   for (const encoding of encodings) {
     if (/\bbr\b/i.test(encoding)) {
-      decoders.push(zlib.createBrotliDecompress());
+      decoders.push(zlib.createBrotliDecompress(compression?.brotliOptions));
     } else if (/\bdeflate(?!-(?:\w+)?)\b/i.test(encoding)) {
-      decoders.push(zlib.createInflate());
+      decoders.push(zlib.createInflate(compression?.zlibOptions));
     } else if (/\bdeflate-raw\b/i.test(encoding)) {
-      decoders.push(zlib.createInflateRaw());
+      decoders.push(zlib.createInflateRaw(compression?.zlibOptions));
     } else if (/\bgzip\b/i.test(encoding)) {
-      decoders.push(zlib.createGunzip());
+      decoders.push(zlib.createGunzip(compression?.zlibOptions));
     } else if (isZstdSupported && /\bzstd\b/i.test(encoding)) {
-      decoders.push(zlib.createZstdDecompress());
+      decoders.push(zlib.createZstdDecompress(compression?.zstdOptions));
     } else {
       return readable;
     }

@@ -120,6 +120,7 @@ console.log(res.body);
   & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#clienthttp2sessionrequestheaders-options)
   and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tlsconnectoptions-callback)
   for HTTP/2 attunes
+  * `compression` **{Object}** Configures compression options
   * `baseURL` **{string | URL}** The base URL to use in cases where `url` is a relative URL
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
     FormData | Iterator | Object | Readable | ReadableStream | SharedArrayBuffer | URLSearchParams}** The body to send
@@ -130,12 +131,12 @@ console.log(res.body);
   * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookies cache
   * `credentials` **{include | omit | same-origin}** `Default: same-origin` Controls credentials in case of cross-origin
     redirects
-  * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or simply add a mixin
+  * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or add a mixin
   * `follow` **{number}** `Default: 20` The number of redirects to follow
   * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol
   * `headers` **{Object}** The headers to add to the request
   * `maxRetryAfter` **{number}** The upper limit of `retry-after` header. If unset, it will use `timeout` value
-  * `parse` **{boolean}** `Default: true` Controls whether to parse response body or simply return a buffer
+  * `parse` **{boolean}** `Default: true` Controls whether to parse response body or return a buffer
   * `redirect` **{error | follow | manual}** `Default: follow` Controls the redirect flows
   * `retry` **{Object}** Represents the retry options
     * `attempts` **{number}** `Default: 0` The number of retry attempts
@@ -164,10 +165,10 @@ console.log(res.body);
     * `bytes` **{AsyncFunction}** Reads the response and returns **Uint8Array**
     * `json` **{AsyncFunction}** Reads the response and returns **Object**
     * `text` **{AsyncFunction}** Reads the response and returns **String**
-  * `bodyUsed` **{boolean}** Indicates whether the response were read or not
+  * `bodyUsed` **{boolean}** Indicates whether the response was read or not
   * `cookies` **{undefined | Cookies}** The cookies sent and received with the response
   * `headers` **{Object}** The headers received with the response
-  * `httpVersion` **{string}** Indicates protocol version negotiated with the server
+  * `httpVersion` **{string}** Indicates a protocol version negotiated with the server
   * `ok` **{boolean}** Indicates if the response was successful (statusCode: **200-299**)
   * `redirected` **{boolean}** Indicates if the response is the result of a redirect
   * `statusCode` **{number}** Indicates the status code of the response

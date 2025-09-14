@@ -25,6 +25,19 @@ const {
 export const isZstdSupported = !!zlib.constants.ZSTD_CLEVEL_DEFAULT;
 
 const defaults = {
+  compression: {
+    brotliOptions: {
+      params: {
+        [zlib.constants.BROTLI_PARAM_QUALITY]: 4,
+      },
+    },
+    zstdOptions: {
+      params: {
+        [zlib.constants.ZSTD_c_compressionLevel]: 6,
+        [zlib.constants.ZSTD_d_windowLogMax]: 0,
+      },
+    },
+  },
   cookiesTTL: false,
   credentials: requestCredentials.sameOrigin,
   digest: true,

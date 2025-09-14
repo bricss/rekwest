@@ -60,9 +60,9 @@ export const transform = async (options) => {
   if (body === Object(body)
     && (Reflect.has(body, Symbol.asyncIterator) || (!Array.isArray(body) && Reflect.has(body, Symbol.iterator)))) {
     body = isReadable(body) ? (isReadableStream(body) ? Readable.fromWeb(body) : body) : Readable.from(body);
-    body = encodings ? compress(body, encodings) : body;
+    body = encodings ? compress(body, encodings, options) : body;
   } else if (encodings) {
-    body = await buffer(compress(Readable.from(body), encodings));
+    body = await buffer(compress(Readable.from(body), encodings, options));
   }
 
   Object.assign(options.headers, {
