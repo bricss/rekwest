@@ -34,12 +34,12 @@ const defaults = {
     zstdOptions: {
       params: {
         [zlib.constants.ZSTD_c_compressionLevel]: 6,
-        [zlib.constants.ZSTD_d_windowLogMax]: 0,
       },
     },
   },
   cookiesTTL: false,
   credentials: requestCredentials.sameOrigin,
+  decompression: {},
   digest: true,
   follow: 20,
   h2: false,

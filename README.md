@@ -120,7 +120,8 @@ console.log(res.body);
   & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#clienthttp2sessionrequestheaders-options)
   and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tlsconnectoptions-callback)
   for HTTP/2 attunes
-  * `compression` **{Object}** Configures compression options
+  * `compression` **{Object}** Configures compression options, e.g.: `brotliOptions`, `zstdOptions`,
+    `zlibOptions`
   * `baseURL` **{string | URL}** The base URL to use in cases where `url` is a relative URL
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
     FormData | Iterator | Object | Readable | ReadableStream | SharedArrayBuffer | URLSearchParams}** The body to send
@@ -131,6 +132,8 @@ console.log(res.body);
   * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookies cache
   * `credentials` **{include | omit | same-origin}** `Default: same-origin` Controls credentials in case of cross-origin
     redirects
+  * `decompression` **{Object}** Configures decompression options, e.g.: `brotliOptions`, `zstdOptions`,
+    `zlibOptions`
   * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or add a mixin
   * `follow` **{number}** `Default: 20` The number of redirects to follow
   * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol

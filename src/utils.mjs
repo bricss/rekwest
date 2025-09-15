@@ -98,22 +98,22 @@ export const copyWithMerge = (target, ...rest) => {
   return merge(target, ...rest);
 };
 
-export const decompress = (readable, encodings = '', { compression } = {}) => {
+export const decompress = (readable, encodings = '', { decompression } = {}) => {
   const decoders = [];
 
   encodings = unwind(encodings);
 
   for (const encoding of encodings) {
     if (/\bbr\b/i.test(encoding)) {
-      decoders.push(zlib.createBrotliDecompress(compression?.brotliOptions));
+      decoders.push(zlib.createBrotliDecompress(decompression?.brotliOptions));
     } else if (/\bdeflate(?!-(?:\w+)?)\b/i.test(encoding)) {
-      decoders.push(zlib.createInflate(compression?.zlibOptions));
+      decoders.push(zlib.createInflate(decompression?.zlibOptions));
     } else if (/\bdeflate-raw\b/i.test(encoding)) {
-      decoders.push(zlib.createInflateRaw(compression?.zlibOptions));
+      decoders.push(zlib.createInflateRaw(decompression?.zlibOptions));
     } else if (/\bgzip\b/i.test(encoding)) {
-      decoders.push(zlib.createGunzip(compression?.zlibOptions));
+      decoders.push(zlib.createGunzip(decompression?.zlibOptions));
     } else if (isZstdSupported && /\bzstd\b/i.test(encoding)) {
-      decoders.push(zlib.createZstdDecompress(compression?.zstdOptions));
+      decoders.push(zlib.createZstdDecompress(decompression?.zstdOptions));
     } else {
       return readable;
     }

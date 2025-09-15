@@ -10,7 +10,7 @@ const {
   HTTP2_HEADER_CONTENT_TYPE,
 } = http2.constants;
 
-export const mixin = (res, { compression, digest = false, parse = false } = {}) => {
+export const mixin = (res, { decompression, digest = false, parse = false } = {}) => {
   if (!digest) {
     Object.defineProperties(res, {
       arrayBuffer: {
@@ -73,7 +73,7 @@ export const mixin = (res, { compression, digest = false, parse = false } = {}) 
 
         let body = [];
 
-        for await (const chunk of decompress(this, this.headers[HTTP2_HEADER_CONTENT_ENCODING], { compression })) {
+        for await (const chunk of decompress(this, this.headers[HTTP2_HEADER_CONTENT_ENCODING], { decompression })) {
           body.push(chunk);
         }
 
