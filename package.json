@@ -13,9 +13,9 @@
     "@babel/eslint-parser": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
     "c8": "^10.1.3",
-    "eslint": "^9.39.0",
-    "eslint-config-ultra-refined": "^3.8.3",
-    "mocha": "^11.7.4"
+    "eslint": "^9.39.2",
+    "eslint-config-ultra-refined": "^3.8.4",
+    "mocha": "^11.7.5"
   },
   "description": "The robust request library that humanity deserves 🌐",
   "engines": {
@@ -71,5 +71,5 @@
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
-  "version": "6.2.0"
+  "version": "6.2.1"
 }
