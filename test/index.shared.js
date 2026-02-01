@@ -3,17 +3,14 @@ import { Blob } from 'node:buffer';
 import { Readable } from 'node:stream';
 import { scheduler } from 'node:timers/promises';
 import { types } from 'node:util';
-import {
-  requestCredentials,
-  requestRedirect,
-} from '../src/constants.mjs';
 import rekwest, {
   constants,
   Cookies,
   File,
   FormData,
-} from '../src/index.mjs';
-import { TEXT_PLAIN } from '../src/mediatypes.mjs';
+  mediatypes,
+  requestRedirect,
+} from '../src/index.js';
 
 const {
   HTTP2_HEADER_ACCEPT_ENCODING,
@@ -27,17 +24,19 @@ const {
   HTTP2_METHOD_HEAD,
   HTTP2_METHOD_POST,
   HTTP2_METHOD_PUT,
-  HTTP_STATUS_FOUND,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
   HTTP_STATUS_MOVED_PERMANENTLY,
   HTTP_STATUS_NO_CONTENT,
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_OK,
+  HTTP_STATUS_PERMANENT_REDIRECT,
   HTTP_STATUS_SEE_OTHER,
   HTTP_STATUS_TOO_MANY_REQUESTS,
   HTTP_STATUS_UNAUTHORIZED,
   HTTP_STATUS_USE_PROXY,
 } = constants;
+
+const { TEXT_PLAIN } = mediatypes;
 
 const logarithmic = 'logarithmic';
 const encoder = new TextEncoder();
@@ -51,7 +50,7 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL('/gimme/json', baseURL);
       const res = await rekwest(url);
 
-      assert.equal(res.body.message, 'json');
+      assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
       assert.equal(res.httpVersion, httpVersion);
@@ -95,7 +94,7 @@ export default ({ baseURL, httpVersion }) => {
           },
         });
 
-        assert.equal(res.body.message, 'json');
+        assert.equal(res.body.message, 'json-bourne');
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies.get('aux'), 'baz');
         assert.equal(res.cookies.get('foo'), 'bar');
@@ -117,7 +116,7 @@ export default ({ baseURL, httpVersion }) => {
           cookiesTTL: true,
         });
 
-        assert.equal(res.body.message, 'json');
+        assert.equal(res.body.message, 'json-bourne');
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies.get('ttl'), 'puff');
         await scheduler.wait(1.1e3);
@@ -139,7 +138,7 @@ export default ({ baseURL, httpVersion }) => {
           cookiesTTL: true,
         });
 
-        assert.equal(res.body.message, 'json');
+        assert.equal(res.body.message, 'json-bourne');
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies.get('ttl'), 'puff');
         await scheduler.wait(1.1e3);
@@ -161,7 +160,7 @@ export default ({ baseURL, httpVersion }) => {
           cookiesTTL: true,
         });
 
-        assert.equal(res.body.message, 'json');
+        assert.equal(res.body.message, 'json-bourne');
         assert.equal(res.bodyUsed, true);
         await scheduler.wait(100);
         assert.equal(res.cookies.get('ttl'), null);
@@ -209,29 +208,27 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.statusCode, HTTP_STATUS_NO_CONTENT);
     });
 
-    it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request with body and must catch an error`,
-      async () => {
-        const url = new URL('/gimme/text', baseURL);
+    it(`should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request with body and must catch an error`, () => {
+      const payload = 'zqiygyxz';
+      const url = new URL('/gimme/text', baseURL);
 
-        await assert.throws(() => rekwest(url, { body: 'zqiygyxz' }), (err) => {
-          assert.equal(
-            err.message,
-            `Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body.`,
-          );
-          assert.equal(err.name, 'TypeError');
+      assert.throws(() => rekwest(url, { body: payload }), (err) => {
+        assert.equal(
+          err.message,
+          `Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body.`,
+        );
+        assert.equal(err.name, 'TypeError');
 
-          return true;
-        });
-      },
-    );
+        return true;
+      });
+    });
 
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_MOVED_PERMANENTLY
-    }] request with redirect { credentials: false } and must catch an error`, async () => {
+    }] request with redirect { credentials: false } and must catch an error`, () => {
       const url = new URL('/gimme/redirect', baseURL);
 
-      await assert.throws(() => rekwest(url, { credentials: false }), (err) => {
+      assert.throws(() => rekwest(url, { credentials: false }), (err) => {
         assert.equal(
           err.message,
           'Failed to read the \'credentials\' property from \'options\': The provided value \'false\' is not a valid enum value.',
@@ -270,10 +267,10 @@ export default ({ baseURL, httpVersion }) => {
 
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_MOVED_PERMANENTLY
-    }] request with redirect { mode: false } and must catch an error`, async () => {
+    }] request with redirect { mode: false } and must catch an error`, () => {
       const url = new URL('/gimme/redirect', baseURL);
 
-      await assert.throws(() => rekwest(url, { redirect: false }), (err) => {
+      assert.throws(() => rekwest(url, { redirect: false }), (err) => {
         assert.equal(
           err.message,
           'Failed to read the \'redirect\' property from \'options\': The provided value \'false\' is not a valid enum value.',
@@ -292,7 +289,7 @@ export default ({ baseURL, httpVersion }) => {
         const url = new URL('/gimme/redirect', baseURL);
         const res = await rekwest(url);
 
-        assert.equal(res.body.message, 'json');
+        assert.equal(res.body.message, 'json-bourne');
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies.get('crack'), 'duck');
         assert.equal(res.httpVersion, httpVersion);
@@ -304,21 +301,19 @@ export default ({ baseURL, httpVersion }) => {
 
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_MOVED_PERMANENTLY
-    }] request with redirect { mode: ${ requestRedirect.follow } } and must omit all cookies`, async () => {
-      const base = baseURL.protocol === 'http:' ? globalThis.baseB1URL : globalThis.baseB2URL;
+    }] request with redirect { mode: ${ requestRedirect.follow } } and must omit all creds`, async () => {
+      const base = baseURL.protocol === 'http:' ? globalThis.https1BaseURL : globalThis.http1BaseURL;
       const url = new URL(`/gimme/redirect?location=${ base.origin }/gimme/json`, baseURL);
       const res = await rekwest(url, {
-        credentials: requestCredentials.omit,
         headers: {
-          [HTTP2_HEADER_AUTHORIZATION]: 'token',
+          [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
         },
-        redirect: requestRedirect.follow,
       });
 
-      assert.equal(res.body.message, 'json');
+      assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
-      assert.equal(res.httpVersion, httpVersion);
+      assert.match(res.httpVersion, /1\.1|2\.0/);
       assert.equal(res.ok, true);
       assert.equal(res.redirected, true);
       assert.equal(res.statusCode, HTTP_STATUS_OK);
@@ -371,7 +366,7 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL(`/gimme/redirect?${ HTTP2_HEADER_RETRY_AFTER }=0.25`, baseURL);
       const res = await rekwest(url);
 
-      assert.equal(res.body.message, 'json');
+      assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies.get('crack'), 'duck');
       assert.equal(res.httpVersion, httpVersion);
@@ -380,31 +375,34 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.statusCode, HTTP_STATUS_OK);
     });
 
-    it(
-      `should make ${ HTTP2_METHOD_GET } [${
-        HTTP_STATUS_MOVED_PERMANENTLY
-      }] request with redirect and must catch an error if max '${ HTTP2_HEADER_RETRY_AFTER }' limit is exceeded`,
-      async () => {
-        const url = new URL(`/gimme/redirect?${ HTTP2_HEADER_RETRY_AFTER }=3.5e5`, baseURL);
-
-        await assert.rejects(rekwest(url), (err) => {
-          assert.ok(err.cause);
-          assert.match(err.message, new RegExp(`Maximum '${ HTTP2_HEADER_RETRY_AFTER }' limit exceeded:`));
-          assert.equal(err.name, 'RequestError');
-
-          return true;
-        });
-      },
-    );
-
     it(`should make ${ HTTP2_METHOD_POST } [${
-      HTTP_STATUS_FOUND
+      HTTP_STATUS_SEE_OTHER
+    }] request with redirect { body: stream } and pass`, async () => {
+      const payload = 'zqiygyxz';
+      const url = new URL('/gimme/redirect', baseURL);
+      const res = await rekwest(url, {
+        body: Readable.from(payload),
+        method: HTTP2_METHOD_POST,
+      });
+
+      assert.equal(res.body.message, 'json-bourne');
+      assert.equal(res.bodyUsed, true);
+      assert.equal(res.cookies.get('crack'), 'duck');
+      assert.equal(res.httpVersion, httpVersion);
+      assert.equal(res.ok, true);
+      assert.equal(res.redirected, true);
+      assert.equal(res.statusCode, HTTP_STATUS_OK);
+    });
+
+    it(`should make ${ HTTP2_METHOD_PUT } [${
+      HTTP_STATUS_PERMANENT_REDIRECT
     }] request with redirect { body: stream } and must catch an error`, async () => {
+      const payload = 'zqiygyxz';
       const url = new URL('/gimme/redirect', baseURL);
 
       await assert.rejects(rekwest(url, {
-        body: Readable.from('zqiygyxz'),
-        method: HTTP2_METHOD_POST,
+        body: Readable.from(payload),
+        method: HTTP2_METHOD_PUT,
       }), (err) => {
         assert.equal(err.message, 'Unable to follow redirect with streamable body.');
         assert.equal(err.name, 'RequestError');
@@ -414,15 +412,17 @@ export default ({ baseURL, httpVersion }) => {
     });
 
     it(`should make ${ HTTP2_METHOD_PUT } [${
-      HTTP_STATUS_SEE_OTHER
-    }] request with redirect { body: json }`, async () => {
+      HTTP_STATUS_PERMANENT_REDIRECT
+    }] request with redirect { body: stream, bufferBody: true } and pass`, async () => {
+      const payload = 'zqiygyxz';
       const url = new URL('/gimme/redirect', baseURL);
       const res = await rekwest(url, {
-        body: { eldritch: 'symbols' },
+        body: Readable.from(payload),
+        bufferBody: true,
         method: HTTP2_METHOD_PUT,
       });
 
-      assert.equal(res.body.message, 'json');
+      assert.equal(res.body.toString(), payload);
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies.get('crack'), 'duck');
       assert.equal(res.httpVersion, httpVersion);
@@ -440,7 +440,7 @@ export default ({ baseURL, httpVersion }) => {
       );
       const res = await rekwest(url, { retry: { attempts: 2, interval: 25 } });
 
-      assert.equal(res.body.message, 'json');
+      assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies.get('crack'), 'duck');
       assert.equal(res.httpVersion, httpVersion);
@@ -458,7 +458,7 @@ export default ({ baseURL, httpVersion }) => {
       );
       const res = await rekwest(url, { retry: { attempts: 2 } });
 
-      assert.equal(res.body.message, 'json');
+      assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies.get('crack'), 'duck');
       assert.equal(res.httpVersion, httpVersion);
@@ -476,7 +476,7 @@ export default ({ baseURL, httpVersion }) => {
       );
       const res = await rekwest(url, { retry: { attempts: 2 } });
 
-      assert.equal(res.body.message, 'json');
+      assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies.get('crack'), 'duck');
       assert.equal(res.httpVersion, httpVersion);
@@ -508,7 +508,7 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL(`/gimme/retry?attempts=2&${ logarithmic }=true&ver=${ httpVersion }`, baseURL);
       const res = await rekwest(url, { retry: { attempts: 2, interval: 100 } });
 
-      assert.equal(res.body.message, 'json');
+      assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies.get('crack'), 'duck');
       assert.equal(res.httpVersion, httpVersion);
@@ -581,21 +581,22 @@ export default ({ baseURL, httpVersion }) => {
       'zstd',
     ].forEach((item) => {
       it(
-        `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with '${ item }' compressed body`,
+        `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with '${ item }' encoded body`,
         async () => {
+          const payload = 'zqiygyxz';
           const url = new URL('/gimme/squash', baseURL);
           const res = await rekwest(url, {
-            body: 'zqiygyxz',
+            body: payload,
             headers: {
               [HTTP2_HEADER_ACCEPT_ENCODING]: item,
               [HTTP2_HEADER_CONTENT_ENCODING]: item,
               [HTTP2_HEADER_CONTENT_TYPE]: TEXT_PLAIN,
-              [HTTP2_HEADER_VARY]: [HTTP2_HEADER_ACCEPT_ENCODING],
+              [HTTP2_HEADER_VARY]: '*',
             },
             method: HTTP2_METHOD_POST,
           });
 
-          assert.equal(res.body, 'zqiygyxz'.split('').reverse().join(''));
+          assert.equal(res.body, payload.split('').reverse().join(''));
           assert.equal(res.bodyUsed, true);
           assert.equal(res.httpVersion, httpVersion);
           assert.equal(res.ok, true);
@@ -613,21 +614,22 @@ export default ({ baseURL, httpVersion }) => {
       'zstd',
     ].forEach((item) => {
       it(
-        `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with '${ item }' compressed body stream`,
+        `should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with '${ item }' encoded body stream`,
         async () => {
+          const payload = 'zqiygyxz';
           const url = new URL('/gimme/squash', baseURL);
           const res = await rekwest(url, {
-            body: Readable.from('zqiygyxz'),
+            body: Readable.from(payload),
             headers: {
               [HTTP2_HEADER_ACCEPT_ENCODING]: item,
               [HTTP2_HEADER_CONTENT_ENCODING]: item,
               [HTTP2_HEADER_CONTENT_TYPE]: TEXT_PLAIN,
-              [HTTP2_HEADER_VARY]: [HTTP2_HEADER_ACCEPT_ENCODING],
+              [HTTP2_HEADER_VARY]: '*',
             },
             method: HTTP2_METHOD_POST,
           });
 
-          assert.equal(res.body, 'zqiygyxz'.split('').reverse().join(''));
+          assert.equal(res.body, payload.split('').reverse().join(''));
           assert.equal(res.bodyUsed, true);
           assert.equal(res.httpVersion, httpVersion);
           assert.equal(res.ok, true);
@@ -1072,7 +1074,7 @@ export default ({ baseURL, httpVersion }) => {
         const url = new URL('/gimme/json', baseURL);
         const res = await rekwest(url, options);
 
-        assert.equal((await res.json()).message, 'json');
+        assert.equal((await res.json()).message, 'json-bourne');
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies, undefined);
         assert.equal(res.httpVersion, httpVersion);
@@ -1109,7 +1111,7 @@ export default ({ baseURL, httpVersion }) => {
         assert.ok(Buffer.isBuffer(await res.body()));
 
         await assert.rejects(res.body(), (err) => {
-          assert.equal(err.message, 'Response stream already read');
+          assert.equal(err.message, 'Response stream already read.');
           assert.equal(err.name, 'TypeError');
 
           return true;

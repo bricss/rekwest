@@ -1,7 +1,7 @@
 import {
   brandCheck,
   toCamelCase,
-} from './utils.mjs';
+} from './utils.js';
 
 const lifetimeCap = 3456e7; // pragma: 400 days
 
@@ -37,7 +37,7 @@ export class Cookies extends URLSearchParams {
         const ttl = {};
 
         for (const val of attrs) {
-          if (/(?:Expires|Max-Age)=/i.test(val)) {
+          if (/(?:expires|max-age)=/i.test(val)) {
             const [key, value] = val.toLowerCase().split('=');
             const ms = Number.isFinite(Number(value)) ? value * 1e3 : Date.parse(value) - Date.now();
 

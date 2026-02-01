@@ -1,41 +1,41 @@
 import http from 'node:http';
 import http2 from 'node:http2';
 import https from 'node:https';
-import config from './config.mjs';
-import { requestRedirect } from './constants.mjs';
-import { APPLICATION_OCTET_STREAM } from './mediatypes.mjs';
-import { preflight } from './preflight.mjs';
-import { transfer } from './transfer.mjs';
+import config from './config.js';
+import { requestRedirect } from './constants.js';
+import { APPLICATION_OCTET_STREAM } from './mediatypes.js';
+import { preflight } from './preflight.js';
+import { transfer } from './transfer.js';
 import {
-  admix,
-  affix,
+  augment,
   copyWithMerge,
   normalize,
-} from './utils.mjs';
-import { validation } from './validation.mjs';
+  snoop,
+} from './utils.js';
+import { validation } from './validation.js';
 
 export {
   Blob,
   File,
 } from 'node:buffer';
 export { constants } from 'node:http2';
-
-export * from './ackn.mjs';
-export * from './constants.mjs';
-export * from './cookies.mjs';
-export * from './errors.mjs';
-export * from './formdata.mjs';
-export * as mediatypes from './mediatypes.mjs';
-export * from './mixin.mjs';
-export * from './utils.mjs';
-export * from './validation.mjs';
+export * from './ackn.js';
+export * from './codecs.js';
+export * from './constants.js';
+export * from './cookies.js';
+export * from './errors.js';
+export * from './formdata.js';
+export * as mediatypes from './mediatypes.js';
+export * from './mixin.js';
+export * from './utils.js';
+export * from './validation.js';
 
 const {
   HTTP2_HEADER_CONTENT_TYPE,
 } = http2.constants;
 
 export default function rekwest(url, options) {
-  return transfer(validation(normalize(url, options)), rekwest);
+  return transfer(validation(normalize(url, options)));
 }
 
 Reflect.defineProperty(rekwest, 'defaults', {
@@ -69,7 +69,7 @@ Reflect.defineProperty(rekwest, 'stream', {
       req = request(options.url, options);
     }
 
-    affix(client, req, options);
+    snoop(client, req, options);
 
     req.once('response', (res) => {
       let headers;
@@ -79,7 +79,7 @@ Reflect.defineProperty(rekwest, 'stream', {
         res = req;
       }
 
-      admix(res, headers, options);
+      augment(res, headers, options);
     });
 
     return req;

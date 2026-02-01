@@ -2,7 +2,7 @@ import http2 from 'node:http2';
 import {
   requestCredentials,
   requestRedirect,
-} from './constants.mjs';
+} from './constants.js';
 
 const {
   HTTP2_METHOD_GET,

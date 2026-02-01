@@ -10,11 +10,12 @@ and [http2.request](https://nodejs.org/api/http2.html#clienthttp2sessionrequesth
 * Cool-beans 🫐 config options (with defaults)
 * Automatic HTTP/2 support (ALPN negotiation) 💼
 * Automatic or opt-in body parse (with non-UTF-8 charset decoding) 🉑
-* Automatic and simplistic `Cookies` treatment (with built-in **jar** & **ttl**) 🍪
-* Automatic decompression (with opt-in body compression) 🗜️
+* Automatic and simplistic `Cookies` treatment (with **TTL** support) 🍪
+* Automatic body decoding (and opt-in request body encoding) 🗜️
+* Better error management 🚥
 * Built-in streamable `FormData` interface 🔌
 * Support redirects & retries with fine-grained tune-ups 🪛
-* Support all legit request body types (include blobs & streams) 📦
+* Support plenty request body types (include blobs & streams) 📦
 * Support both CJS and ESM module systems 🧩
 * Fully promise-able and pipe-able 🔗
 * Zero dependencies 🗽
@@ -47,7 +48,7 @@ const res = await rekwest(url, {
   body: { celestial: 'payload' },
   headers: {
     [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
-    [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // enables: body compression
+    [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // enables: body encoding
     /** [HTTP2_HEADER_CONTENT_TYPE]
      * is undue for
      * Array/Blob/File/FormData/Object/URLSearchParams body types
@@ -99,7 +100,7 @@ const res = await rekwest(url, {
   body: fd,
   headers: {
     [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
-    [HTTP2_HEADER_CONTENT_ENCODING]: 'zstd',  // enables: body compression
+    [HTTP2_HEADER_CONTENT_ENCODING]: 'zstd',  // enables: body encoding
   },
   method: HTTP2_METHOD_POST,
 });
@@ -120,21 +121,21 @@ console.log(res.body);
   & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#clienthttp2sessionrequestheaders-options)
   and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tlsconnectoptions-callback)
   for HTTP/2 attunes
-  * `compression` **{Object}** Configures compression options, e.g.: `brotliOptions`, `zstdOptions`,
-    `zlibOptions`
   * `baseURL` **{string | URL}** The base URL to use in cases where `url` is a relative URL
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
     FormData | Iterator | Object | Readable | ReadableStream | SharedArrayBuffer | URLSearchParams}** The body to send
     with the request
+  * `bufferBody` **{boolean}** `Default: false` Toggles the buffering of the streamable request bodies for redirects and
+    retries
   * `cookies` **{boolean | Array<[k, v]> | Array<string\> | Cookies | Object | URLSearchParams}** `Default: true` The
     cookies to add to
     the request
   * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookies cache
   * `credentials` **{include | omit | same-origin}** `Default: same-origin` Controls credentials in case of cross-origin
     redirects
-  * `decompression` **{Object}** Configures decompression options, e.g.: `brotliOptions`, `zstdOptions`,
-    `zlibOptions`
+  * `decodersOptions` **{Object}** Configures decoders options, e.g.: `brotli`, `zstd`, `zlib`
   * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or add a mixin
+  * `encodersOptions` **{Object}** Configures encoders options, e.g.: `brotli`, `zstd`, `zlib`
   * `follow` **{number}** `Default: 20` The number of redirects to follow
   * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol
   * `headers` **{Object}** The headers to add to the request
@@ -146,7 +147,7 @@ console.log(res.body);
     * `backoffStrategy` **{string}** `Default: interval * Math.log(Math.random() * (Math.E * Math.E - Math.E) + Math.E)`
       The backoff strategy algorithm that increases logarithmically. To fixate set value to `interval * 1`
     * `errorCodes` **{string[]}**
-      `Default: ['EAI_AGAIN', 'ECONNREFUSED', 'ECONNRESET', 'EHOSTDOWN', 'EHOSTUNREACH', 'ENETDOWN', 'ENETUNREACH', 'ENOTFOUND', 'EPIPE', 'ERR_HTTP2_STREAM_ERROR']`
+      `Default: ['ECONNREFUSED', 'ECONNRESET', 'EHOSTDOWN', 'EHOSTUNREACH', 'ENETDOWN', 'ENETUNREACH', 'ENOTFOUND', 'ERR_HTTP2_STREAM_ERROR']`
       The list of error codes to retry on
     * `interval` **{number}** `Default: 1e3` The initial retry interval
     * `retryAfter` **{boolean}** `Default: true` Controls `retry-after` header receptiveness

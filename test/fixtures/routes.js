@@ -1,13 +1,13 @@
 import { constants } from 'node:http2';
 import { Transform } from 'node:stream';
 import {
+  decode,
+  encode,
+} from '../../src/codecs.js';
+import {
   APPLICATION_JSON,
   TEXT_PLAIN,
-} from '../../src/mediatypes.mjs';
-import {
-  compress,
-  decompress,
-} from '../../src/utils.mjs';
+} from '../../src/mediatypes.js';
 
 const {
   HTTP2_HEADER_CONTENT_ENCODING,
@@ -19,12 +19,12 @@ const {
   HTTP2_METHOD_GET,
   HTTP2_METHOD_POST,
   HTTP2_METHOD_PUT,
-  HTTP_STATUS_FOUND,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
   HTTP_STATUS_MOVED_PERMANENTLY,
   HTTP_STATUS_NO_CONTENT,
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_OK,
+  HTTP_STATUS_PERMANENT_REDIRECT,
   HTTP_STATUS_SEE_OTHER,
   HTTP_STATUS_TOO_MANY_REQUESTS,
   HTTP_STATUS_UNAUTHORIZED,
@@ -32,7 +32,7 @@ const {
 
 const attempts = 'attempts';
 const json = {
-  message: 'json',
+  message: 'json-bourne',
 };
 const sentinel = (date, lapse = '1') => new Date(date.getTime() + (lapse.split(':').pop() * 1e3)).toUTCString();
 const stash = new Map();
@@ -137,13 +137,13 @@ export default (baseURL) => (req, res) => {
 
     res.end();
   } else if (pathname.match(String.raw`^/gimme/redirect$`) && req.method === HTTP2_METHOD_POST) {
-    res.writeHead(HTTP_STATUS_FOUND, {
-      [HTTP2_HEADER_LOCATION]: '/gimme/void',
+    res.writeHead(HTTP_STATUS_SEE_OTHER, {
+      [HTTP2_HEADER_LOCATION]: '/gimme/json',
     });
     res.end();
   } else if (pathname.match(String.raw`^/gimme/redirect$`) && req.method === HTTP2_METHOD_PUT) {
-    res.writeHead(HTTP_STATUS_SEE_OTHER, {
-      [HTTP2_HEADER_LOCATION]: '/gimme/json',
+    res.writeHead(HTTP_STATUS_PERMANENT_REDIRECT, {
+      [HTTP2_HEADER_LOCATION]: '/gimme/repulse',
     });
     res.end();
   } else if (pathname.match(String.raw`^/gimme/refusal$`) && req.method === HTTP2_METHOD_GET) {
@@ -152,7 +152,10 @@ export default (baseURL) => (req, res) => {
       message: 'unauthorized',
     }));
     res.end();
-  } else if (pathname.match(String.raw`^/gimme/repulse$`) && req.method === HTTP2_METHOD_POST) {
+  } else if (pathname.match(String.raw`^/gimme/repulse$`) && [
+    HTTP2_METHOD_POST,
+    HTTP2_METHOD_PUT,
+  ].includes(req.method)) {
     res.statusCode = HTTP_STATUS_OK;
     req.pipe(res);
   } else if (pathname.match(String.raw`^/gimme/squash$`) && req.method === HTTP2_METHOD_POST) {
@@ -163,7 +166,7 @@ export default (baseURL) => (req, res) => {
       Object.fromEntries(Object.entries(req.headers).filter(([key]) => !key.startsWith(':'))),
     );
 
-    compress(decompress(req, encodings)
+    encode(decode(req, encodings)
       .pipe(new Transform({
         construct(cb) {
           this.data = [];

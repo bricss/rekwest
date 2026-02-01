@@ -1,16 +1,16 @@
 import { Blob } from 'node:buffer';
 import http2 from 'node:http2';
-import {
-  brandCheck,
-  decompress,
-} from './utils.mjs';
+import { buffer } from 'node:stream/consumers';
+import { MIMEType } from 'node:util';
+import { decode } from './codecs.js';
+import { brandCheck } from './utils.js';
 
 const {
   HTTP2_HEADER_CONTENT_ENCODING,
   HTTP2_HEADER_CONTENT_TYPE,
 } = http2.constants;
 
-export const mixin = (res, { decompression, digest = false, parse = false } = {}) => {
+export const mixin = (res, { decodersOptions, digest = false, parse = false } = {}) => {
   if (!digest) {
     Object.defineProperties(res, {
       arrayBuffer: {
@@ -68,16 +68,10 @@ export const mixin = (res, { decompression, digest = false, parse = false } = {}
         brandCheck(this, res?.constructor);
 
         if (this.bodyUsed) {
-          throw new TypeError('Response stream already read');
+          throw new TypeError('Response stream already read.');
         }
 
-        let body = [];
-
-        for await (const chunk of decompress(this, this.headers[HTTP2_HEADER_CONTENT_ENCODING], { decompression })) {
-          body.push(chunk);
-        }
-
-        body = Buffer.concat(body);
+        let body = await buffer(decode(this, this.headers[HTTP2_HEADER_CONTENT_ENCODING], { decodersOptions }));
 
         if (!body.length && parse) {
           return null;
@@ -85,20 +79,25 @@ export const mixin = (res, { decompression, digest = false, parse = false } = {}
 
         if (body.length && parse) {
           const contentType = this.headers[HTTP2_HEADER_CONTENT_TYPE] ?? '';
-          const charset = contentType.split(';')
-                                     .find((it) => /charset=/i.test(it))
-                                     ?.toLowerCase()
-                                     .replace('charset=', '')
-                                     .replace('iso-8859-1', 'latin1')
-                                     .trim() || 'utf-8';
+          let isTextual, mimeType;
 
-          if (/\bjson\b/i.test(contentType)) {
-            body = JSON.parse(body.toString(charset));
-          } else if (/\b(?:text|xml)\b/i.test(contentType)) {
-            if (/\b(?:latin1|ucs-2|utf-(?:8|16le))\b/i.test(charset)) {
-              body = body.toString(charset);
+          try {
+            mimeType = contentType ? new MIMEType(contentType) : null;
+          } finally {
+            isTextual = mimeType && (
+              mimeType.type === 'text'
+              || mimeType.subtype.match(/\bcsv\b|\bjson\b|\bxml\b|\byaml\b/)
+              || mimeType.essence.match(/\becmascript\b|\bjavascript\b|\bx-www-form-urlencoded\b/)
+            );
+          }
+
+          if (isTextual) {
+            if (/\bjson\b/i.test(contentType)) {
+              body = JSON.parse(body.toString());
             } else {
-              body = new TextDecoder(charset).decode(body);
+              const charset = mimeType.params.get('charset')?.toLowerCase() ?? 'utf-8';
+
+              body = new TextDecoder(charset, { fatal: true }).decode(body);
             }
           }
         }

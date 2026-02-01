@@ -3,13 +3,14 @@ import zlib from 'node:zlib';
 import {
   requestCredentials,
   requestRedirect,
-} from './constants.mjs';
+} from './constants.js';
 import {
   APPLICATION_JSON,
   TEXT_PLAIN,
   WILDCARD,
-} from './mediatypes.mjs';
-import { maxRetryAfter } from './utils.mjs';
+} from './mediatypes.js';
+
+export const isZstdSupported = !!zlib.constants.ZSTD_CLEVEL_DEFAULT;
 
 const {
   HTTP2_HEADER_ACCEPT,
@@ -22,37 +23,33 @@ const {
   HTTP_STATUS_TOO_MANY_REQUESTS,
 } = http2.constants;
 
-export const isZstdSupported = !!zlib.constants.ZSTD_CLEVEL_DEFAULT;
+const timeout = 3e5;
 
 const defaults = {
-  compression: {
-    brotliOptions: {
+  bufferBody: false,
+  cookiesTTL: false,
+  credentials: requestCredentials.sameOrigin,
+  decodersOptions: {},
+  digest: true,
+  encodersOptions: {
+    brotli: {
       params: {
         [zlib.constants.BROTLI_PARAM_QUALITY]: 4,
       },
     },
-    zstdOptions: {
+    zstd: {
       params: {
         [zlib.constants.ZSTD_c_compressionLevel]: 6,
       },
     },
   },
-  cookiesTTL: false,
-  credentials: requestCredentials.sameOrigin,
-  decompression: {},
-  digest: true,
   follow: 20,
   h2: false,
   headers: {
     [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
     [HTTP2_HEADER_ACCEPT_ENCODING]: `br,${ isZstdSupported ? ' zstd, ' : ' ' }gzip, deflate, deflate-raw`,
   },
-  get maxRetryAfter() {
-    return this[maxRetryAfter] ?? this.timeout;
-  },
-  set maxRetryAfter(value) {
-    this[maxRetryAfter] = value;
-  },
+  maxRetryAfter: timeout,
   method: HTTP2_METHOD_GET,
   parse: true,
   redirect: requestRedirect.follow,
@@ -61,7 +58,6 @@ const defaults = {
     attempts: 0,
     backoffStrategy: 'interval * Math.log(Math.random() * (Math.E * Math.E - Math.E) + Math.E)',
     errorCodes: [
-      'EAI_AGAIN',
       'ECONNREFUSED',
       'ECONNRESET',
       'EHOSTDOWN',
@@ -69,7 +65,6 @@ const defaults = {
       'ENETDOWN',
       'ENETUNREACH',
       'ENOTFOUND',
-      'EPIPE',
       'ERR_HTTP2_STREAM_ERROR',
     ],
     interval: 1e3,
@@ -84,7 +79,7 @@ const defaults = {
   },
   stripTrailingSlash: false,
   thenable: false,
-  timeout: 3e5,
+  timeout,
   trimTrailingSlashes: false,
 };
 

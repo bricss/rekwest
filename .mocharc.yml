@@ -1,5 +1,5 @@
 exit: true
 ignore:
   - test/**/fixtures/**
-require: test/fixtures/index.mjs
+require: test/fixtures/index.js
 recursive: true

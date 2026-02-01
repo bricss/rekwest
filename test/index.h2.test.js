@@ -1,19 +1,16 @@
 import { strict as assert } from 'node:assert';
 import { once } from 'node:events';
 import { Readable } from 'node:stream';
-import rekwest, {
-  ackn,
-  constants,
-  mixin,
-} from '../src/index.mjs';
-import shared from './index.shared.mjs';
+import { buffer } from 'node:stream/consumers';
+import rekwest, { constants } from '../src/index.js';
+import shared from './index.shared.js';
 
 const {
   HTTP2_METHOD_POST,
   HTTP_STATUS_OK,
 } = constants;
 
-const baseURL = globalThis.baseH2URL;
+const baseURL = globalThis.https2BaseURL;
 const httpVersion = '2.0';
 const rejectUnauthorized = false;
 
@@ -32,14 +29,18 @@ describe('rekwest { h2 } mode', () => {
   describe('withal stream', () => {
 
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request and must pipe throughout it`, async () => {
+      const payload = 'zqiygyxz';
       const url = new URL('/gimme/squash', baseURL);
-      const options = await ackn({ rejectUnauthorized, url });
-      const req = Readable.from('zqiygyxz').pipe(rekwest.stream(url, { ...options, method: HTTP2_METHOD_POST }));
-      const [headers] = await once(req, 'response');
+      const req = Readable.from(payload).pipe(rekwest.stream(url, { h2: true, method: HTTP2_METHOD_POST }));
 
-      assert.equal(req.headers, headers);
+      await once(req, 'response');
+
+      assert.ok(req.ok);
       assert.equal(req.statusCode, HTTP_STATUS_OK);
-      assert.equal((await mixin(req).body()).toString(), 'zqiygyxz'.split('').reverse().join(''));
+      assert.equal(
+        new TextDecoder('utf-8', { fatal: true }).decode(await buffer(req)).toString(),
+        payload.split('').reverse().join(''),
+      );
     });
 
   });

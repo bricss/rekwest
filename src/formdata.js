@@ -5,12 +5,12 @@ import { toUSVString } from 'node:util';
 import {
   APPLICATION_OCTET_STREAM,
   MULTIPART_FORM_DATA,
-} from './mediatypes.mjs';
+} from './mediatypes.js';
 import {
   brandCheck,
   isFileLike,
   tap,
-} from './utils.mjs';
+} from './utils.js';
 
 const CRLF = '\r\n';
 const {
@@ -59,8 +59,8 @@ export class FormData {
     };
   }
 
-  static alike(instance) {
-    return FormData.name === instance?.[Symbol.toStringTag];
+  static alike(value) {
+    return FormData.name === value?.[Symbol.toStringTag];
   }
 
   static #enfoldEntry(name, value, filename) {
@@ -83,7 +83,7 @@ export class FormData {
   }
 
   static #ensureInstance(value) {
-    return isFileLike(value) || (value === Object(value) && Reflect.has(value, Symbol.asyncIterator));
+    return isFileLike(value) || (Object(value) === value && Reflect.has(value, Symbol.asyncIterator));
   }
 
   #entries = [];
@@ -93,13 +93,7 @@ export class FormData {
   }
 
   constructor(input) {
-    if (input === Object(input)
-      && (input?.constructor === Object || Reflect.has(input, Symbol.iterator))) {
-
-      if (input.constructor !== Object) {
-        input = Array.from(input);
-      }
-
+    if (Object(input) === input) {
       if (Array.isArray(input)) {
         if (!input.every((it) => Array.isArray(it))) {
           throw new TypeError(`Failed to construct '${
@@ -110,9 +104,9 @@ export class FormData {
             this[Symbol.toStringTag]
           }': Sequence initializer must only contain pair elements.`);
         }
-      }
 
-      if (input.constructor === Object) {
+        input = Array.from(input);
+      } else if (!Reflect.has(input, Symbol.iterator)) {
         input = Object.entries(input);
       }
 

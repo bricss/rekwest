@@ -1,23 +1,18 @@
 import http from 'node:http';
 import http2 from 'node:http2';
 import https from 'node:https';
-import { setTimeout as setTimeoutPromise } from 'node:timers/promises';
-import { ackn } from './ackn.mjs';
-import { RequestError } from './errors.mjs';
-import { postflight } from './postflight.mjs';
-import { preflight } from './preflight.mjs';
-import { transform } from './transform.mjs';
+import { ackn } from './ackn.js';
+import { RequestError } from './errors.js';
+import { postflight } from './postflight.js';
+import { preflight } from './preflight.js';
+import { retries } from './retries.js';
+import { transform } from './transform.js';
 import {
-  affix,
   dispatch,
-  maxRetryAfterError,
-} from './utils.mjs';
+  snoop,
+} from './utils.js';
 
-const {
-  HTTP2_HEADER_RETRY_AFTER,
-} = http2.constants;
-
-export const transfer = async (options, overact) => {
+export const transfer = async (options) => {
   const { digest, redirected, thenable, url } = options;
 
   if (options.follow === 0) {
@@ -26,9 +21,7 @@ export const transfer = async (options, overact) => {
 
   if (url.protocol === 'https:') {
     options = !options.h2 ? await ackn(options) : {
-      ...options,
-      createConnection: null,
-      protocol: url.protocol,
+      ...options, createConnection: null, protocol: url.protocol,
     };
   } else if (Reflect.has(options, 'alpnProtocol')) {
     for (const it of [
@@ -58,18 +51,17 @@ export const transfer = async (options, overact) => {
       req = request(url, options);
     }
 
-    affix(client, req, options);
+    snoop(client, req, options);
 
     req.once('aborted', reject);
     req.once('error', reject);
     req.once('frameError', reject);
     req.once('goaway', reject);
     req.once('response', (res) => postflight(req, res, options, {
-      reject,
-      resolve,
+      reject, resolve,
     }));
 
-    dispatch(options, req);
+    dispatch(req, options);
   });
 
   try {
@@ -81,31 +73,10 @@ export const transfer = async (options, overact) => {
 
     return res;
   } catch (ex) {
-    const { maxRetryAfter, retry } = options;
+    const willRetry = retries(ex, options);
 
-    if (retry?.attempts > 0) {
-      if (retry.errorCodes?.includes(ex.code) || retry.statusCodes?.includes(ex.statusCode)) {
-        let { interval } = retry;
-
-        if (retry.retryAfter && ex.headers?.[HTTP2_HEADER_RETRY_AFTER]) {
-          interval = ex.headers[HTTP2_HEADER_RETRY_AFTER];
-          interval = Number(interval) * 1e3 || new Date(interval) - Date.now();
-          if (interval > maxRetryAfter) {
-            throw maxRetryAfterError(interval, { cause: ex });
-          }
-        } else {
-          interval = new Function('interval', `return Math.ceil(${ retry.backoffStrategy });`)(interval);
-        }
-
-        if (interval < 0) {
-          interval = 0;
-        }
-
-        retry.attempts--;
-        retry.interval = interval;
-
-        return setTimeoutPromise(interval).then(() => overact(url, options));
-      }
+    if (willRetry) {
+      return willRetry;
     }
 
     if (digest && !redirected && ex.body) {

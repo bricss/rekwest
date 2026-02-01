@@ -1,7 +1,7 @@
 import http2 from 'node:http2';
-import { isZstdSupported } from './config.mjs';
-import { requestCredentials } from './constants.mjs';
-import { Cookies } from './cookies.mjs';
+import { isZstdSupported } from './config.js';
+import { requestCredentials } from './constants.js';
+import { Cookies } from './cookies.js';
 
 const {
   HTTP2_HEADER_ACCEPT_ENCODING,
@@ -28,7 +28,7 @@ export const preflight = (options) => {
   if (cookies !== false && credentials !== requestCredentials.omit) {
     let cookie = Cookies.jar.has(url.origin);
 
-    if (cookies === Object(cookies) && [
+    if (Object(cookies) === cookies && [
       requestCredentials.include,
       requestCredentials.sameOrigin,
     ].includes(credentials)) {
@@ -56,22 +56,31 @@ export const preflight = (options) => {
   }
 
   if (credentials === requestCredentials.omit) {
+    [
+      HTTP2_HEADER_AUTHORIZATION,
+      HTTP2_HEADER_COOKIE,
+    ].forEach((key) => Reflect.deleteProperty(options.headers, key));
     options.cookies = false;
-    for (const it of Object.keys(options.headers ?? {})
-                           .filter((val) => new RegExp(`^(${
-                              HTTP2_HEADER_AUTHORIZATION }|${ HTTP2_HEADER_COOKIE
-                            })$`, 'i').test(val))) { Reflect.deleteProperty(options.headers, it); }
-
     url.password = url.username = '';
+  }
+
+  if (!h2) {
+    [
+      HTTP2_HEADER_AUTHORITY,
+      HTTP2_HEADER_METHOD,
+      HTTP2_HEADER_PATH,
+      HTTP2_HEADER_SCHEME,
+    ].forEach((key) => Reflect.deleteProperty(options.headers, key));
   }
 
   options.headers = {
     ...Object.entries(options.headers ?? {})
              .reduce((acc, [key, val]) => {
                acc[key.toLowerCase()] = val;
+               const rex = /\s?zstd,?/gi;
 
-               if (acc[HTTP2_HEADER_ACCEPT_ENCODING]?.match(/\bzstd\b/i) && !isZstdSupported) {
-                 acc[HTTP2_HEADER_ACCEPT_ENCODING] = val.replace(/\s?zstd,?/gi, '').trim();
+               if (acc[HTTP2_HEADER_ACCEPT_ENCODING]?.match(rex) && !isZstdSupported) {
+                 acc[HTTP2_HEADER_ACCEPT_ENCODING] = val.replace(rex, '').trim();
                  if (!acc[HTTP2_HEADER_ACCEPT_ENCODING]) {
                    Reflect.deleteProperty(acc, HTTP2_HEADER_ACCEPT_ENCODING);
                  }
