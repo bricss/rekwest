@@ -32,11 +32,11 @@ export const preflight = (options) => {
   }
 
   if (credentials === requestCredentials.omit) {
+    cookies = false;
     headers = stripHeaders(headers, [
       HTTP2_HEADER_AUTHORIZATION,
       HTTP2_HEADER_COOKIE,
     ]);
-    options.cookies = false;
     url.password = url.username = '';
   }
 
