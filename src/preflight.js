@@ -1,10 +1,9 @@
 import http2 from 'node:http2';
-import { isZstdSupported } from './config.js';
 import { requestCredentials } from './constants.js';
 import { Cookies } from './cookies.js';
+import { stripHeaders } from './utils.js';
 
 const {
-  HTTP2_HEADER_ACCEPT_ENCODING,
   HTTP2_HEADER_AUTHORITY,
   HTTP2_HEADER_AUTHORIZATION,
   HTTP2_HEADER_COOKIE,
@@ -16,13 +15,29 @@ const {
 } = http2.constants;
 
 export const preflight = (options) => {
-  const { cookies, credentials, h2, headers, method, url } = options;
+  let { cookies, credentials, h2, headers, method, url } = options;
 
   if (h2) {
     options.endStream = [
       HTTP2_METHOD_GET,
       HTTP2_METHOD_HEAD,
     ].includes(method);
+  } else {
+    headers = stripHeaders(headers, [
+      HTTP2_HEADER_AUTHORITY,
+      HTTP2_HEADER_METHOD,
+      HTTP2_HEADER_PATH,
+      HTTP2_HEADER_SCHEME,
+    ]);
+  }
+
+  if (credentials === requestCredentials.omit) {
+    headers = stripHeaders(headers, [
+      HTTP2_HEADER_AUTHORIZATION,
+      HTTP2_HEADER_COOKIE,
+    ]);
+    options.cookies = false;
+    url.password = url.username = '';
   }
 
   if (cookies !== false && credentials !== requestCredentials.omit) {
@@ -55,39 +70,8 @@ export const preflight = (options) => {
     };
   }
 
-  if (credentials === requestCredentials.omit) {
-    [
-      HTTP2_HEADER_AUTHORIZATION,
-      HTTP2_HEADER_COOKIE,
-    ].forEach((key) => Reflect.deleteProperty(options.headers, key));
-    options.cookies = false;
-    url.password = url.username = '';
-  }
-
-  if (!h2) {
-    [
-      HTTP2_HEADER_AUTHORITY,
-      HTTP2_HEADER_METHOD,
-      HTTP2_HEADER_PATH,
-      HTTP2_HEADER_SCHEME,
-    ].forEach((key) => Reflect.deleteProperty(options.headers, key));
-  }
-
   options.headers = {
-    ...Object.entries(options.headers ?? {})
-             .reduce((acc, [key, val]) => {
-               acc[key.toLowerCase()] = val;
-               const rex = /\s?zstd,?/gi;
-
-               if (acc[HTTP2_HEADER_ACCEPT_ENCODING]?.match(rex) && !isZstdSupported) {
-                 acc[HTTP2_HEADER_ACCEPT_ENCODING] = val.replace(rex, '').trim();
-                 if (!acc[HTTP2_HEADER_ACCEPT_ENCODING]) {
-                   Reflect.deleteProperty(acc, HTTP2_HEADER_ACCEPT_ENCODING);
-                 }
-               }
-
-               return acc;
-             }, {}),
+    ...headers,
     ...h2 && {
       [HTTP2_HEADER_AUTHORITY]: url.host,
       [HTTP2_HEADER_METHOD]: method,

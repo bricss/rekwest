@@ -11,7 +11,10 @@ const https1BaseURL = new URL('https://localhost:1083');
 const https2BaseURL = new URL('https://localhost:3443');
 
 Object.assign(globalThis, {
-  http1BaseURL, http2BaseURL, https1BaseURL, https2BaseURL,
+  http1BaseURL,
+  http2BaseURL,
+  https1BaseURL,
+  https2BaseURL,
 });
 
 export async function mochaGlobalSetup() {
@@ -30,10 +33,10 @@ export async function mochaGlobalSetup() {
     once(this.https1Server.listen(https1BaseURL.port), 'listening'),
     once(this.https2Server.listen(https2BaseURL.port), 'listening'),
   ]);
-  console.log('http1 server listening on:', this.http1Server.address());
-  console.log('http2 server listening on:', this.http2Server.address());
-  console.log('https1 server listening on:', this.https1Server.address());
-  console.log('https2 server listening on:', this.https2Server.address());
+  console.log('http1 server listening on', this.http1Server.address());
+  console.log('http2 server listening on', this.http2Server.address());
+  console.log('https1 server listening on', this.https1Server.address());
+  console.log('https2 server listening on', this.https2Server.address());
 }
 
 export async function mochaGlobalTeardown() {
@@ -43,5 +46,5 @@ export async function mochaGlobalTeardown() {
     once(this.https1Server.close(), 'close'),
     once(this.https2Server.close(), 'close'),
   ]);
-  console.log('server(s) has been closed.');
+  console.log('server(s) has been closed');
 }

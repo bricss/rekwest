@@ -1,7 +1,7 @@
 {
   "author": {
-    "name": "Yehor Sergeenko",
     "email": "yehor.sergeenko@gmail.com",
+    "name": "Yehor Sergeenko",
     "url": "https://github.com/bricss"
   },
   "bugs": {
@@ -72,5 +72,5 @@
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
   "type": "module",
-  "version": "7.0.0"
+  "version": "7.0.1"
 }

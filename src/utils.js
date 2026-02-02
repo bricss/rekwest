@@ -7,10 +7,11 @@ import {
   isReadable,
   Readable,
 } from 'node:stream';
-import config from './config.js';
+import config, { isZstdSupported } from './config.js';
 import { TimeoutError } from './errors.js';
 
 const {
+  HTTP2_HEADER_ACCEPT_ENCODING,
   HTTP2_HEADER_STATUS,
 } = http2.constants;
 
@@ -115,9 +116,33 @@ export const normalize = (url, options = {}) => {
     url = `${ url }`.replace(/\/$|\/(?=#)|\/(?=\?)/g, '');
   }
 
-  url = new URL(url, options.baseURL);
+  return Object.assign(options, {
+    headers: normalizeHeaders(options.headers),
+    method: options.method.toUpperCase(),
+    url: new URL(url, options.baseURL),
+  });
+};
 
-  return Object.assign(options, { url });
+export const normalizeHeaders = (headers) => {
+  const collector = {};
+
+  for (const [key, value] of Object.entries(headers ?? {})) {
+    const name = key.toLowerCase();
+
+    collector[key] = value;
+
+    if (key === HTTP2_HEADER_ACCEPT_ENCODING && !isZstdSupported) {
+      const stripped = value.replace(/\s?zstd,?/gi, '').trim();
+
+      if (stripped) {
+        collector[key] = stripped;
+      } else {
+        Reflect.deleteProperty(collector, name);
+      }
+    }
+  }
+
+  return collector;
 };
 
 export const sameOrigin = (a, b) => a.protocol === b.protocol && a.hostname === b.hostname && a.port === b.port;
@@ -132,6 +157,16 @@ export const snoop = (client, req, options) => {
       value: trailers,
     });
   });
+};
+
+export const stripHeaders = (headers = {}, names = []) => {
+  names = new Set(names);
+
+  return Object.fromEntries(
+    Object.entries(headers).filter(
+      ([key]) => !names.has(key.toLowerCase()),
+    ),
+  );
 };
 
 export async function* tap(value) {
