@@ -33,7 +33,6 @@ const {
   HTTP_STATUS_SEE_OTHER,
   HTTP_STATUS_TOO_MANY_REQUESTS,
   HTTP_STATUS_UNAUTHORIZED,
-  HTTP_STATUS_USE_PROXY,
 } = constants;
 
 const { TEXT_PLAIN } = mediatypes;
@@ -342,19 +341,6 @@ export default ({ baseURL, httpVersion }) => {
       await assert.rejects(rekwest(url), (err) => {
         assert.equal(err.message, 'URL scheme must be "http" or "https".');
         assert.equal(err.name, 'RequestError');
-
-        return true;
-      });
-    });
-
-    it(`should make ${ HTTP2_METHOD_GET } [${
-      HTTP_STATUS_USE_PROXY
-    }] request with redirect and must catch an error on inapt status code`, async () => {
-      const url = new URL(`/gimme/redirect?statusCode=${ HTTP_STATUS_USE_PROXY }`, baseURL);
-
-      await assert.rejects(rekwest(url), (err) => {
-        assert.equal(err.message, `Invalid status code: ${ HTTP_STATUS_USE_PROXY }`);
-        assert.equal(err.name, 'RangeError');
 
         return true;
       });

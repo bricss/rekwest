@@ -3,7 +3,6 @@ import { isReadable } from 'node:stream';
 import {
   requestCredentials,
   requestRedirect,
-  requestRedirectCodes,
 } from './constants.js';
 import { RequestError } from './errors.js';
 import rekwest from './index.js';
@@ -28,10 +27,6 @@ export const redirects = (res, options) => {
   const { credentials, follow, redirect, url } = options;
 
   if (follow && /3\d{2}/.test(res.statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
-    if (!requestRedirectCodes.includes(res.statusCode)) {
-      return res.emit('error', new RangeError(`Invalid status code: ${ res.statusCode }`));
-    }
-
     if (redirect === requestRedirect.error) {
       return res.emit('error', new RequestError(`Unexpected redirect, redirect mode is set to '${ redirect }'.`));
     }

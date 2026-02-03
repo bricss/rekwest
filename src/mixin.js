@@ -1,4 +1,7 @@
-import { Blob } from 'node:buffer';
+import {
+  Blob,
+  isUtf8,
+} from 'node:buffer';
 import http2 from 'node:http2';
 import { buffer } from 'node:stream/consumers';
 import { MIMEType } from 'node:util';
@@ -92,8 +95,10 @@ export const mixin = (res, { decodersOptions, digest = false, parse = false } = 
           }
 
           if (isTextual) {
-            if (/\bjson\b/i.test(contentType)) {
+            if (/\bjson\b/.test(mimeType)) {
               body = JSON.parse(body.toString());
+            } else if (isUtf8(body)) {
+              body = body.toString();
             } else {
               const charset = mimeType.params.get('charset')?.toLowerCase() ?? 'utf-8';
 

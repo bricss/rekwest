@@ -73,10 +73,10 @@ export const transfer = async (options) => {
 
     return res;
   } catch (ex) {
-    const willRetry = retries(ex, options);
+    const result = retries(ex, options);
 
-    if (willRetry) {
-      return willRetry;
+    if (result) {
+      return result;
     }
 
     if (digest && !redirected && ex.body) {

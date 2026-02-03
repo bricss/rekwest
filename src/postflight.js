@@ -42,10 +42,14 @@ export const postflight = (req, res, options, { reject, resolve }) => {
     value: cookies !== false && Cookies.jar.has(url.origin) ? Cookies.jar.get(url.origin) : void 0,
   });
 
-  const willRedirect = redirects(res, options);
+  const result = redirects(res, options);
 
-  if (Object(willRedirect) === willRedirect) {
-    return willRedirect.then(resolve, reject);
+  if (Object(result) === result) {
+    return result.then(resolve, reject);
+  }
+
+  if (result) {
+    return reject(mixin(res, options));
   }
 
   if (res.statusCode >= HTTP_STATUS_BAD_REQUEST) {
