@@ -9,7 +9,7 @@ export const ackn = (options) => new Promise((resolve, reject) => {
       'http/1.1',
     ],
     host: url.hostname,
-    port: parseInt(url.port) || 443,
+    port: parseInt(url.port, 10) || 443,
     servername: url.hostname,
   }, () => {
     socket.off('error', reject);
