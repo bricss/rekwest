@@ -71,7 +71,7 @@ export const mixin = (res, { decodersOptions, digest = false, parse = false } = 
         brandCheck(this, res?.constructor);
 
         if (this.bodyUsed) {
-          throw new TypeError('Response stream already read.');
+          throw new TypeError('Response stream already read');
         }
 
         let body = await buffer(decode(this, this.headers[HTTP2_HEADER_CONTENT_ENCODING], { decodersOptions }));

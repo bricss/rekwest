@@ -223,7 +223,7 @@ export default ({ baseURL, httpVersion }) => {
       assert.throws(() => rekwest(url, { body: payload }), (err) => {
         assert.equal(
           err.message,
-          `Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body.`,
+          `Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body`,
         );
         assert.equal(err.name, 'TypeError');
 
@@ -239,7 +239,7 @@ export default ({ baseURL, httpVersion }) => {
       assert.throws(() => rekwest(url, { credentials: false }), (err) => {
         assert.equal(
           err.message,
-          'Failed to read the \'credentials\' property from \'options\': The provided value \'false\' is not a valid enum value.',
+          'Failed to read the \'credentials\' property from \'options\': The provided value \'false\' is not a valid enum value',
         );
         assert.equal(err.name, 'TypeError');
 
@@ -266,7 +266,7 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL('/gimme/redirect', baseURL);
 
       await assert.rejects(rekwest(url, { redirect: requestRedirect.error }), (err) => {
-        assert.equal(err.message, 'Unexpected redirect, redirect mode is set to \'error\'.');
+        assert.equal(err.message, 'Unexpected redirect, redirect mode is set to: error');
         assert.equal(err.name, 'RequestError');
 
         return true;
@@ -281,7 +281,7 @@ export default ({ baseURL, httpVersion }) => {
       assert.throws(() => rekwest(url, { redirect: false }), (err) => {
         assert.equal(
           err.message,
-          'Failed to read the \'redirect\' property from \'options\': The provided value \'false\' is not a valid enum value.',
+          'Failed to read the \'redirect\' property from \'options\': The provided value \'false\' is not a valid enum value',
         );
         assert.equal(err.name, 'TypeError');
 
@@ -355,7 +355,7 @@ export default ({ baseURL, httpVersion }) => {
           location: `wss://${ baseURL.host }`,
         },
       }), (err) => {
-        assert.equal(err.message, 'URL scheme must be "http" or "https".');
+        assert.equal(err.message, 'URL scheme must be "http" or "https"');
         assert.equal(err.name, 'RequestError');
 
         return true;
@@ -410,7 +410,7 @@ export default ({ baseURL, httpVersion }) => {
         body: Readable.from(payload),
         method: HTTP2_METHOD_PUT,
       }), (err) => {
-        assert.equal(err.message, 'Unable to follow redirect with streamable body.');
+        assert.equal(err.message, 'Unable to follow redirect with streamable body');
         assert.equal(err.name, 'RequestError');
 
         return true;
@@ -1153,7 +1153,7 @@ export default ({ baseURL, httpVersion }) => {
         assert.ok(Buffer.isBuffer(await res.body()));
 
         await assert.rejects(res.body(), (err) => {
-          assert.equal(err.message, 'Response stream already read.');
+          assert.equal(err.message, 'Response stream already read');
           assert.equal(err.name, 'TypeError');
 
           return true;

@@ -62,7 +62,7 @@ export const augment = (res, headers, options) => {
 
 export const brandCheck = (val, ctor) => {
   if (!(val instanceof ctor)) {
-    throw new TypeError('Illegal invocation.');
+    throw new TypeError('Illegal invocation');
   }
 };
 
@@ -164,7 +164,7 @@ export const sameOrigin = (a, b) => a.protocol === b.protocol && a.hostname === 
 export const snoop = (client, req, options) => {
   req.once('close', () => client?.close());
   req.once('end', () => client?.close());
-  req.once('timeout', () => req.destroy(new TimeoutError(`Timed out after ${ options.timeout } ms.`)));
+  req.once('timeout', () => req.destroy(new TimeoutError(`Timed out after ${ options.timeout } ms`)));
   req.once('trailers', (trailers) => {
     Reflect.defineProperty(req, 'trailers', {
       enumerable: true,

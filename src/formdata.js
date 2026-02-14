@@ -98,11 +98,11 @@ export class FormData {
         if (!input.every((it) => Array.isArray(it))) {
           throw new TypeError(`Failed to construct '${
             this[Symbol.toStringTag]
-          }': The provided value cannot be converted to a sequence.`);
+          }': The provided value cannot be converted to a sequence`);
         } else if (!input.every((it) => it.length === 2)) {
           throw new TypeError(`Failed to construct '${
             this[Symbol.toStringTag]
-          }': Sequence initializer must only contain pair elements.`);
+          }': Sequence initializer must only contain pair elements`);
         }
 
         input = Array.from(input);
@@ -120,7 +120,7 @@ export class FormData {
     if (args.length < expected) {
       throw new TypeError(`Failed to execute '${ method }' on '${
         this[Symbol.toStringTag]
-      }': ${ expected } arguments required, but only ${ args.length } present.`);
+      }': ${ expected } arguments required, but only ${ args.length } present`);
     }
 
     if ([
@@ -130,7 +130,7 @@ export class FormData {
       if (args.length === 3 && !this.constructor.#ensureInstance(args[1])) {
         throw new TypeError(`Failed to execute '${ method }' on '${
           this[Symbol.toStringTag]
-        }': parameter ${ expected } is not of type 'Blob'.`);
+        }': parameter ${ expected } is not of type 'Blob'`);
       }
     }
 
@@ -138,7 +138,7 @@ export class FormData {
       if (args[0]?.constructor !== Function) {
         throw new TypeError(`Failed to execute '${ method }' on '${
           this[Symbol.toStringTag]
-        }': parameter ${ expected } is not of type 'Function'.`);
+        }': parameter ${ expected } is not of type 'Function'`);
       }
     }
   }
