@@ -15,6 +15,20 @@ const {
   HTTP2_HEADER_STATUS,
 } = http2.constants;
 
+export const addSearchParams = (url, params = {}) => {
+  for (const [key, val] of Object.entries(params)) {
+    if (Array.isArray(val)) {
+      for (const v of val) {
+        url.searchParams.append(key, v);
+      }
+    } else {
+      url.searchParams.set(key, val);
+    }
+  }
+
+  return url;
+};
+
 export const augment = (res, headers, options) => {
   const { h2 } = options;
 
@@ -46,45 +60,22 @@ export const augment = (res, headers, options) => {
   });
 };
 
-export const brandCheck = (value, ctor) => {
-  if (!(value instanceof ctor)) {
+export const brandCheck = (val, ctor) => {
+  if (!(val instanceof ctor)) {
     throw new TypeError('Illegal invocation.');
   }
 };
 
-export const copyWithMerge = (target, ...rest) => {
+export const cloneWith = (target, ...rest) => {
   target = structuredClone(target);
   if (!rest.length) {
     return target;
   }
 
-  return merge(target, ...rest);
+  return deepMerge(target, ...rest);
 };
 
-export const dispatch = (req, { body }) => {
-  if (isReadable(body)) {
-    body.pipe(req);
-  } else {
-    req.end(body);
-  }
-};
-
-export const isFileLike = (value) => {
-  return [
-    Blob,
-    File,
-  ].some((it) => value instanceof it);
-};
-
-export const isPipeStream = (value) => {
-  return value instanceof Readable;
-};
-
-export const isReadableStream = (value) => {
-  return value instanceof ReadableStream;
-};
-
-export const merge = (target, ...rest) => {
+export const deepMerge = (target, ...rest) => {
   rest = rest.filter((it) => Object(it) === it);
   for (const source of rest) {
     for (const key of Object.getOwnPropertyNames(source)) {
@@ -92,7 +83,7 @@ export const merge = (target, ...rest) => {
       const tv = target[key];
 
       if (Object(sv) === sv && Object(tv) === tv) {
-        target[key] = merge(tv, sv);
+        target[key] = deepMerge(tv, sv);
         continue;
       }
 
@@ -103,9 +94,32 @@ export const merge = (target, ...rest) => {
   return target;
 };
 
+export const dispatch = (req, { body }) => {
+  if (isReadable(body)) {
+    body.pipe(req);
+  } else {
+    req.end(body);
+  }
+};
+
+export const isFileLike = (val) => {
+  return [
+    Blob,
+    File,
+  ].some((it) => val instanceof it);
+};
+
+export const isPipeStream = (val) => {
+  return val instanceof Readable;
+};
+
+export const isReadableStream = (val) => {
+  return val instanceof ReadableStream;
+};
+
 export const normalize = (url, options = {}) => {
   if (!options.redirected) {
-    options = copyWithMerge(config.defaults, options);
+    options = cloneWith(config.defaults, options);
   }
 
   if (options.trimTrailingSlashes) {
@@ -119,30 +133,30 @@ export const normalize = (url, options = {}) => {
   return Object.assign(options, {
     headers: normalizeHeaders(options.headers),
     method: options.method.toUpperCase(),
-    url: new URL(url, options.baseURL),
+    url: addSearchParams(new URL(url, options.baseURL), options.params),
   });
 };
 
 export const normalizeHeaders = (headers) => {
-  const collector = {};
+  const acc = {};
 
-  for (const [key, value] of Object.entries(headers ?? {})) {
+  for (const [key, val] of Object.entries(headers ?? {})) {
     const name = key.toLowerCase();
 
-    collector[key] = value;
+    acc[key] = val;
 
     if (key === HTTP2_HEADER_ACCEPT_ENCODING && !isZstdSupported) {
-      const stripped = value.replace(/\s?zstd,?/gi, '').trim();
+      const stripped = val.replace(/\s?zstd,?/gi, '').trim();
 
       if (stripped) {
-        collector[key] = stripped;
+        acc[key] = stripped;
       } else {
-        Reflect.deleteProperty(collector, name);
+        Reflect.deleteProperty(acc, name);
       }
     }
   }
 
-  return collector;
+  return acc;
 };
 
 export const sameOrigin = (a, b) => a.protocol === b.protocol && a.hostname === b.hostname && a.port === b.port;
@@ -169,13 +183,13 @@ export const stripHeaders = (headers = {}, names = []) => {
   );
 };
 
-export async function* tap(value) {
-  if (Reflect.has(value, Symbol.asyncIterator)) {
-    yield* value;
-  } else if (value.stream) {
-    yield* value.stream();
+export async function* tap(val) {
+  if (Reflect.has(val, Symbol.asyncIterator)) {
+    yield* val;
+  } else if (val.stream) {
+    yield* val.stream();
   } else {
-    yield await value.arrayBuffer();
+    yield await val.arrayBuffer();
   }
 }
 

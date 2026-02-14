@@ -1,4 +1,4 @@
-import { strict as assert } from 'node:assert';
+import assert from 'node:assert/strict';
 import { Blob } from 'node:buffer';
 import { Readable } from 'node:stream';
 import { scheduler } from 'node:timers/promises';
@@ -37,8 +37,8 @@ const {
 
 const { TEXT_PLAIN } = mediatypes;
 
-const logarithmic = 'logarithmic';
 const encoder = new TextEncoder();
+const logarithmic = 'logarithmic';
 
 export default ({ baseURL, httpVersion }) => {
   describe('with { digest: true } & { parse: true } (defaults)', () => {
@@ -110,9 +110,12 @@ export default ({ baseURL, httpVersion }) => {
         HTTP_STATUS_OK
       }] request and must get new cookie with 'expires' attribute`,
       async () => {
-        const url = new URL(`/gimme/cookies?expires=${ new Date(Date.now() + 1e3).toGMTString() }`, baseURL);
+        const url = new URL('/gimme/cookies', baseURL);
         const res = await rekwest(url, {
           cookiesTTL: true,
+          params: {
+            expires: new Date(Date.now() + 1e3).toUTCString(),
+          },
         });
 
         assert.equal(res.body.message, 'json-bourne');
@@ -132,9 +135,12 @@ export default ({ baseURL, httpVersion }) => {
         HTTP_STATUS_OK
       }] request and must get new cookie with positive (+) 'max-age' attribute`,
       async () => {
-        const url = new URL(`/gimme/cookies?maxAge=${ 1 }`, baseURL);
+        const url = new URL('/gimme/cookies', baseURL);
         const res = await rekwest(url, {
           cookiesTTL: true,
+          params: {
+            maxAge: 1,
+          },
         });
 
         assert.equal(res.body.message, 'json-bourne');
@@ -154,9 +160,12 @@ export default ({ baseURL, httpVersion }) => {
         HTTP_STATUS_OK
       }] request and must get new cookie with negative (-) 'max-age' attribute`,
       async () => {
-        const url = new URL(`/gimme/cookies?maxAge=${ -1 }`, baseURL);
+        const url = new URL('/gimme/cookies', baseURL);
         const res = await rekwest(url, {
           cookiesTTL: true,
+          params: {
+            maxAge: -1,
+          },
         });
 
         assert.equal(res.body.message, 'json-bourne');
@@ -301,11 +310,14 @@ export default ({ baseURL, httpVersion }) => {
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_MOVED_PERMANENTLY
     }] request with redirect { mode: ${ requestRedirect.follow } } and must omit all creds`, async () => {
-      const base = baseURL.protocol === 'http:' ? globalThis.https1BaseURL : globalThis.http1BaseURL;
-      const url = new URL(`/gimme/redirect?location=${ base.origin }/gimme/json`, baseURL);
+      const base = baseURL.protocol === 'http:' ? globalThis.h1sBaseURL : globalThis.h1cBaseURL;
+      const url = new URL('/gimme/redirect', baseURL);
       const res = await rekwest(url, {
         headers: {
           [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
+        },
+        params: {
+          location: `${ base.origin }/gimme/json`,
         },
       });
 
@@ -336,9 +348,13 @@ export default ({ baseURL, httpVersion }) => {
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_SEE_OTHER
     }] request with redirect and must catch an error on invalid protocol`, async () => {
-      const url = new URL(`/gimme/redirect?location=wss://${ baseURL.host }`, baseURL);
+      const url = new URL('/gimme/redirect', baseURL);
 
-      await assert.rejects(rekwest(url), (err) => {
+      await assert.rejects(rekwest(url, {
+        params: {
+          location: `wss://${ baseURL.host }`,
+        },
+      }), (err) => {
         assert.equal(err.message, 'URL scheme must be "http" or "https".');
         assert.equal(err.name, 'RequestError');
 
@@ -349,8 +365,12 @@ export default ({ baseURL, httpVersion }) => {
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_MOVED_PERMANENTLY
     }] request with redirect and must respect '${ HTTP2_HEADER_RETRY_AFTER }' header`, async () => {
-      const url = new URL(`/gimme/redirect?${ HTTP2_HEADER_RETRY_AFTER }=0.25`, baseURL);
-      const res = await rekwest(url);
+      const url = new URL('/gimme/redirect', baseURL);
+      const res = await rekwest(url, {
+        params: {
+          [HTTP2_HEADER_RETRY_AFTER]: 0.25,
+        },
+      });
 
       assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
@@ -420,11 +440,16 @@ export default ({ baseURL, httpVersion }) => {
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_OK
     }] request and must succeed after connection reset`, async () => {
-      const url = new URL(
-        '/gimme/reset?attempts=2',
-        baseURL,
-      );
-      const res = await rekwest(url, { retry: { attempts: 2, interval: 25 } });
+      const url = new URL('/gimme/reset', baseURL);
+      const res = await rekwest(url, {
+        params: {
+          attempts: 2,
+        },
+        retry: {
+          attempts: 2,
+          interval: 25,
+        },
+      });
 
       assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
@@ -438,11 +463,15 @@ export default ({ baseURL, httpVersion }) => {
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_TOO_MANY_REQUESTS
     }] request and must succeed after '${ HTTP2_HEADER_RETRY_AFTER }' with date interval retry`, async () => {
-      const url = new URL(
-        `/gimme/retry?attempts=2&${ HTTP2_HEADER_RETRY_AFTER }=date:0.5&ver=${ httpVersion }`,
-        baseURL,
-      );
-      const res = await rekwest(url, { retry: { attempts: 2 } });
+      const url = new URL('/gimme/retry', baseURL);
+      const res = await rekwest(url, {
+        params: {
+          [HTTP2_HEADER_RETRY_AFTER]: 'date:0.5',
+          attempts: 2,
+          ver: httpVersion,
+        },
+        retry: { attempts: 2 },
+      });
 
       assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
@@ -456,11 +485,15 @@ export default ({ baseURL, httpVersion }) => {
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_TOO_MANY_REQUESTS
     }] request and must succeed after '${ HTTP2_HEADER_RETRY_AFTER }' with seconds interval retry`, async () => {
-      const url = new URL(
-        `/gimme/retry?attempts=2&${ HTTP2_HEADER_RETRY_AFTER }=0.25&ver=${ httpVersion }`,
-        baseURL,
-      );
-      const res = await rekwest(url, { retry: { attempts: 2 } });
+      const url = new URL('/gimme/retry', baseURL);
+      const res = await rekwest(url, {
+        params: {
+          [HTTP2_HEADER_RETRY_AFTER]: 0.25,
+          attempts: 2,
+          ver: httpVersion,
+        },
+        retry: { attempts: 2 },
+      });
 
       assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
@@ -474,12 +507,16 @@ export default ({ baseURL, httpVersion }) => {
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_TOO_MANY_REQUESTS
     }] request and must catch an error if max '${ HTTP2_HEADER_RETRY_AFTER }' limit is exceeded`, async () => {
-      const url = new URL(
-        `/gimme/retry?attempts=2&${ HTTP2_HEADER_RETRY_AFTER }=3.5e5&ver=${ httpVersion }`,
-        baseURL,
-      );
+      const url = new URL('/gimme/retry', baseURL);
 
-      await assert.rejects(rekwest(url, { retry: { attempts: 2 } }), (err) => {
+      await assert.rejects(rekwest(url, {
+        params: {
+          [HTTP2_HEADER_RETRY_AFTER]: '3.5e5',
+          attempts: 2,
+          ver: httpVersion,
+        },
+        retry: { attempts: 2 },
+      }), (err) => {
         assert.ok(err.cause);
         assert.match(err.message, new RegExp(`Maximum '${ HTTP2_HEADER_RETRY_AFTER }' limit exceeded:`));
         assert.equal(err.name, 'RequestError');
@@ -491,8 +528,18 @@ export default ({ baseURL, httpVersion }) => {
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_TOO_MANY_REQUESTS
     }] request and must succeed after a ${ logarithmic } interval retry`, async () => {
-      const url = new URL(`/gimme/retry?attempts=2&${ logarithmic }=true&ver=${ httpVersion }`, baseURL);
-      const res = await rekwest(url, { retry: { attempts: 2, interval: 100 } });
+      const url = new URL('/gimme/retry', baseURL);
+      const res = await rekwest(url, {
+        params: {
+          attempts: 2,
+          [`${ logarithmic }`]: true,
+          ver: httpVersion,
+        },
+        retry: {
+          attempts: 2,
+          interval: 100,
+        },
+      });
 
       assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
@@ -806,8 +853,8 @@ export default ({ baseURL, httpVersion }) => {
       const keys = [...payload.keys()];
       const values = [...payload.values()];
 
-      payload.forEach((value, key) => {
-        assert.equal(value, values.shift());
+      payload.forEach((val, key) => {
+        assert.equal(val, values.shift());
         assert.equal(key, keys.shift());
       });
 
@@ -968,7 +1015,16 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a URLSearchParams`, async () => {
-      const payload = new URLSearchParams('eldritch=symbols&ley=lines');
+      const payload = new URLSearchParams([
+        [
+          'eldritch',
+          'symbols',
+        ],
+        [
+          'ley',
+          'lines',
+        ],
+      ]);
       const url = new URL('/gimme/repulse', baseURL);
       const res = await rekwest(url, {
         body: payload,

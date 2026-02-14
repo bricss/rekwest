@@ -140,6 +140,7 @@ console.log(res.body);
   * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol
   * `headers` **{Object}** The headers to add to the request
   * `maxRetryAfter` **{number}** The upper limit of `retry-after` header. If unset, it will use `timeout` value
+  * `params` **{Object}** The search params to add to the `url`
   * `parse` **{boolean}** `Default: true` Controls whether to parse response body or return a buffer
   * `redirect` **{error | follow | manual}** `Default: follow` Controls the redirect flows
   * `retry` **{Object}** Represents the retry options

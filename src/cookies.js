@@ -10,13 +10,13 @@ export class Cookies extends URLSearchParams {
   static #finalizers = new Set();
   static jar = new Map();
 
-  static #register(target, value) {
-    const finalizer = new FinalizationRegistry((heldValue) => {
-      clearTimeout(heldValue);
+  static #register(target, val) {
+    const finalizer = new FinalizationRegistry((heldVal) => {
+      clearTimeout(heldVal);
       this.#finalizers.delete(finalizer);
     });
 
-    finalizer.register(target, value);
+    finalizer.register(target, val);
     this.#finalizers.add(finalizer);
   }
 
@@ -36,10 +36,10 @@ export class Cookies extends URLSearchParams {
         const [cookie, ...attrs] = it.split(';').map((it) => it.trim());
         const ttl = {};
 
-        for (const val of attrs) {
-          if (/(?:expires|max-age)=/i.test(val)) {
-            const [key, value] = val.toLowerCase().split('=');
-            const ms = Number.isFinite(Number(value)) ? value * 1e3 : Date.parse(value) - Date.now();
+        for (const attr of attrs) {
+          if (/(?:expires|max-age)=/i.test(attr)) {
+            const [key, val] = attr.toLowerCase().split('=');
+            const ms = Number.isFinite(Number(val)) ? val * 1e3 : Date.parse(val) - Date.now();
 
             ttl[toCamelCase(key)] = Math.min(ms, lifetimeCap);
           }

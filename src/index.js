@@ -8,7 +8,7 @@ import { preflight } from './preflight.js';
 import { transfer } from './transfer.js';
 import {
   augment,
-  copyWithMerge,
+  cloneWith,
   normalize,
   snoop,
 } from './utils.js';
@@ -41,20 +41,20 @@ export default function rekwest(url, options) {
 Reflect.defineProperty(rekwest, 'defaults', {
   enumerable: true,
   get() { return config.defaults; },
-  set(value) { config.defaults = copyWithMerge(config.defaults, value); },
+  set(val) { config.defaults = cloneWith(config.defaults, val); },
 });
 
 Reflect.defineProperty(rekwest, 'extend', {
   enumerable: true,
   value(options) {
-    return (url, opts) => rekwest(url, copyWithMerge(options, opts));
+    return (url, opts) => rekwest(url, cloneWith(options, opts));
   },
 });
 
 Reflect.defineProperty(rekwest, 'stream', {
   enumerable: true,
   value(url, options) {
-    options = preflight(validation(normalize(url, copyWithMerge({}, options, {
+    options = preflight(validation(normalize(url, cloneWith({}, options, {
       headers: { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_OCTET_STREAM },
       redirect: requestRedirect.manual,
     }))));

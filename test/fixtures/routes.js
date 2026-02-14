@@ -175,8 +175,8 @@ export default (baseURL) => (req, res) => {
         flush(cb) {
           try {
             this.push(Buffer.concat(this.data).reverse());
-          } catch (ex) {
-            cb(ex);
+          } catch (err) {
+            cb(err);
           } finally {
             cb();
           }

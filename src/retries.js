@@ -11,7 +11,7 @@ const {
   HTTP2_METHOD_HEAD,
 } = http2.constants;
 
-export const retries = (ex, options) => {
+export const retries = (err, options) => {
   const { body, maxRetryAfter, method, retry, url } = options;
 
   if (retry?.attempts > 0) {
@@ -19,19 +19,19 @@ export const retries = (ex, options) => {
       HTTP2_METHOD_GET,
       HTTP2_METHOD_HEAD,
     ].includes(method) && isPipeStream(body) && !isReadable(body)) {
-      throw new RequestError('Request stream already read.', { cause: ex });
+      throw new RequestError('Request stream already read.', { cause: err });
     }
 
-    if (retry.errorCodes?.includes(ex.code) || retry.statusCodes?.includes(ex.statusCode)) {
+    if (retry.errorCodes?.includes(err.code) || retry.statusCodes?.includes(err.statusCode)) {
       let { interval } = retry;
 
-      if (retry.retryAfter && ex.headers?.[HTTP2_HEADER_RETRY_AFTER]) {
-        interval = ex.headers[HTTP2_HEADER_RETRY_AFTER];
+      if (retry.retryAfter && err.headers?.[HTTP2_HEADER_RETRY_AFTER]) {
+        interval = err.headers[HTTP2_HEADER_RETRY_AFTER];
         interval = Math.abs(Number(interval) * 1e3 || new Date(interval) - Date.now()) || 0;
         if (interval > maxRetryAfter) {
           throw new RequestError(
             `Maximum '${ HTTP2_HEADER_RETRY_AFTER }' limit exceeded: ${ interval } ms.`,
-            { cause: ex },
+            { cause: err },
           );
         }
       } else {

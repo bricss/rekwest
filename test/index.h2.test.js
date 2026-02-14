@@ -1,4 +1,4 @@
-import { strict as assert } from 'node:assert';
+import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { Readable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
@@ -10,7 +10,7 @@ const {
   HTTP_STATUS_OK,
 } = constants;
 
-const baseURL = globalThis.https2BaseURL;
+const baseURL = globalThis.h2sBaseURL;
 const httpVersion = '2.0';
 const rejectUnauthorized = false;
 

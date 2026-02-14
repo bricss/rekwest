@@ -33,20 +33,20 @@ export class FormData {
       async* [Symbol.asyncIterator]() {
         const encoder = new TextEncoder();
 
-        for (const [name, value] of fd) {
-          if (value.constructor === String) {
+        for (const [name, val] of fd) {
+          if (val.constructor === String) {
             yield encoder.encode(`${ prefix }; name="${
               escape(redress(name))
-            }"${ CRLF.repeat(2) }${ redress(value) }${ CRLF }`);
+            }"${ CRLF.repeat(2) }${ redress(val) }${ CRLF }`);
           } else {
             yield encoder.encode(`${ prefix }; name="${
               escape(redress(name))
-            }"${ value.name ? `; filename="${ escape(value.name) }"` : '' }${ CRLF }${
+            }"${ val.name ? `; filename="${ escape(val.name) }"` : '' }${ CRLF }${
               HTTP2_HEADER_CONTENT_TYPE
             }: ${
-              value.type || APPLICATION_OCTET_STREAM
+              val.type || APPLICATION_OCTET_STREAM
             }${ CRLF.repeat(2) }`);
-            yield* tap(value);
+            yield* tap(val);
             yield new Uint8Array([
               13,
               10,
@@ -59,8 +59,8 @@ export class FormData {
     };
   }
 
-  static alike(value) {
-    return FormData.name === value?.[Symbol.toStringTag];
+  static alike(val) {
+    return FormData.name === val?.[Symbol.toStringTag];
   }
 
   static #enfoldEntry(name, value, filename) {
@@ -82,8 +82,8 @@ export class FormData {
     };
   }
 
-  static #ensureInstance(value) {
-    return isFileLike(value) || (Object(value) === value && Reflect.has(value, Symbol.asyncIterator));
+  static #ensureInstance(val) {
+    return isFileLike(val) || (Object(val) === val && Reflect.has(val, Symbol.asyncIterator));
   }
 
   #entries = [];
@@ -110,8 +110,8 @@ export class FormData {
         input = Object.entries(input);
       }
 
-      for (const [key, value] of input) {
-        this.append(key, value);
+      for (const [key, val] of input) {
+        this.append(key, val);
       }
     }
   }
@@ -226,8 +226,8 @@ export class FormData {
 
   * values() {
     brandCheck(this, FormData);
-    for (const [, value] of this) {
-      yield value;
+    for (const [, val] of this) {
+      yield val;
     }
   }
 

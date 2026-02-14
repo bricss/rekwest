@@ -34,9 +34,9 @@ export const transfer = async (options) => {
 
   try {
     options = await transform(preflight(options));
-  } catch (ex) {
+  } catch (err) {
     options.createConnection?.().destroy();
-    throw ex;
+    throw err;
   }
 
   const promise = new Promise((resolve, reject) => {
@@ -72,21 +72,21 @@ export const transfer = async (options) => {
     }
 
     return res;
-  } catch (ex) {
-    const result = retries(ex, options);
+  } catch (err) {
+    const result = retries(err, options);
 
     if (result) {
       return result;
     }
 
-    if (digest && !redirected && ex.body) {
-      ex.body = await ex.body();
+    if (digest && !redirected && err.body) {
+      err.body = await err.body();
     }
 
     if (!thenable) {
-      throw ex;
+      throw err;
     } else {
-      return ex;
+      return err;
     }
   }
 };
