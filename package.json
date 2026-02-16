@@ -71,5 +71,5 @@
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
   "type": "module",
-  "version": "7.2.0"
+  "version": "7.2.1"
 }

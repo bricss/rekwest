@@ -48,7 +48,7 @@ const res = await rekwest(url, {
   body: { celestial: 'payload' },
   headers: {
     [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
-    [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // enables: body encoding
+    [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // Enables: body encoding
     /** [HTTP2_HEADER_CONTENT_TYPE] is undue for
      * Array/Blob/File/FormData/Object/URLSearchParams body types
      * and will be set automatically, with an option to override it here
@@ -85,7 +85,7 @@ const file = new File(['bits'], 'file.xyz');
 const readable = Readable.from('bits');
 
 const fd = new FormData({
-  aux: Date.now(),  // either [[key, value]] or kv sequenceable
+  aux: Date.now(),  // Either [[key, value]] or kv sequenceable
 });
 
 fd.append('celestial', 'payload');
@@ -99,7 +99,7 @@ const res = await rekwest(url, {
   body: fd,
   headers: {
     [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
-    [HTTP2_HEADER_CONTENT_ENCODING]: 'zstd',  // enables: body encoding
+    [HTTP2_HEADER_CONTENT_ENCODING]: 'zstd',  // Enables: body encoding
   },
   method: HTTP2_METHOD_POST,
 });
