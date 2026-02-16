@@ -30,7 +30,7 @@ export class Cookies extends URLSearchParams {
     if (Array.isArray(input) && input.every((it) => !Array.isArray(it))) {
       input = input.map((it) => {
         if (!cookiesTTL) {
-          return [it.split(';').at(0).trim()];
+          return [it.split(';')[0].trim()];
         }
 
         const [cookie, ...attrs] = it.split(';').map((it) => it.trim());
@@ -52,11 +52,11 @@ export class Cookies extends URLSearchParams {
       });
     }
 
-    super(Array.isArray(input) ? input.map((it) => it.at(0)).join('&') : input);
+    super(Array.isArray(input) ? input.map((it) => it[0]).join('&') : input);
 
     if (Array.isArray(input) && cookiesTTL) {
-      for (const [cookie, ttl] of input.filter((it) => it.at(1))) {
-        const key = cookie.split('=').at(0);
+      for (const [cookie, ttl] of input.filter((it) => it[1])) {
+        const key = cookie.split('=')[0];
 
         if (this.#chronometry.has(key)) {
           clearTimeout(this.#chronometry.get(key));

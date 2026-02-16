@@ -1,7 +1,6 @@
 import { File } from 'node:buffer';
 import { randomBytes } from 'node:crypto';
 import http2 from 'node:http2';
-import { toUSVString } from 'node:util';
 import {
   APPLICATION_OCTET_STREAM,
   MULTIPART_FORM_DATA,
@@ -64,8 +63,8 @@ export class FormData {
   }
 
   static #enfoldEntry(name, value, filename) {
-    name = toUSVString(name);
-    filename &&= toUSVString(filename);
+    name = String(name).toWellFormed();
+    filename &&= String(filename).toWellFormed();
 
     if (isFileLike(value)) {
       filename ??= value.name || 'blob';
@@ -73,7 +72,7 @@ export class FormData {
     } else if (this.#ensureInstance(value)) {
       value.name = filename;
     } else {
-      value = toUSVString(value);
+      value = String(value).toWellFormed();
     }
 
     return {
@@ -152,7 +151,7 @@ export class FormData {
   delete(...args) {
     brandCheck(this, FormData);
     this.#ensureArgs(args, 1, 'delete');
-    const name = toUSVString(args[0]);
+    const name = String(args[0]).toWellFormed();
 
     this.#entries = this.#entries.filter((it) => it.name !== name);
   }
@@ -173,15 +172,15 @@ export class FormData {
   get(...args) {
     brandCheck(this, FormData);
     this.#ensureArgs(args, 1, 'get');
-    const name = toUSVString(args[0]);
+    const name = String(args[0]).toWellFormed();
 
-    return (this.#entries.find((it) => it.name === name) ?? {}).value ?? null;
+    return this.#entries.find((it) => it.name === name)?.value ?? null;
   }
 
   getAll(...args) {
     brandCheck(this, FormData);
     this.#ensureArgs(args, 1, 'getAll');
-    const name = toUSVString(args[0]);
+    const name = String(args[0]).toWellFormed();
 
     return this.#entries.filter((it) => it.name === name).map((it) => it.value);
   }
@@ -189,7 +188,7 @@ export class FormData {
   has(...args) {
     brandCheck(this, FormData);
     this.#ensureArgs(args, 1, 'has');
-    const name = toUSVString(args[0]);
+    const name = String(args[0]).toWellFormed();
 
     return !!this.#entries.find((it) => it.name === name);
   }
