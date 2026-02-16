@@ -383,6 +383,30 @@ export default ({ baseURL, httpVersion }) => {
           return true;
         });
       });
+
+      it(`should make ${ HTTP2_METHOD_GET } [${
+        HTTP_STATUS_MOVED_PERMANENTLY
+      }] request with redirect { allowDowngrade: true } and must receive a response`, async () => {
+        const loc = new URL(`${ globalThis.h2cBaseURL.origin }/gimme/json`);
+        const url = new URL('/gimme/redirect', baseURL);
+        const res = await rekwest(url, {
+          allowDowngrade: true,
+          headers: {
+            [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
+          },
+          params: {
+            location: loc,
+          },
+        });
+
+        assert.equal(res.body.message, 'json-bourne');
+        assert.equal(res.bodyUsed, true);
+        assert.equal(res.cookies, undefined);
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.redirected, true);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
+      });
     }
 
     it(`should make ${ HTTP2_METHOD_GET } [${

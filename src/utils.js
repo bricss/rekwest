@@ -109,6 +109,10 @@ export const isFileLike = (val) => {
   ].some((it) => val instanceof it);
 };
 
+export const isLikelyH2cPrefaceError = (err) => {
+  return err.code === 'HPE_INVALID_CONSTANT';
+};
+
 export const isPipeStream = (val) => {
   return val instanceof Readable;
 };

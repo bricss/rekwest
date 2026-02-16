@@ -7,7 +7,7 @@ and [http2.request](https://nodejs.org/api/http2.html#clienthttp2sessionrequesth
 ## Abstract
 
 * Fetch-alike 🥏
-* Cool-beans 🫐 config options (with defaults)
+* Cool-beans 🫐 config options (with defaults) 📋
 * Automatic HTTP/2 support (ALPN negotiation) 💼
 * Automatic or opt-in body parse (with non-UTF-8 charset decoding) 🉑
 * Automatic and simplistic `Cookies` treatment (with **TTL** support) 🍪
@@ -17,7 +17,7 @@ and [http2.request](https://nodejs.org/api/http2.html#clienthttp2sessionrequesth
 * Support redirects & retries with fine-grained tune-ups 🪛
 * Support plenty request body types (include blobs & streams) 📦
 * Support both CJS and ESM module systems 🧩
-* Fully promise-able and pipe-able 🔗
+* Fully promise-able ⏳ and pipe-able 🌀
 * Zero dependencies 🗽
 
 ## Prerequisites
@@ -207,7 +207,7 @@ const params = {
   signature: '[code]',
   variant: 'A',
 };
-const signal = AbortSignal.timeout(1e4);
+const signal = AbortSignal.timeout(3e4);
 const url = '/somewhat/endpoint';
 
 const res = await rk(url, {

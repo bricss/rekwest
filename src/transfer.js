@@ -8,7 +8,9 @@ import { preflight } from './preflight.js';
 import { retries } from './retries.js';
 import { transform } from './transform.js';
 import {
+  deepMerge,
   dispatch,
+  isLikelyH2cPrefaceError,
   snoop,
 } from './utils.js';
 
@@ -73,6 +75,17 @@ export const transfer = async (options) => {
 
     return res;
   } catch (err) {
+    if (isLikelyH2cPrefaceError(err)) {
+      options = deepMerge(options, {
+        h2: true,
+        retry: {
+          attempts: 1,
+          errorCodes: [err.code],
+          interval: 0,
+        },
+      });
+    }
+
     const result = retries(err, options);
 
     if (result) {
