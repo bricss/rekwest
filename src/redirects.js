@@ -24,21 +24,33 @@ const {
 } = http2.constants;
 
 export const redirects = (res, options) => {
-  const { credentials, follow, redirect, url } = options;
+  const {
+    allowDowngrade,
+    credentials,
+    follow,
+    redirect,
+    url,
+  } = options;
 
   if (follow && /3\d{2}/.test(res.statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
     if (redirect === requestRedirect.error) {
-      return res.emit('error', new RequestError(`Unexpected redirect, redirect mode is set to: ${ redirect }`));
+      throw new RequestError(`Unexpected redirect, redirect mode is set to: ${ redirect }`);
     }
 
     if (redirect === requestRedirect.follow) {
-      const location = new URL(res.headers[HTTP2_HEADER_LOCATION], url);
+      const loc = new URL(res.headers[HTTP2_HEADER_LOCATION], url);
 
-      if (!/^https?:/i.test(location.protocol)) {
-        return res.emit('error', new RequestError('URL scheme must be "http" or "https"'));
+      if (!/^https?:/i.test(loc.protocol)) {
+        throw new RequestError('URL scheme must be "http" or "https"');
       }
 
-      if (!sameOrigin(location, url)) {
+      if (!allowDowngrade && loc.protocol === 'http:' && url.protocol === 'https:') {
+        throw new RequestError(
+          `Protocol downgrade detected, redirect from "${ url.protocol }" to "${ loc.protocol }": ${ loc }`,
+        );
+      }
+
+      if (!sameOrigin(loc, url)) {
         if (credentials !== requestCredentials.include) {
           options.credentials = requestCredentials.omit;
         }
@@ -50,7 +62,7 @@ export const redirects = (res, options) => {
         HTTP_STATUS_PERMANENT_REDIRECT,
         HTTP_STATUS_TEMPORARY_REDIRECT,
       ].includes(res.statusCode) && isPipeStream(options.body) && !isReadable(options.body)) {
-        return res.emit('error', new RequestError(`Unable to ${ redirect } redirect with streamable body`));
+        throw new RequestError(`Unable to ${ redirect } redirect with streamable body`);
       }
 
       if (([
@@ -68,7 +80,7 @@ export const redirects = (res, options) => {
       options.follow--;
       options.redirected = true;
 
-      return rekwest(location, options);
+      return rekwest(loc, options);
     }
   }
 };

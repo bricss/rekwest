@@ -49,8 +49,7 @@ const res = await rekwest(url, {
   headers: {
     [HTTP2_HEADER_AUTHORIZATION]: 'Bearer [token]',
     [HTTP2_HEADER_CONTENT_ENCODING]: 'br',  // enables: body encoding
-    /** [HTTP2_HEADER_CONTENT_TYPE]
-     * is undue for
+    /** [HTTP2_HEADER_CONTENT_TYPE] is undue for
      * Array/Blob/File/FormData/Object/URLSearchParams body types
      * and will be set automatically, with an option to override it here
      */
@@ -82,7 +81,7 @@ const {
 } = constants;
 
 const blob = new Blob(['bits']);
-const file = new File(['bits'], 'file.dab');
+const file = new File(['bits'], 'file.xyz');
 const readable = Readable.from('bits');
 
 const fd = new FormData({
@@ -90,9 +89,9 @@ const fd = new FormData({
 });
 
 fd.append('celestial', 'payload');
-fd.append('blob', blob, 'blob.dab');
+fd.append('blob', blob, 'blob.xyz');
 fd.append('file', file);
-fd.append('readable', readable, 'readable.dab');
+fd.append('readable', readable, 'readable.xyz');
 
 const url = 'https://somewhe.re/somewhat/endpoint';
 
@@ -121,36 +120,37 @@ console.log(res.body);
   & [http2.ClientSessionRequestOptions](https://nodejs.org/api/http2.html#clienthttp2sessionrequestheaders-options)
   and [tls.ConnectionOptions](https://nodejs.org/api/tls.html#tlsconnectoptions-callback)
   for HTTP/2 attunes
+  * `allowDowngrade` **{boolean}** `Default: false` Controls whether `https:` redirects to `http:` are allowed
   * `baseURL` **{string | URL}** The base URL to use in cases where `url` is a relative URL
   * `body` **{string | Array | ArrayBuffer | ArrayBufferView | AsyncIterator | Blob | Buffer | DataView | File |
     FormData | Iterator | Object | Readable | ReadableStream | SharedArrayBuffer | URLSearchParams}** The body to send
     with the request
   * `bufferBody` **{boolean}** `Default: false` Toggles the buffering of the streamable request bodies for redirects and
     retries
-  * `cookies` **{boolean | Array<[k, v]> | Array<string\> | Cookies | Object | URLSearchParams}** `Default: true` The
+  * `cookies` **{boolean | string[] | Array<[k, v]> | Cookies | Object | URLSearchParams}** `Default: true` The
     cookies to add to
     the request
   * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookies cache
   * `credentials` **{include | omit | same-origin}** `Default: same-origin` Controls credentials in case of cross-origin
     redirects
-  * `decodersOptions` **{Object}** Configures decoders options, e.g.: `brotli`, `zstd`, `zlib`
+  * `decodersOptions` **{Object}** Configures decoders options, e.g.: `brotli`, `zlib`, `zstd`
   * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or add a mixin
-  * `encodersOptions` **{Object}** Configures encoders options, e.g.: `brotli`, `zstd`, `zlib`
+  * `encodersOptions` **{Object}** Configures encoders options, e.g.: `brotli`, `zlib`, `zstd`
   * `follow` **{number}** `Default: 20` The number of redirects to follow
   * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol
   * `headers` **{Object}** The headers to add to the request
-  * `maxRetryAfter` **{number}** The upper limit of `retry-after` header. If unset, it will use `timeout` value
   * `params` **{Object}** The search params to add to the `url`
   * `parse` **{boolean}** `Default: true` Controls whether to parse response body or return a buffer
   * `redirect` **{error | follow | manual}** `Default: follow` Controls the redirect flows
   * `retry` **{Object}** Represents the retry options
     * `attempts` **{number}** `Default: 0` The number of retry attempts
     * `backoffStrategy` **{string}** `Default: interval * Math.log(Math.random() * (Math.E * Math.E - Math.E) + Math.E)`
-      The backoff strategy algorithm that increases logarithmically. To fixate set value to `interval * 1`
+      The backoff strategy uses a log-uniform algorithm. To fix the interval, set the value to `interval * 1`.
     * `errorCodes` **{string[]}**
       `Default: ['ECONNREFUSED', 'ECONNRESET', 'EHOSTDOWN', 'EHOSTUNREACH', 'ENETDOWN', 'ENETUNREACH', 'ENOTFOUND', 'ERR_HTTP2_STREAM_ERROR']`
       The list of error codes to retry on
     * `interval` **{number}** `Default: 1e3` The initial retry interval
+    * `maxRetryAfter` **{number}** `Default: 3e5` The maximum `retry-after` limit in milliseconds
     * `retryAfter` **{boolean}** `Default: true` Controls `retry-after` header receptiveness
     * `statusCodes` **{number[]}** `Default: [429, 500, 502, 503, 504]` The list of status codes to retry on
   * `stripTrailingSlash` **{boolean}** `Default: false` Controls whether to strip trailing slash at the end of the URL
@@ -202,10 +202,16 @@ const rk = rekwest.extend({
   baseURL: 'https://somewhe.re',
 });
 
+const params = {
+  id: '[uid]',
+  signature: '[code]',
+  variant: 'A',
+};
 const signal = AbortSignal.timeout(1e4);
 const url = '/somewhat/endpoint';
 
 const res = await rk(url, {
+  params,
   signal,
 });
 

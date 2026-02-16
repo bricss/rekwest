@@ -38,7 +38,6 @@ const {
 const { TEXT_PLAIN } = mediatypes;
 
 const encoder = new TextEncoder();
-const logarithmic = 'logarithmic';
 
 export default ({ baseURL, httpVersion }) => {
   describe('with { digest: true } & { parse: true } (defaults)', () => {
@@ -89,15 +88,15 @@ export default ({ baseURL, httpVersion }) => {
         const url = new URL('/gimme/cookies', baseURL);
         const res = await rekwest(url, {
           cookies: {
-            aux: 'baz',
+            aux: '🍪',
           },
         });
 
         assert.equal(res.body.message, 'json-bourne');
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies.get('aux'), 'baz');
+        assert.equal(res.cookies.get('aux'), '🍪');
         assert.equal(res.cookies.get('foo'), 'bar');
-        assert.equal(res.cookies.get('qux'), 'zap');
+        assert.equal(res.cookies.get('baz'), 'qux');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, true);
         assert.equal(res.redirected, false);
@@ -120,7 +119,7 @@ export default ({ baseURL, httpVersion }) => {
 
         assert.equal(res.body.message, 'json-bourne');
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies.get('ttl'), 'puff');
+        assert.equal(res.cookies.get('ttl'), 'yank');
         await scheduler.wait(1.1e3);
         assert.equal(res.cookies.get('ttl'), null);
         assert.equal(res.httpVersion, httpVersion);
@@ -145,7 +144,7 @@ export default ({ baseURL, httpVersion }) => {
 
         assert.equal(res.body.message, 'json-bourne');
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies.get('ttl'), 'puff');
+        assert.equal(res.cookies.get('ttl'), 'yank');
         await scheduler.wait(1.1e3);
         assert.equal(res.cookies.get('ttl'), null);
         assert.equal(res.httpVersion, httpVersion);
@@ -185,17 +184,17 @@ export default ({ baseURL, httpVersion }) => {
         const url = new URL('/gimme/nothing', baseURL);
         const res = await rekwest(url, {
           cookies: {
-            xen: 'wix',
+            zig: 'zag',
           },
         });
 
         assert.equal(res.body, null);
         assert.equal(res.bodyUsed, true);
-        assert.equal(res.cookies.get('aux'), 'baz');
+        assert.equal(res.cookies.get('aux'), '🍪');
         assert.equal(res.cookies.get('foo'), 'bar');
-        assert.equal(res.cookies.get('qux'), 'zap');
+        assert.equal(res.cookies.get('baz'), 'qux');
         assert.equal(res.cookies.get('ttl'), null);
-        assert.equal(res.cookies.get('xen'), 'wix');
+        assert.equal(res.cookies.get('zig'), 'zag');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, true);
         assert.equal(res.redirected, false);
@@ -310,7 +309,7 @@ export default ({ baseURL, httpVersion }) => {
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_MOVED_PERMANENTLY
     }] request with redirect { mode: ${ requestRedirect.follow } } and must omit all creds`, async () => {
-      const base = baseURL.protocol === 'http:' ? globalThis.h1sBaseURL : globalThis.h1cBaseURL;
+      const base = baseURL.protocol === 'http:' ? globalThis.h2sBaseURL : globalThis.h1sBaseURL;
       const url = new URL('/gimme/redirect', baseURL);
       const res = await rekwest(url, {
         headers: {
@@ -324,7 +323,7 @@ export default ({ baseURL, httpVersion }) => {
       assert.equal(res.body.message, 'json-bourne');
       assert.equal(res.bodyUsed, true);
       assert.equal(res.cookies, undefined);
-      assert.match(res.httpVersion, /1\.1|2\.0/);
+      assert.equal(res.httpVersion, baseURL.protocol === 'http:' ? '2.0' : '1.1');
       assert.equal(res.ok, true);
       assert.equal(res.redirected, true);
       assert.equal(res.statusCode, HTTP_STATUS_OK);
@@ -362,13 +361,37 @@ export default ({ baseURL, httpVersion }) => {
       });
     });
 
+    if (baseURL.protocol === 'https:') {
+      it(`should make ${ HTTP2_METHOD_GET } [${
+        HTTP_STATUS_MOVED_PERMANENTLY
+      }] request with redirect and must prevent https downgrade`, async () => {
+        const loc = new URL(`${ globalThis.h2cBaseURL.origin }/gimme/json`);
+        const url = new URL('/gimme/redirect', baseURL);
+
+        await assert.rejects(rekwest(url, {
+          params: {
+            location: loc,
+          },
+        }), (err) => {
+          assert.equal(err.message, `Protocol downgrade detected, redirect from "${
+            url.protocol
+          }" to "${
+            loc.protocol
+          }": ${ loc }`);
+          assert.equal(err.name, 'RequestError');
+
+          return true;
+        });
+      });
+    }
+
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_MOVED_PERMANENTLY
     }] request with redirect and must respect '${ HTTP2_HEADER_RETRY_AFTER }' header`, async () => {
       const url = new URL('/gimme/redirect', baseURL);
       const res = await rekwest(url, {
         params: {
-          [HTTP2_HEADER_RETRY_AFTER]: 0.25,
+          [HTTP2_HEADER_RETRY_AFTER]: 1,
         },
       });
 
@@ -447,7 +470,7 @@ export default ({ baseURL, httpVersion }) => {
         },
         retry: {
           attempts: 2,
-          interval: 25,
+          interval: 1,
         },
       });
 
@@ -466,9 +489,11 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL('/gimme/retry', baseURL);
       const res = await rekwest(url, {
         params: {
-          [HTTP2_HEADER_RETRY_AFTER]: 'date:0.5',
+          [HTTP2_HEADER_RETRY_AFTER]: [
+            1,
+            new Date(),
+          ],
           attempts: 2,
-          ver: httpVersion,
         },
         retry: { attempts: 2 },
       });
@@ -488,9 +513,8 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL('/gimme/retry', baseURL);
       const res = await rekwest(url, {
         params: {
-          [HTTP2_HEADER_RETRY_AFTER]: 0.25,
+          [HTTP2_HEADER_RETRY_AFTER]: 0,
           attempts: 2,
-          ver: httpVersion,
         },
         retry: { attempts: 2 },
       });
@@ -511,9 +535,8 @@ export default ({ baseURL, httpVersion }) => {
 
       await assert.rejects(rekwest(url, {
         params: {
-          [HTTP2_HEADER_RETRY_AFTER]: '3.5e5',
+          [HTTP2_HEADER_RETRY_AFTER]: 3.5e5,
           attempts: 2,
-          ver: httpVersion,
         },
         retry: { attempts: 2 },
       }), (err) => {
@@ -525,19 +548,39 @@ export default ({ baseURL, httpVersion }) => {
       });
     });
 
+    it(`should make ${ HTTP2_METHOD_POST } [${
+      HTTP_STATUS_NOT_FOUND
+    }] request with retry and must catch an error on used stream`, async () => {
+      const payload = 'zqiygyxz';
+      const url = new URL('/gimme/void', baseURL);
+
+      await assert.rejects(rekwest(url, {
+        body: Readable.from(payload),
+        method: HTTP2_METHOD_POST,
+        retry: {
+          attempts: 1,
+          interval: 1,
+          statusCodes: [HTTP_STATUS_NOT_FOUND],
+        },
+      }), (err) => {
+        assert.equal(err.message, 'Request stream already read');
+        assert.equal(err.name, 'RequestError');
+
+        return true;
+      });
+    });
+
     it(`should make ${ HTTP2_METHOD_GET } [${
       HTTP_STATUS_TOO_MANY_REQUESTS
-    }] request and must succeed after a ${ logarithmic } interval retry`, async () => {
+    }] request and must succeed after a log-uniform interval retry`, async () => {
       const url = new URL('/gimme/retry', baseURL);
       const res = await rekwest(url, {
         params: {
           attempts: 2,
-          [`${ logarithmic }`]: true,
-          ver: httpVersion,
         },
         retry: {
           attempts: 2,
-          interval: 100,
+          interval: 1,
         },
       });
 
@@ -806,7 +849,7 @@ export default ({ baseURL, httpVersion }) => {
     });
 
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a File`, async () => {
-      const payload = new File(['bits'], 'file.dab');
+      const payload = new File(['bits'], 'file.xyz');
 
       assert.throws(() => new File([]), TypeError);
 
@@ -826,16 +869,16 @@ export default ({ baseURL, httpVersion }) => {
 
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a FormData`, async () => {
       const blob = new Blob(['bits']);
-      const file = new File(['bits'], 'file.dab');
+      const file = new File(['bits'], 'file.xyz');
       const readable = Readable.from('bits');
       const payload = new FormData({
         aux: Date.now(),
       });
 
       payload.append('celestial', 'payload');
-      payload.append('blob', blob, 'blob.dab');
+      payload.append('blob', blob, 'blob.xyz');
       payload.append('file', file);
-      payload.append('readable', readable, 'readable.dab');
+      payload.append('readable', readable, 'readable.xyz');
 
       payload.set('celestial', 'goddess');
       assert.equal(payload.has('celestial'), true);
@@ -885,11 +928,11 @@ export default ({ baseURL, httpVersion }) => {
       ].flatMap((it) => it.slice(1).filter(Boolean)), [
         'aux',
         'blob',
-        'blob.dab',
+        'blob.xyz',
         'file',
-        'file.dab',
+        'file.xyz',
         'readable',
-        'readable.dab',
+        'readable.xyz',
         'celestial',
       ]);
       assert.equal(res.bodyUsed, true);

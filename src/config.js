@@ -26,6 +26,7 @@ const {
 const timeout = 3e5;
 
 const defaults = {
+  allowDowngrade: false,
   bufferBody: false,
   cookiesTTL: false,
   credentials: requestCredentials.sameOrigin,
@@ -49,11 +50,9 @@ const defaults = {
     [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
     [HTTP2_HEADER_ACCEPT_ENCODING]: `br,${ isZstdSupported ? ' zstd, ' : ' ' }gzip, deflate, deflate-raw`,
   },
-  maxRetryAfter: timeout,
   method: HTTP2_METHOD_GET,
   parse: true,
   redirect: requestRedirect.follow,
-  redirected: false,
   retry: {
     attempts: 0,
     backoffStrategy: 'interval * Math.log(Math.random() * (Math.E * Math.E - Math.E) + Math.E)',
@@ -68,6 +67,7 @@ const defaults = {
       'ERR_HTTP2_STREAM_ERROR',
     ],
     interval: 1e3,
+    maxRetryAfter: timeout,
     retryAfter: true,
     statusCodes: [
       HTTP_STATUS_TOO_MANY_REQUESTS,

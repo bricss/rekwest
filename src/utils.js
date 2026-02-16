@@ -137,19 +137,19 @@ export const normalize = (url, options = {}) => {
   });
 };
 
-export const normalizeHeaders = (headers) => {
+export const normalizeHeaders = (headers = {}) => {
   const acc = {};
 
-  for (const [key, val] of Object.entries(headers ?? {})) {
+  for (const [key, val] of Object.entries(headers)) {
     const name = key.toLowerCase();
 
     acc[key] = val;
 
     if (key === HTTP2_HEADER_ACCEPT_ENCODING && !isZstdSupported) {
-      const stripped = val.replace(/\s?zstd,?/gi, '').trim();
+      const modified = val.replace(/\s?zstd,?/gi, '').trim();
 
-      if (stripped) {
-        acc[key] = stripped;
+      if (modified) {
+        acc[key] = modified;
       } else {
         Reflect.deleteProperty(acc, name);
       }

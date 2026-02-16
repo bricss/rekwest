@@ -3,7 +3,7 @@ import {
   toCamelCase,
 } from './utils.js';
 
-const lifetimeCap = 3456e7; // pragma: 400 days
+const lifetimeCap = 3456e7; // 400 days
 
 export class Cookies extends URLSearchParams {
 
@@ -39,7 +39,7 @@ export class Cookies extends URLSearchParams {
         for (const attr of attrs) {
           if (/(?:expires|max-age)=/i.test(attr)) {
             const [key, val] = attr.toLowerCase().split('=');
-            const ms = Number.isFinite(Number(val)) ? val * 1e3 : Date.parse(val) - Date.now();
+            const ms = Number.isFinite(Number.parseInt(val, 10)) ? val * 1e3 : Date.parse(val) - Date.now();
 
             ttl[toCamelCase(key)] = Math.min(ms, lifetimeCap);
           }

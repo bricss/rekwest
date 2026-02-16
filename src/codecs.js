@@ -36,6 +36,7 @@ export const encodeCodecs = {
   gzip: (opts) => zlib.createGzip(opts?.zlib),
   zstd: (opts) => isZstdSupported && zlib.createZstdCompress(opts?.zstd),
 };
+
 export const encode = (readable, encodings = '', { encodersOptions } = {}) => {
   const encoders = [];
 
