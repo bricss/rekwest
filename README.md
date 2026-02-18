@@ -127,9 +127,8 @@ console.log(res.body);
     with the request
   * `bufferBody` **{boolean}** `Default: false` Toggles the buffering of the streamable request bodies for redirects and
     retries
-  * `cookies` **{boolean | string[] | Array<[k, v]> | Cookies | Object | URLSearchParams}** `Default: true` The
-    cookies to add to
-    the request
+  * `cookies` **{boolean | string | string[] | [k, v][] | Cookies | Object | URLSearchParams}** `Default: true` The
+    cookies to add to the request. Manually set `cookie` header to override.
   * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookies cache
   * `credentials` **{include | omit | same-origin}** `Default: same-origin` Controls credentials in case of cross-origin
     redirects

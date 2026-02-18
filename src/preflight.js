@@ -64,7 +64,7 @@ export const preflight = (options) => {
       cookie &&= Cookies.jar.get(url.origin);
     }
 
-    options.headers = {
+    headers = {
       ...cookie && { [HTTP2_HEADER_COOKIE]: cookie },
       ...headers,
     };

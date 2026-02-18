@@ -1,17 +1,16 @@
 import { constants } from 'node:http2';
 import { Transform } from 'node:stream';
 import {
+  Cookies,
   decode,
   encode,
-} from '../../src/codecs.js';
-import {
-  APPLICATION_JSON,
-  TEXT_PLAIN,
-} from '../../src/mediatypes.js';
+  mediatypes,
+} from '../../src/index.js';
 
 const {
   HTTP2_HEADER_CONTENT_ENCODING,
   HTTP2_HEADER_CONTENT_TYPE,
+  HTTP2_HEADER_COOKIE,
   HTTP2_HEADER_DATE,
   HTTP2_HEADER_LOCATION,
   HTTP2_HEADER_RETRY_AFTER,
@@ -29,6 +28,11 @@ const {
   HTTP_STATUS_TOO_MANY_REQUESTS,
   HTTP_STATUS_UNAUTHORIZED,
 } = constants;
+
+const {
+  APPLICATION_JSON,
+  TEXT_PLAIN,
+} = mediatypes;
 
 const attsCounter = new Map();
 const utcOffset = (
@@ -55,6 +59,7 @@ export default (baseURL) => (req, res) => {
   });
   res.statusCode = HTTP_STATUS_NOT_FOUND;
   if (pathname.match(String.raw`^/gimme/cookies$`) && req.method === HTTP2_METHOD_GET) {
+    const cookies = new Cookies(req.headers[HTTP2_HEADER_COOKIE]);
     const expires = searchParams.has('expires') && searchParams.get('expires');
     const maxAge = searchParams.has('maxAge') && searchParams.get('maxAge');
 
@@ -68,6 +73,7 @@ export default (baseURL) => (req, res) => {
         [
           'foo=bar; HttpOnly; SameSite=Lax; Secure',
           'baz=qux; Partitioned; Path=/; SameSite=None; Secure',
+          'quoted="alpha;beta;gamma"; HttpOnly; Secure',
           ...expires ? [`ttl=yank; Expires=${ expires }`] : [],
           ...maxAge ? [`ttl=yank; Max-Age=${ maxAge }`] : [],
         ],
@@ -75,6 +81,7 @@ export default (baseURL) => (req, res) => {
     ]);
     res.write(JSON.stringify({
       message: 'json-bourne',
+      reqCookies: Object.fromEntries(cookies),
     }));
     res.end();
   } else if (pathname.match(String.raw`^/gimme/encode$`) && req.method === HTTP2_METHOD_GET) {

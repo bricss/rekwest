@@ -27,7 +27,7 @@ export const retries = (err, options) => {
 
       if (retry.retryAfter && err.headers?.[HTTP2_HEADER_RETRY_AFTER]) {
         interval = err.headers[HTTP2_HEADER_RETRY_AFTER];
-        interval = Number.isFinite(Number.parseInt(interval, 10)) ? interval * 1e3 : new Date(interval) - Date.now();
+        interval = interval * 1e3 || Date.parse(interval) - Date.now();
         if (interval > retry.maxRetryAfter) {
           throw new RequestError(
             `Maximum '${ HTTP2_HEADER_RETRY_AFTER }' limit exceeded: ${ interval } ms`,
@@ -38,7 +38,7 @@ export const retries = (err, options) => {
         interval = new Function('interval', `return Math.ceil(${ retry.backoffStrategy });`)(interval);
       }
 
-      if (interval < 0) {
+      if (interval < 0 || Number.isNaN(interval)) {
         interval = 0;
       }
 

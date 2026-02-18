@@ -3,7 +3,13 @@ import {
   toCamelCase,
 } from './utils.js';
 
-const lifetimeCap = 3456e7; // 400 days
+export const cookieRex = /^[\w-]+=(?:"[^"]*"|[^\p{Control};]*)(?:;\s*(?:[\w-]+=(?:"[^"]*"|[^\p{Control};]*)|[\w-]+))*$/u;
+export const cookiePairRex = /(?:[^;"\s]+="[^"]*"|[^;]+)(?=;|$)/g;
+export const illegalCookieChars = /\p{Control}/u;
+export const isValidCookie = (str) => str?.constructor === String && cookieRex.test(str);
+export const maxCookieLifetimeCap = 3456e7; // 400 days
+export const maxCookieSize = 4096;
+export const splitCookie = (str) => str.match(cookiePairRex).map((str) => str.trim());
 
 export class Cookies extends URLSearchParams {
 
@@ -27,49 +33,60 @@ export class Cookies extends URLSearchParams {
   }
 
   constructor(input, { cookiesTTL } = { cookiesTTL: false }) {
-    if (Array.isArray(input) && input.every((it) => !Array.isArray(it))) {
-      input = input.map((it) => {
-        if (!cookiesTTL) {
-          return [it.split(';')[0].trim()];
-        }
-
-        const [cookie, ...attrs] = it.split(';').map((it) => it.trim());
-        const ttl = {};
-
-        for (const attr of attrs) {
-          if (/(?:expires|max-age)=/i.test(attr)) {
-            const [key, val] = attr.toLowerCase().split('=');
-            const ms = Number.isFinite(Number.parseInt(val, 10)) ? val * 1e3 : Date.parse(val) - Date.now();
-
-            ttl[toCamelCase(key)] = Math.min(ms, lifetimeCap);
-          }
-        }
-
-        return [
-          cookie.replace(/\u0022/g, ''),
-          Object.keys(ttl).length ? ttl : null,
-        ];
-      });
+    if (isValidCookie(input)) {
+      input = splitCookie(input);
     }
 
-    super(Array.isArray(input) ? input.map((it) => it[0]).join('&') : input);
+    const ttlMap = new Map();
 
-    if (Array.isArray(input) && cookiesTTL) {
-      for (const [cookie, ttl] of input.filter((it) => it[1])) {
-        const key = cookie.split('=')[0];
+    if (Array.isArray(input)) {
+      if (input.every((it) => isValidCookie(it))) {
+        input = input.filter((it) => !illegalCookieChars.test(it) && it.length <= maxCookieSize);
+        input = input.map(splitCookie).map(([cookie, ...attrs]) => {
+          try {
+            cookie = cookie.split('=').map((it) => decodeURIComponent(it.trim()));
+
+            return cookie;
+          } finally {
+            if (cookiesTTL) {
+              for (const attr of attrs) {
+                if (/(?:expires|max-age)=/i.test(attr)) {
+                  const [key, val] = attr.toLowerCase().split('=');
+                  let interval = val * 1e3 || Date.parse(val) - Date.now();
+
+                  if (interval < 0 || Number.isNaN(interval)) {
+                    interval = 0;
+                  }
+
+                  ttlMap.set(
+                    cookie[0],
+                    { [toCamelCase(key.trim())]: Math.min(interval, maxCookieLifetimeCap) },
+                  );
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    super(input);
+
+    if (ttlMap.size) {
+      for (const [key, attrs] of ttlMap) {
 
         if (this.#chronometry.has(key)) {
           clearTimeout(this.#chronometry.get(key));
           this.#chronometry.delete(key);
         }
 
-        const { expires, maxAge } = ttl;
+        const { expires, maxAge } = attrs;
 
-        for (const ms of [
+        for (const interval of [
           maxAge,
           expires,
         ]) {
-          if (!Number.isInteger(ms)) {
+          if (!Number.isInteger(interval)) {
             continue;
           }
 
@@ -81,7 +98,7 @@ export class Cookies extends URLSearchParams {
               ctx.#chronometry.delete(key);
               ctx.delete(key);
             }
-          }, Math.max(ms, 0));
+          }, Math.max(interval, 0));
 
           this.constructor.#register(this, tid);
           this.#chronometry.set(key, tid);

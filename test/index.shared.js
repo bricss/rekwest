@@ -85,18 +85,21 @@ export default ({ baseURL, httpVersion }) => {
     it(
       `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request with cookies and must get new cookies`,
       async () => {
+        const cookies = {
+          aux: '🍪',
+        };
         const url = new URL('/gimme/cookies', baseURL);
         const res = await rekwest(url, {
-          cookies: {
-            aux: '🍪',
-          },
+          cookies,
         });
 
         assert.equal(res.body.message, 'json-bourne');
+        assert.deepEqual(res.body.reqCookies, cookies);
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies.get('aux'), '🍪');
         assert.equal(res.cookies.get('foo'), 'bar');
         assert.equal(res.cookies.get('baz'), 'qux');
+        assert.equal(res.cookies.get('quoted'), '"alpha;beta;gamma"');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, true);
         assert.equal(res.redirected, false);
@@ -169,7 +172,7 @@ export default ({ baseURL, httpVersion }) => {
 
         assert.equal(res.body.message, 'json-bourne');
         assert.equal(res.bodyUsed, true);
-        await scheduler.wait(100);
+        await scheduler.wait(1);
         assert.equal(res.cookies.get('ttl'), null);
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, true);
@@ -179,26 +182,28 @@ export default ({ baseURL, httpVersion }) => {
     );
 
     it(
-      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_NO_CONTENT }] request with new and preserved cookies`,
+      `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request with new and preserved cookies`,
       async () => {
-        const url = new URL('/gimme/nothing', baseURL);
+        const url = new URL('/gimme/cookies', baseURL);
         const res = await rekwest(url, {
           cookies: {
             zig: 'zag',
           },
         });
 
-        assert.equal(res.body, null);
+        assert.equal(res.body.message, 'json-bourne');
+        assert.deepEqual(res.body.reqCookies, Object.fromEntries(res.cookies));
         assert.equal(res.bodyUsed, true);
         assert.equal(res.cookies.get('aux'), '🍪');
         assert.equal(res.cookies.get('foo'), 'bar');
         assert.equal(res.cookies.get('baz'), 'qux');
+        assert.equal(res.cookies.get('quoted'), '"alpha;beta;gamma"');
         assert.equal(res.cookies.get('ttl'), null);
         assert.equal(res.cookies.get('zig'), 'zag');
         assert.equal(res.httpVersion, httpVersion);
         assert.equal(res.ok, true);
         assert.equal(res.redirected, false);
-        assert.equal(res.statusCode, HTTP_STATUS_NO_CONTENT);
+        assert.equal(res.statusCode, HTTP_STATUS_OK);
       },
     );
 
@@ -657,7 +662,7 @@ export default ({ baseURL, httpVersion }) => {
         HTTP_STATUS_NO_CONTENT
       }] request and must strip & trim extra slashes from the URL`,
       async () => {
-        const url = new URL('/gimme///nothing///#bang', baseURL);
+        const url = new URL('/gimme///nothing///#meaningful', baseURL);
         const res = await rekwest(url, {
           stripTrailingSlash: true,
           trimTrailingSlashes: true,

@@ -126,36 +126,28 @@ export const normalize = (url, options = {}) => {
     options = cloneWith(config.defaults, options);
   }
 
-  if (options.trimTrailingSlashes) {
-    url = `${ url }`.replace(/(?<!:)\/+/g, '/');
-  }
-
-  if (options.stripTrailingSlash) {
-    url = `${ url }`.replace(/\/$|\/(?=#)|\/(?=\?)/g, '');
-  }
-
   return Object.assign(options, {
     headers: normalizeHeaders(options.headers),
     method: options.method.toUpperCase(),
-    url: addSearchParams(new URL(url, options.baseURL), options.params),
+    url: addSearchParams(normalizeUrl(new URL(url, options.baseURL), options), options.params),
   });
 };
 
 export const normalizeHeaders = (headers = {}) => {
   const acc = {};
 
-  for (const [key, val] of Object.entries(headers)) {
-    const name = key.toLowerCase();
+  for (let [key, val] of Object.entries(headers)) {
+    key = key.toLowerCase();
 
     acc[key] = val;
 
     if (key === HTTP2_HEADER_ACCEPT_ENCODING && !isZstdSupported) {
-      const modified = val.replace(/\s?zstd,?/gi, '').trim();
+      val = val.replace(/\s?zstd,?/gi, '').trim();
 
-      if (modified) {
-        acc[key] = modified;
+      if (val) {
+        acc[key] = val;
       } else {
-        Reflect.deleteProperty(acc, name);
+        Reflect.deleteProperty(acc, key);
       }
     }
   }
@@ -163,7 +155,19 @@ export const normalizeHeaders = (headers = {}) => {
   return acc;
 };
 
-export const sameOrigin = (a, b) => a.protocol === b.protocol && a.hostname === b.hostname && a.port === b.port;
+function normalizeUrl(url, { trimTrailingSlashes, stripTrailingSlash } = {}) {
+  if (trimTrailingSlashes) {
+    url.pathname = url.pathname.replace(/\/{2,}/g, '/');
+  }
+
+  if (stripTrailingSlash && url.pathname !== '/') {
+    url.pathname = url.pathname.replace(/\/$/, '');
+  }
+
+  return url;
+}
+
+export const sameOrigin = (a, b) => a.origin === b.origin;
 
 export const snoop = (client, req, options) => {
   req.once('close', () => client?.close());
@@ -177,14 +181,10 @@ export const snoop = (client, req, options) => {
   });
 };
 
-export const stripHeaders = (headers = {}, names = []) => {
-  names = new Set(names);
+export const stripHeaders = (headers = {}, keys = []) => {
+  keys = new Set(keys);
 
-  return Object.fromEntries(
-    Object.entries(headers).filter(
-      ([key]) => !names.has(key.toLowerCase()),
-    ),
-  );
+  return Object.fromEntries(Object.entries(headers).filter(([key]) => !keys.has(key)));
 };
 
 export async function* tap(val) {
