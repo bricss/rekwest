@@ -1,7 +1,4 @@
-import {
-  Blob,
-  File,
-} from 'node:buffer';
+import { Blob } from 'node:buffer';
 import http2 from 'node:http2';
 import {
   isReadable,
@@ -30,7 +27,7 @@ export const addSearchParams = (url, params = {}) => {
 };
 
 export const augment = (res, headers, options) => {
-  const { h2 } = options;
+  const h2 = /\bh2c?\b/i.test(res.session?.alpnProtocol);
 
   if (h2) {
     Reflect.defineProperty(res, 'headers', {
@@ -96,30 +93,20 @@ export const deepMerge = (target, ...rest) => {
 
 export const dispatch = (req, { body }) => {
   if (isReadable(body)) {
+    body.once('error', (err) => (req.session && req.emit('error', err) && req.destroy()) || req.destroy(err));
     body.pipe(req);
   } else {
     req.end(body);
   }
 };
 
-export const isFileLike = (val) => {
-  return [
-    Blob,
-    File,
-  ].some((it) => val instanceof it);
-};
+export const isBlobLike = (val) => val instanceof Blob;
 
-export const isLikelyH2cPrefaceError = (err) => {
-  return err.code === 'HPE_INVALID_CONSTANT';
-};
+export const isLikelyH2cPrefaceError = (err) => err.code === 'HPE_INVALID_CONSTANT';
 
-export const isPipeStream = (val) => {
-  return val instanceof Readable;
-};
+export const isPipeStream = (val) => val instanceof Readable;
 
-export const isReadableStream = (val) => {
-  return val instanceof ReadableStream;
-};
+export const isReadableStream = (val) => val instanceof ReadableStream;
 
 export const normalize = (url, options = {}) => {
   if (!options.redirected) {
@@ -128,7 +115,7 @@ export const normalize = (url, options = {}) => {
 
   return Object.assign(options, {
     headers: normalizeHeaders(options.headers),
-    method: options.method.toUpperCase(),
+    method: options.method?.toUpperCase(),
     url: addSearchParams(normalizeUrl(new URL(url, options.baseURL), options), options.params),
   });
 };
@@ -169,9 +156,13 @@ function normalizeUrl(url, { trimTrailingSlashes, stripTrailingSlash } = {}) {
 
 export const sameOrigin = (a, b) => a.origin === b.origin;
 
-export const snoop = (client, req, options) => {
+export const snoop = (client, req, options, { reject } = { reject: () => void 0 }) => {
+  req.once('aborted', reject);
   req.once('close', () => client?.close());
   req.once('end', () => client?.close());
+  req.once('error', reject);
+  req.once('frameError', reject);
+  req.once('goaway', reject);
   req.once('timeout', () => req.destroy(new TimeoutError(`Timed out after ${ options.timeout } ms`)));
   req.once('trailers', (trailers) => {
     Reflect.defineProperty(req, 'trailers', {
@@ -192,8 +183,6 @@ export async function* tap(val) {
     yield* val;
   } else if (val.stream) {
     yield* val.stream();
-  } else {
-    yield await val.arrayBuffer();
   }
 }
 

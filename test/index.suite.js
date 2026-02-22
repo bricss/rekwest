@@ -9,13 +9,13 @@ import rekwest, {
   File,
   FormData,
   mediatypes,
+  parseFormData,
   requestRedirect,
 } from '../src/index.js';
 
 const {
   HTTP2_HEADER_ACCEPT_ENCODING,
   HTTP2_HEADER_AUTHORIZATION,
-  HTTP2_HEADER_CONTENT_DISPOSITION,
   HTTP2_HEADER_CONTENT_ENCODING,
   HTTP2_HEADER_CONTENT_TYPE,
   HTTP2_HEADER_RETRY_AFTER,
@@ -40,7 +40,7 @@ const { TEXT_PLAIN } = mediatypes;
 const encoder = new TextEncoder();
 
 export default ({ baseURL, httpVersion }) => {
-  describe('with { digest: true } & { parse: true } (defaults)', () => {
+  describe('using { digest: true, parse: true } (defaults)', () => {
 
     after(() => Cookies.jar.clear());
 
@@ -897,17 +897,20 @@ export default ({ baseURL, httpVersion }) => {
     });
 
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request with body as a FormData`, async () => {
+      const aux = new Date();
       const blob = new Blob(['bits']);
       const file = new File(['bits'], 'file.xyz');
-      const readable = Readable.from('bits');
+      const rbl = Readable.from('bits');
+      const rds = ReadableStream.from('bits');
       const payload = new FormData({
-        aux: Date.now(),
+        aux,
       });
 
       payload.append('celestial', 'payload');
       payload.append('blob', blob, 'blob.xyz');
       payload.append('file', file);
-      payload.append('readable', readable, 'readable.xyz');
+      payload.append('rbl', rbl, 'rbl.xyz');
+      payload.append('rds', rds, 'rds.xyz');
 
       payload.set('celestial', 'goddess');
       assert.equal(payload.has('celestial'), true);
@@ -933,7 +936,6 @@ export default ({ baseURL, httpVersion }) => {
       assert.throws(() => new FormData([null]), TypeError);
       assert.throws(() => new FormData([[]]), TypeError);
       assert.throws(() => payload.append(), TypeError);
-      assert.throws(() => payload.append(null, null, null), TypeError);
       assert.throws(() => payload.delete(), TypeError);
       assert.throws(() => payload.forEach(), TypeError);
       assert.throws(() => payload.forEach(null), TypeError);
@@ -941,7 +943,6 @@ export default ({ baseURL, httpVersion }) => {
       assert.throws(() => payload.getAll(), TypeError);
       assert.throws(() => payload.has(), TypeError);
       assert.throws(() => payload.set(), TypeError);
-      assert.throws(() => payload.set(null, null, null), TypeError);
 
       const url = new URL('/gimme/repulse', baseURL);
       const res = await rekwest(url, {
@@ -949,20 +950,39 @@ export default ({ baseURL, httpVersion }) => {
         method: HTTP2_METHOD_POST,
       });
 
-      assert.deepEqual([
-        ...res.body.toString()
-              .matchAll(new RegExp(`${
-                HTTP2_HEADER_CONTENT_DISPOSITION
-              }: form-data; name="([^"]*)"(?:; filename="([^"]*)")?`, 'g')),
-      ].flatMap((it) => it.slice(1).filter(Boolean)), [
-        'aux',
-        'blob',
-        'blob.xyz',
-        'file',
-        'file.xyz',
-        'readable',
-        'readable.xyz',
-        'celestial',
+      const result = parseFormData(res.body.toString());
+
+      assert.deepEqual(result, [
+        {
+          content: aux.toString(),
+          filename: undefined,
+          name: 'aux',
+        },
+        {
+          content: 'bits',
+          filename: 'blob.xyz',
+          name: 'blob',
+        },
+        {
+          content: 'bits',
+          filename: 'file.xyz',
+          name: 'file',
+        },
+        {
+          content: 'bits',
+          filename: 'rbl.xyz',
+          name: 'rbl',
+        },
+        {
+          content: 'bits',
+          filename: 'rds.xyz',
+          name: 'rds',
+        },
+        {
+          content: 'payload',
+          filename: undefined,
+          name: 'celestial',
+        },
       ]);
       assert.equal(res.bodyUsed, true);
       assert.equal(res.httpVersion, httpVersion);
@@ -1113,7 +1133,7 @@ export default ({ baseURL, httpVersion }) => {
 
   });
 
-  describe('with { digest: false } & { parse: false }', () => {
+  describe('using { digest: false, parse: false }', () => {
 
     const options = { digest: false, parse: false };
 
@@ -1235,7 +1255,7 @@ export default ({ baseURL, httpVersion }) => {
 
   });
 
-  describe('with abort { signal }', () => {
+  describe('using abort { signal }', () => {
 
     it(
       `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_OK }] request and must catch an error after the abort signal`,
@@ -1256,7 +1276,7 @@ export default ({ baseURL, httpVersion }) => {
 
   });
 
-  describe('with { thenable: true }', () => {
+  describe('using { thenable: true }', () => {
 
     it(
       `should make ${ HTTP2_METHOD_GET } [${ HTTP_STATUS_INTERNAL_SERVER_ERROR }] request and must slip an error`,
@@ -1275,5 +1295,4 @@ export default ({ baseURL, httpVersion }) => {
     );
 
   });
-
 };

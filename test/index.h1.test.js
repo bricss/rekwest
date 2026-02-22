@@ -3,7 +3,7 @@ import { once } from 'node:events';
 import { Readable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 import rekwest, { constants } from '../src/index.js';
-import shared from './index.shared.js';
+import suite from './index.suite.js';
 
 const {
   HTTP2_METHOD_POST,
@@ -14,7 +14,7 @@ const baseURL = globalThis.h1cBaseURL;
 const httpVersion = '1.1';
 const rejectUnauthorized = false;
 
-describe('rekwest', () => {
+describe('given rekwest w/o h2 mode', () => {
 
   before(() => {
     rekwest.defaults = {
@@ -24,9 +24,9 @@ describe('rekwest', () => {
 
   after(() => Reflect.deleteProperty(rekwest.defaults, 'rejectUnauthorized'));
 
-  shared({ baseURL, httpVersion });
+  suite({ baseURL, httpVersion });
 
-  describe('withal stream', () => {
+  describe('using stream()', () => {
 
     it(`should make ${ HTTP2_METHOD_POST } [${ HTTP_STATUS_OK }] request and must pipe throughout it`, async () => {
       const payload = 'zqiygyxz';

@@ -12,9 +12,10 @@
     "@babel/cli": "^7.28.6",
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.0",
+    "@eslint/markdown": "^7.5.1",
     "c8": "^10.1.3",
-    "eslint": "^10.0.0",
-    "eslint-config-ultra-refined": "^4.0.1",
+    "eslint": "^10.0.1",
+    "eslint-config-ultra-refined": "^4.1.2",
     "mocha": "^11.7.5"
   },
   "engines": {
@@ -60,16 +61,16 @@
     "url": "git+https://github.com/bricss/rekwest.git"
   },
   "scripts": {
-    "build": "rm -rf dist && npx babel src --out-dir dist --out-file-extension .cjs",
+    "build": "rm -rf dist && npx babel src --out-dir dist --out-file-extension .cjs && sh misc.sh",
     "cert:gen": "openssl req -days 365 -keyout localhost.key -newkey ec -nodes -pkeyopt ec_paramgen_curve:prime256v1 -subj //SKIP=1/CN=localhost -out localhost.cert -x509",
     "cert:ken": "openssl x509 -in localhost.cert -noout -text",
     "lint": "eslint --concurrency=auto",
-    "prepack": "npm run build && sh misc.sh && npm run lint",
+    "prepack": "npm run build && npm run lint",
     "pretest": "rm -rf coverage && npm run cert:gen",
     "test": "mocha",
     "test:bail": "mocha --bail",
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
   "type": "module",
-  "version": "7.2.4"
+  "version": "7.2.5"
 }

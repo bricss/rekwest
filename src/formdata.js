@@ -7,7 +7,9 @@ import {
 } from './mediatypes.js';
 import {
   brandCheck,
-  isFileLike,
+  isBlobLike,
+  isPipeStream,
+  isReadableStream,
   tap,
 } from './utils.js';
 
@@ -19,58 +21,31 @@ const {
 
 export class FormData {
 
-  static actuate(fd) {
-    const boundary = randomBytes(24).toString('hex');
-    const contentType = `${ MULTIPART_FORM_DATA }; boundary=${ boundary }`;
-    const prefix = `--${ boundary }${ CRLF }${ HTTP2_HEADER_CONTENT_DISPOSITION }: form-data`;
+  static #ensureArgs(args, expect, method) {
+    if (args.length < expect) {
+      throw new TypeError(`Failed to execute '${ method }' on '${
+        this[Symbol.toStringTag]
+      }': ${ expect } arguments required, but only ${ args.length } present`);
+    }
 
-    const escape = (str) => str.replace(/\n/g, '%0A').replace(/\r/g, '%0D').replace(/"/g, '%22');
-    const redress = (str) => str.replace(/\r?\n|\r/g, CRLF);
-
-    return {
-      contentType,
-      async* [Symbol.asyncIterator]() {
-        const encoder = new TextEncoder();
-
-        for (const [name, val] of fd) {
-          if (val.constructor === String) {
-            yield encoder.encode(`${ prefix }; name="${
-              escape(redress(name))
-            }"${ CRLF.repeat(2) }${ redress(val) }${ CRLF }`);
-          } else {
-            yield encoder.encode(`${ prefix }; name="${
-              escape(redress(name))
-            }"${ val.name ? `; filename="${ escape(val.name) }"` : '' }${ CRLF }${
-              HTTP2_HEADER_CONTENT_TYPE
-            }: ${
-              val.type || APPLICATION_OCTET_STREAM
-            }${ CRLF.repeat(2) }`);
-            yield* tap(val);
-            yield new Uint8Array([
-              13,
-              10,
-            ]);
-          }
-        }
-
-        yield encoder.encode(`--${ boundary }--`);
-      },
-    };
+    if (method === 'forEach') {
+      if (args[0]?.constructor !== Function) {
+        throw new TypeError(`Failed to execute '${ method }' on '${
+          this[Symbol.toStringTag]
+        }': parameter ${ expect } is not of type 'Function'`);
+      }
+    }
   }
 
-  static alike(val) {
-    return FormData.name === val?.[Symbol.toStringTag];
-  }
-
-  static #enfoldEntry(name, value, filename) {
+  static #formEntry(name, value, filename) {
     name = String(name).toWellFormed();
     filename &&= String(filename).toWellFormed();
 
-    if (isFileLike(value)) {
-      filename ??= value.name || 'blob';
+    if (isBlobLike(value)) {
+      filename ??= String(value.name ?? 'blob').toWellFormed();
       value = new File([value], filename, value);
-    } else if (this.#ensureInstance(value)) {
-      value.name = filename;
+    } else if (isPipeStream(value) || isReadableStream(value)) {
+      value.name = filename ?? 'blob';
     } else {
       value = String(value).toWellFormed();
     }
@@ -79,10 +54,6 @@ export class FormData {
       name,
       value,
     };
-  }
-
-  static #ensureInstance(val) {
-    return isFileLike(val) || (Object(val) === val && Reflect.has(val, Symbol.asyncIterator));
   }
 
   #entries = [];
@@ -98,13 +69,13 @@ export class FormData {
           throw new TypeError(`Failed to construct '${
             this[Symbol.toStringTag]
           }': The provided value cannot be converted to a sequence`);
-        } else if (!input.every((it) => it.length === 2)) {
+        }
+
+        if (!input.every((it) => it.length === 2)) {
           throw new TypeError(`Failed to construct '${
             this[Symbol.toStringTag]
           }': Sequence initializer must only contain pair elements`);
         }
-
-        input = Array.from(input);
       } else if (!Reflect.has(input, Symbol.iterator)) {
         input = Object.entries(input);
       }
@@ -115,42 +86,15 @@ export class FormData {
     }
   }
 
-  #ensureArgs(args, expected, method) {
-    if (args.length < expected) {
-      throw new TypeError(`Failed to execute '${ method }' on '${
-        this[Symbol.toStringTag]
-      }': ${ expected } arguments required, but only ${ args.length } present`);
-    }
-
-    if ([
-      'append',
-      'set',
-    ].includes(method)) {
-      if (args.length === 3 && !this.constructor.#ensureInstance(args[1])) {
-        throw new TypeError(`Failed to execute '${ method }' on '${
-          this[Symbol.toStringTag]
-        }': parameter ${ expected } is not of type 'Blob'`);
-      }
-    }
-
-    if (method === 'forEach') {
-      if (args[0]?.constructor !== Function) {
-        throw new TypeError(`Failed to execute '${ method }' on '${
-          this[Symbol.toStringTag]
-        }': parameter ${ expected } is not of type 'Function'`);
-      }
-    }
-  }
-
   append(...args) {
     brandCheck(this, FormData);
-    this.#ensureArgs(args, 2, 'append');
-    this.#entries.push(this.constructor.#enfoldEntry(...args));
+    this.constructor.#ensureArgs(args, 2, this.append.name);
+    this.#entries.push(this.constructor.#formEntry(...args));
   }
 
   delete(...args) {
     brandCheck(this, FormData);
-    this.#ensureArgs(args, 1, 'delete');
+    this.constructor.#ensureArgs(args, 1, this.delete.name);
     const name = String(args[0]).toWellFormed();
 
     this.#entries = this.#entries.filter((it) => it.name !== name);
@@ -158,7 +102,7 @@ export class FormData {
 
   forEach(...args) {
     brandCheck(this, FormData);
-    this.#ensureArgs(args, 1, 'forEach');
+    this.constructor.#ensureArgs(args, 1, this.forEach.name);
     const [callback, thisArg] = args;
 
     for (const entry of this) {
@@ -171,7 +115,7 @@ export class FormData {
 
   get(...args) {
     brandCheck(this, FormData);
-    this.#ensureArgs(args, 1, 'get');
+    this.constructor.#ensureArgs(args, 1, this.get.name);
     const name = String(args[0]).toWellFormed();
 
     return this.#entries.find((it) => it.name === name)?.value ?? null;
@@ -179,7 +123,7 @@ export class FormData {
 
   getAll(...args) {
     brandCheck(this, FormData);
-    this.#ensureArgs(args, 1, 'getAll');
+    this.constructor.#ensureArgs(args, 1, this.getAll.name);
     const name = String(args[0]).toWellFormed();
 
     return this.#entries.filter((it) => it.name === name).map((it) => it.value);
@@ -187,7 +131,7 @@ export class FormData {
 
   has(...args) {
     brandCheck(this, FormData);
-    this.#ensureArgs(args, 1, 'has');
+    this.constructor.#ensureArgs(args, 1, this.has.name);
     const name = String(args[0]).toWellFormed();
 
     return !!this.#entries.find((it) => it.name === name);
@@ -195,8 +139,8 @@ export class FormData {
 
   set(...args) {
     brandCheck(this, FormData);
-    this.#ensureArgs(args, 2, 'set');
-    const entry = this.constructor.#enfoldEntry(...args);
+    this.constructor.#ensureArgs(args, 2, this.set.name);
+    const entry = this.constructor.#formEntry(...args);
     const idx = this.#entries.findIndex((it) => it.name === entry.name);
 
     if (idx !== -1) {
@@ -237,3 +181,50 @@ export class FormData {
   }
 
 }
+
+export const fdToAsyncIterable = (fd) => {
+  const boundary = randomBytes(32).toString('hex');
+  const contentType = `${ MULTIPART_FORM_DATA }; boundary=${ boundary }`;
+  const prefix = `--${ boundary }${ CRLF }${ HTTP2_HEADER_CONTENT_DISPOSITION }: form-data`;
+
+  const escape = (str) => str.replace(/\n/g, '%0A').replace(/\r/g, '%0D').replace(/"/g, '%22');
+  const normalize = (str) => str.replace(/\r?\n|\r/g, CRLF);
+
+  return {
+    contentType,
+    async* [Symbol.asyncIterator]() {
+      const encoder = new TextEncoder();
+
+      for (const [name, val] of fd) {
+        if (val.constructor === String) {
+          yield encoder.encode(`${ prefix }; name="${
+            escape(normalize(name))
+          }"${ CRLF.repeat(2) }${ normalize(val) }${ CRLF }`);
+        } else {
+          yield encoder.encode(`${ prefix }; name="${
+            escape(normalize(name))
+          }"${ val.name ? `; filename="${ escape(val.name) }"` : '' }${ CRLF }${
+            HTTP2_HEADER_CONTENT_TYPE
+          }: ${
+            val.type || APPLICATION_OCTET_STREAM
+          }${ CRLF.repeat(2) }`);
+          yield* tap(val);
+          yield new Uint8Array([
+            13,
+            10,
+          ]);
+        }
+      }
+
+      yield encoder.encode(`--${ boundary }--${ CRLF }`);
+    },
+  };
+};
+
+export const isFormData = (val) => FormData.name === val?.[Symbol.toStringTag];
+
+export const parseFormData = (str) => {
+  const rex = /^-+[^\r\n]+\r?\ncontent-disposition:\s*form-data;\s*name="(?<name>[^"]+)"(?:;\s*filename="(?<filename>[^"]+)")?(?:\r?\n[^\r\n:]+:[^\r\n]*)*\r?\n\r?\n(?<content>.*?)(?=\r?\n-+[^\r\n]+)/gims;
+
+  return [...str.matchAll(rex)].map(({ groups }) => structuredClone(groups));
+};

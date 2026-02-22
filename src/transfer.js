@@ -53,12 +53,8 @@ export const transfer = async (options) => {
       req = request(url, options);
     }
 
-    snoop(client, req, options);
+    snoop(client, req, options, { reject });
 
-    req.once('aborted', reject);
-    req.once('error', reject);
-    req.once('frameError', reject);
-    req.once('goaway', reject);
     req.once('response', (res) => postflight(req, res, options, {
       reject, resolve,
     }));

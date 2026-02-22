@@ -36,9 +36,9 @@ const {
 
 const attsCounter = new Map();
 const utcOffset = (
-  seconds,
+  sec,
   since = Date.now(),
-) => new Date(new Date(since).getTime() + seconds * 1e3).toUTCString();
+) => new Date(new Date(since).getTime() + sec * 1e3).toUTCString();
 
 export default (baseURL) => (req, res) => {
   const { href, pathname, searchParams } = new URL(req.url, baseURL);

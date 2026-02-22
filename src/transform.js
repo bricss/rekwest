@@ -6,14 +6,17 @@ import {
 import { buffer } from 'node:stream/consumers';
 import { types } from 'node:util';
 import { encode } from './codecs.js';
-import { FormData } from './formdata.js';
+import {
+  fdToAsyncIterable,
+  isFormData,
+} from './formdata.js';
 import {
   APPLICATION_FORM_URLENCODED,
   APPLICATION_JSON,
   APPLICATION_OCTET_STREAM,
 } from './mediatypes.js';
 import {
-  isFileLike,
+  isBlobLike,
   isReadableStream,
 } from './utils.js';
 
@@ -32,7 +35,7 @@ export const transform = async (options) => {
 
   if (!Buffer.isBuffer(body)) {
     switch (true) {
-      case isFileLike(body): {
+      case isBlobLike(body): {
         headers = {
           [HTTP2_HEADER_CONTENT_LENGTH]: body.size,
           [HTTP2_HEADER_CONTENT_TYPE]: body.type || APPLICATION_OCTET_STREAM,
@@ -41,8 +44,8 @@ export const transform = async (options) => {
         break;
       }
 
-      case FormData.alike(body): {
-        body = FormData.actuate(body);
+      case isFormData(body): {
+        body = fdToAsyncIterable(body);
         headers = { [HTTP2_HEADER_CONTENT_TYPE]: body.contentType };
         break;
       }

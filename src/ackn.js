@@ -23,11 +23,11 @@ export const ackn = (options) => new Promise((resolve, reject) => {
       createConnection() {
         return socket;
       },
-      h2: /h2c?/i.test(alpnProtocol),
+      h2: /\bh2\b/i.test(alpnProtocol),
       protocol: url.protocol,
     });
   });
 
-  socket.on('error', reject);
-  socket.on('timeout', reject);
+  socket.once('error', reject);
+  socket.once('timeout', reject);
 });
