@@ -1,4 +1,3 @@
-import { Blob } from 'node:buffer';
 import http2 from 'node:http2';
 import {
   isReadable,

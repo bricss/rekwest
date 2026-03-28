@@ -7,7 +7,8 @@ import {
 
 export default defineConfig([
   globalIgnores(['dist']),
-  ...markdown.configs.processor,
+  markdown.configs.processor,
+  markdown.configs.recommended,
   {
     extends: [ultraRefined],
   },

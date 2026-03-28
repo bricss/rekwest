@@ -1,7 +1,7 @@
 import { connect } from 'node:tls';
 
-export const ackn = (options) => new Promise((resolve, reject) => {
-  const { url } = options;
+export const ackn = (options = {}) => new Promise((resolve, reject) => {
+  const url = new URL(options.url);
   const socket = connect({
     ...options,
     ALPNProtocols: [

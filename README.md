@@ -22,7 +22,7 @@ and [http2.request](https://nodejs.org/api/http2.html#clienthttp2sessionrequesth
 
 ## Prerequisites
 
-* Node.js `>= 20.0.0`
+* Node.js `>=20.0.0`
 
 ## Installation
 
@@ -69,8 +69,6 @@ console.log(res.body);
 import { Readable } from 'node:stream';
 import rekwest, {
   constants,
-  Blob,
-  File,
   FormData,
 } from 'rekwest';
 

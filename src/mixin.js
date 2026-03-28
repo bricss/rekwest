@@ -1,7 +1,4 @@
-import {
-  Blob,
-  isUtf8,
-} from 'node:buffer';
+import { isUtf8 } from 'node:buffer';
 import http2 from 'node:http2';
 import { buffer } from 'node:stream/consumers';
 import { MIMEType } from 'node:util';

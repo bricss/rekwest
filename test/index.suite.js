@@ -1,12 +1,10 @@
 import assert from 'node:assert/strict';
-import { Blob } from 'node:buffer';
 import { Readable } from 'node:stream';
 import { scheduler } from 'node:timers/promises';
 import { types } from 'node:util';
 import rekwest, {
   constants,
   Cookies,
-  File,
   FormData,
   mediatypes,
   parseFormData,

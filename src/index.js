@@ -14,10 +14,6 @@ import {
 } from './utils.js';
 import { validation } from './validation.js';
 
-export {
-  Blob,
-  File,
-} from 'node:buffer';
 export { constants } from 'node:http2';
 export * from './ackn.js';
 export * from './codecs.js';

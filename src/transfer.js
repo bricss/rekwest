@@ -72,12 +72,17 @@ export const transfer = async (options) => {
     return res;
   } catch (err) {
     if (isLikelyH2cPrefaceError(err)) {
+      const { retry } = options;
+
       options = deepMerge(options, {
         h2: true,
         retry: {
-          attempts: 1,
-          errorCodes: [err.code],
-          interval: 0,
+          attempts: ++retry.attempts,
+          errorCodes: [
+            err.code,
+            ...retry.errorCodes,
+          ],
+          interval: 1,
         },
       });
     }
