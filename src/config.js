@@ -15,6 +15,7 @@ export const isZstdSupported = !!zlib.constants.ZSTD_CLEVEL_DEFAULT;
 const {
   HTTP2_HEADER_ACCEPT,
   HTTP2_HEADER_ACCEPT_ENCODING,
+  HTTP2_HEADER_USER_AGENT,
   HTTP2_METHOD_GET,
   HTTP_STATUS_BAD_GATEWAY,
   HTTP_STATUS_GATEWAY_TIMEOUT,
@@ -49,6 +50,7 @@ const defaults = {
   headers: {
     [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
     [HTTP2_HEADER_ACCEPT_ENCODING]: `br,${ isZstdSupported ? ' zstd, ' : ' ' }gzip, deflate, deflate-raw`,
+    [HTTP2_HEADER_USER_AGENT]: `node/${ process.versions.node } ${ process.platform }/${ process.arch }`,
   },
   method: HTTP2_METHOD_GET,
   parse: true,

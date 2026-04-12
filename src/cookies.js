@@ -3,13 +3,13 @@ import {
   toCamelCase,
 } from './utils.js';
 
-export const cookieRex = /^[\w-]+=(?:"[^"]*"|[^\p{Control};]*)(?:;\s*(?:[\w-]+=(?:"[^"]*"|[^\p{Control};]*)|[\w-]+))*$/u;
-export const cookiePairRex = /(?:[^;"\s]+="[^"]*"|[^;]+)(?=;|$)/g;
+export const cookieRex = /^[^=]+=(?:"[^"]*"|[^\p{Control};]*)(?:;\s*(?:[^=]+=(?:"[^"]*"|[^\p{Control};]*)|[^=]+))*$/u;
+export const cookiePairRex = /[^;\s]+=(?:"[^"]*"|[^;\s]*)/g;
 export const illegalCookieChars = /\p{Control}/u;
 export const isValidCookie = (str) => str?.constructor === String && cookieRex.test(str);
 export const maxCookieLifetimeCap = 3456e7; // 400 days
 export const maxCookieSize = 4096;
-export const splitCookie = (str) => str.match(cookiePairRex).map((str) => str.trim());
+export const splitCookie = (str) => str.match(cookiePairRex);
 
 export class Cookies extends URLSearchParams {
 
@@ -43,29 +43,33 @@ export class Cookies extends URLSearchParams {
       if (input.every((it) => isValidCookie(it))) {
         input = input.filter((it) => !illegalCookieChars.test(it) && it.length <= maxCookieSize);
         input = input.map(splitCookie).map(([cookie, ...attrs]) => {
-          try {
-            cookie = cookie.split('=').map((it) => decodeURIComponent(it.trim()));
+          cookie = cookie.split(/=(?<v>.*)/s, 2).map((it) => {
+            try {
+              return decodeURIComponent(it);
+            } catch {
+              return it;
+            }
+          });
 
-            return cookie;
-          } finally {
-            if (cookiesTTL) {
-              for (const attr of attrs) {
-                if (/(?:expires|max-age)=/i.test(attr)) {
-                  const [key, val] = attr.toLowerCase().split('=');
-                  let interval = val * 1e3 || Date.parse(val) - Date.now();
+          if (cookiesTTL) {
+            for (const attr of attrs) {
+              if (/(?:expires|max-age)=/i.test(attr)) {
+                const [key, val] = attr.split(/=(?<v>.*)/s, 2);
+                let interval = val * 1e3 || Date.parse(val) - Date.now();
 
-                  if (interval < 0 || Number.isNaN(interval)) {
-                    interval = 0;
-                  }
-
-                  ttlMap.set(
-                    cookie[0],
-                    { [toCamelCase(key.trim())]: Math.min(interval, maxCookieLifetimeCap) },
-                  );
+                if (interval < 0 || Number.isNaN(interval)) {
+                  interval = 0;
                 }
+
+                ttlMap.set(
+                  cookie[0],
+                  { [toCamelCase(key)]: Math.min(interval, maxCookieLifetimeCap) },
+                );
               }
             }
           }
+
+          return cookie;
         });
       }
     }
@@ -111,7 +115,7 @@ export class Cookies extends URLSearchParams {
   toString() {
     brandCheck(this, Cookies);
 
-    return super.toString().split('&').join('; ').trim();
+    return super.toString().split('&').join('; ');
   }
 
 }
