@@ -78,6 +78,11 @@ export const deepMerge = (target, ...rest) => {
       const sv = source[key];
       const tv = target[key];
 
+      if (sv instanceof Function) {
+        target[key] = source[key];
+        continue;
+      }
+
       if (Object(sv) === sv && Object(tv) === tv) {
         target[key] = deepMerge(tv, sv);
         continue;

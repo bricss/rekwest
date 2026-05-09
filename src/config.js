@@ -50,7 +50,7 @@ const defaults = {
   headers: {
     [HTTP2_HEADER_ACCEPT]: `${ APPLICATION_JSON }, ${ TEXT_PLAIN }, ${ WILDCARD }`,
     [HTTP2_HEADER_ACCEPT_ENCODING]: `br,${ isZstdSupported ? ' zstd, ' : ' ' }gzip, deflate, deflate-raw`,
-    [HTTP2_HEADER_USER_AGENT]: `node/${ process.versions.node } ${ process.platform }/${ process.arch }`,
+    [HTTP2_HEADER_USER_AGENT]: navigator.userAgent,
   },
   method: HTTP2_METHOD_GET,
   parse: true,

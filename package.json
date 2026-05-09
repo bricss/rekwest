@@ -11,15 +11,15 @@
   "devDependencies": {
     "@babel/cli": "^7.28.6",
     "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.2",
+    "@babel/preset-env": "^7.29.5",
     "@eslint/markdown": "^8.0.1",
     "c8": "^11.0.0",
-    "eslint": "^10.2.0",
-    "eslint-config-ultra-refined": "^4.1.6",
+    "eslint": "^10.3.0",
+    "eslint-config-ultra-refined": "^4.1.7",
     "mocha": "^11.7.5"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "exports": {
     "import": "./src/index.js",
@@ -72,5 +72,5 @@
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
   "type": "module",
-  "version": "7.2.7"
+  "version": "8.0.0"
 }
