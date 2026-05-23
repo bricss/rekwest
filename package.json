@@ -12,11 +12,11 @@
     "@babel/cli": "^7.28.6",
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.5",
-    "@eslint/markdown": "^8.0.1",
+    "@eslint/markdown": "^8.0.2",
     "c8": "^11.0.0",
-    "eslint": "^10.3.0",
-    "eslint-config-ultra-refined": "^4.1.7",
-    "mocha": "^11.7.5"
+    "eslint": "^10.4.0",
+    "eslint-config-ultra-refined": "^4.1.8",
+    "mocha": "^11.7.6"
   },
   "engines": {
     "node": ">=22.0.0"

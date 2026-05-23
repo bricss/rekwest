@@ -1,63 +1,69 @@
-Coding Rules
+# Contributing Guidelines
+
+## Development Workflow
+
+1. Create a branch: `git checkout -b feat/my-feature` or `fix/bug-fix-name`
+2. Code, add tests, verify:
+   ```bash
+   npm test                          # run the full suite
+   npm run lint                      # ensure zero errors/warnings
+   npm run build                     # compile source if applicable
+   ```
+3. Commit using [Conventional Commits](https://www.conventionalcommits.org/) format (see below).
+4. Push and open a pull request.
+
+## Commit Message Format
+
+Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) spec:
+
+```
+<type>(<scope>): <subject>   # subject ≤ 80 chars
+                             # blank line
+<body>                       # wrap at 80 chars
+```
+
+### Allowed Types
+
+| Type       | Description                              |
+|------------|------------------------------------------|
+| `build`    | Build system or dependency changes       |
+| `ci`       | CI pipeline modifications                |
+| `chore`    | Housekeeping (tooling, config)           |
+| `docs`     | Documentation-only changes               |
+| `feat`     | A new feature                            |
+| `fix`      | A bug fix                                |
+| `perf`     | Performance improvement                  |
+| `refactor` | Code change, neither fix nor feature     |
+| `style`    | Formatting, whitespace — no logic change |
+| `test`     | Adding or correcting tests               |
+
+### Examples
+
+```
+feat(api): add new endpoint for user auth
+fix(parser): handle malformed input gracefully
+docs(readme): update installation instructions
+```
+
+## Pull Requests
+
+- Ensure all checks pass locally (`npm test`, `npm run lint`).
+- Include tests covering new or changed behavior.
+- Describe the motivation behind the change, not just what was done.
+
+## Coding Standards
+
+- **ESLint** (or your linter) enforces style rules — configure it in your IDE for auto-fix on save.
+- **EditorConfig**: matches the project's indentation, encoding, and line-ending conventions.
+- Follow the existing code style — match patterns already present in the codebase.
+- Use descriptive names; avoid one-letter variables except in short loops.
+
+## Reporting Issues
+
+1. Search existing issues to avoid duplicates.
+2. Confirm you're on a supported version of the dependency (e.g., Node.js).
+3. Include a minimal reproducible snippet, expected vs. actual behavior, and environment details.
+
 ---
 
-Make sure your `IDE` uses [ESLint](https://eslint.org/) rules and applies [EditorConfig](https://editorconfig.org/)
-coding styles.
-
-## Commit Guidelines
-
-We have very precise rules over how our git commit messages can be formatted. This leads to **more readable messages**
-that are easy to follow when looking through the **project history**.
-
-### Commit Message Format
-
-Each commit message consists of a **header**, a **body** and a **footer**. The header has a special format that includes
-a **type**, a **scope**, and a **subject**:
-
-```
-<type>(<scope>): <subject>
-<blank>
-<body>
-<blank>
-<footer>
-```
-
-The subject line of the commit message cannot be longer 80 characters. The second line is always blank and other lines
-should be wrapped at 80 characters. This allows the message to be easier to read.
-
-The **type** and **scope** *(can be avoided)* should always be lowercase as shown above.
-
-### Type
-
-Please use one of the following:
-
-* **bump**: Manual increment of the application version.
-* **chore**: Update to task runner or build scripts, etc.
-* **feat**: New feature for the user, not a new feature for build scripts.
-* **fix**: Bugs fix for the user, not a fix to a build scripts.
-* **doc**: Change to the documentation.
-* **perf**: Change that improves code performance.
-* **refactor**: Change that neither fixes a bug nor adds a feature.
-* **style**: Change that do not affect the meaning of the code (formatting, missing semicolons, white-spaces, etc.).
-* **test**: Add new or missing tests, or tests refactoring.
-
-### Scope
-
-The scope could be anything specifying the location of the commit change. For example `view` or `logger`.
-
-### Subject
-
-The subject contains a succinct description of the change:
-
-* Use the imperative, present tense: "change" not "changed" nor "changes".
-* Don't capitalize the first letter.
-* Do not add a dot (.) at the end.
-
-### Body
-
-The body should include the motivation for the change and contrast this with previous behavior.
-
-### Footer
-
-The footer should contain any information about breaking changes and is also the place to reference issues that this
-commit closes.
+This project follows the [Contributor Covenant](https://www.contributor-covenant.org/). Be respectful and constructive.
