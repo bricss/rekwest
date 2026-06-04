@@ -255,7 +255,7 @@ export default ({ baseURL, httpVersion }) => {
       const url = new URL('/gimme/redirect', baseURL);
 
       await assert.rejects(rekwest(url, { follow: 0 }), (err) => {
-        assert.match(err.message, /Maximum redirect reached at:/);
+        assert.ok(err.message.includes('Maximum redirect reached at:'));
         assert.equal(err.name, 'RequestError');
 
         return true;
@@ -409,6 +409,32 @@ export default ({ baseURL, httpVersion }) => {
         assert.equal(res.ok, true);
         assert.equal(res.redirected, true);
         assert.equal(res.statusCode, HTTP_STATUS_OK);
+      });
+
+      it(`should make ${ HTTP2_METHOD_GET } request with correct certPins and must receive a response`, async () => {
+        const base = baseURL.protocol === 'http:' ? globalThis.h1sBaseURL : globalThis.h2sBaseURL;
+        const url = new URL('/gimme/nothing', base);
+        const res = await rekwest(url, {
+          certPins: [globalThis.certFp],
+        });
+
+        assert.equal(res.httpVersion, httpVersion);
+        assert.equal(res.ok, true);
+        assert.equal(res.statusCode, HTTP_STATUS_NO_CONTENT);
+      });
+
+      it(`should make ${ HTTP2_METHOD_GET } request with wrong certPins and must catch an error`, async () => {
+        const base = baseURL.protocol === 'http:' ? globalThis.h1sBaseURL : globalThis.h2sBaseURL;
+        const url = new URL('/gimme/nothing', base);
+
+        await assert.rejects(rekwest(url, {
+          certPins: [Array.from({ length: 32 }, () => '00').join(':')],
+        }), (err) => {
+          assert.ok(err.message.includes('Certificate pins mismatch'));
+          assert.equal(err.name, 'RequestError');
+
+          return true;
+        });
       });
     }
 

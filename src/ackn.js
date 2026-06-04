@@ -1,4 +1,5 @@
 import { connect } from 'node:tls';
+import { RequestError } from './errors.js';
 
 export const ackn = (options = {}) => new Promise((resolve, reject) => {
   const url = new URL(options.url);
@@ -12,6 +13,18 @@ export const ackn = (options = {}) => new Promise((resolve, reject) => {
     port: parseInt(url.port, 10) || 443,
     servername: url.hostname,
   }, () => {
+    const cert = socket.getPeerCertificate();
+
+    if (options.certPins?.length) {
+      const fp = cert.fingerprint256;
+
+      if (!options.certPins.includes(fp) && !socket.isSessionReused()) {
+        socket.destroy();
+
+        return reject(new RequestError(`Certificate pins mismatch for ${ url.hostname }`));
+      }
+    }
+
     socket.off('error', reject);
     socket.off('timeout', reject);
 

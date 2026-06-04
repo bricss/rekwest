@@ -4,7 +4,7 @@ import {
 } from './utils.js';
 
 export const cookieRex = /^[^=]+=(?:"[^"]*"|[^\p{Control};]*)(?:;\s*(?:[^=]+=(?:"[^"]*"|[^\p{Control};]*)|[^=]+))*$/u;
-export const cookiePairRex = /[^;\s]+=(?:"[^"]*"|[^;\s]*)/g;
+export const cookiePairRex = /[^;\s]+=(?:"[^"]*"|[^;]*)/g;
 export const illegalCookieChars = /\p{Control}/u;
 export const isValidCookie = (str) => str?.constructor === String && cookieRex.test(str);
 export const maxCookieLifetimeCap = 3456e7; // 400 days

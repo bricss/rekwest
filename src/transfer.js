@@ -22,9 +22,7 @@ export const transfer = async (options) => {
   }
 
   if (url.protocol === 'https:') {
-    options = !options.h2 ? await ackn(options) : {
-      ...options, createConnection: null, protocol: url.protocol,
-    };
+    options = await ackn(options);
   } else if (Reflect.has(options, 'alpnProtocol')) {
     for (const it of [
       'alpnProtocol',

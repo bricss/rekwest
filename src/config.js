@@ -29,6 +29,7 @@ const timeout = 3e5;
 const defaults = {
   allowDowngrade: false,
   bufferBody: false,
+  certPins: [],
   cookiesTTL: false,
   credentials: requestCredentials.sameOrigin,
   decodersOptions: {},

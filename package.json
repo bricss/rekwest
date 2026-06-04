@@ -9,12 +9,12 @@
   },
   "description": "The robust request library that humanity deserves 🌐",
   "devDependencies": {
-    "@babel/cli": "^7.28.6",
-    "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.5",
+    "@babel/cli": "^7.29.7",
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
     "@eslint/markdown": "^8.0.2",
     "c8": "^11.0.0",
-    "eslint": "^10.4.0",
+    "eslint": "^10.4.1",
     "eslint-config-ultra-refined": "^4.1.8",
     "mocha": "^11.7.6"
   },
@@ -77,5 +77,5 @@
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
   "type": "module",
-  "version": "8.0.0"
+  "version": "8.1.0"
 }

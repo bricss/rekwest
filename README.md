@@ -7,13 +7,14 @@ and [http2.request](https://nodejs.org/api/http2.html#clienthttp2sessionrequesth
 ## Abstract
 
 * Fetch-alike 🥏
-* Cool-beans 🫐 config options (with defaults) 📋
+* Cool-beans 🫛 config options (with defaults) 📋
 * Automatic HTTP/2 support (ALPN negotiation) 💼
 * Automatic or opt-in body parse (with non-UTF-8 charset decoding) 🉑
 * Automatic and simplistic `Cookies` treatment (with **TTL** support) 🍪
 * Automatic body decoding (and opt-in request body encoding) 🗜️
 * Better error management 🚥
 * Built-in streamable `FormData` interface 🔌
+* Support certificate pinning for enhanced TLS security 🛡️
 * Support redirects & retries with fine-grained tune-ups 🪛
 * Support plenty request body types (include blobs & streams) 📦
 * Support both CJS and ESM module systems 🧩
@@ -131,14 +132,17 @@ console.log(res.body);
     with the request.
   * `bufferBody` **{boolean}** `Default: false` Toggles the buffering of the streamable request bodies for redirects and
     retries.
+  * `certPins` **{string[]}** `Default: []` A list of SHA-256 certificate fingerprints (colon-separated hex) used for
+    HTTPS certificate pinning. If the list is non-empty and none of the fingerprints match, the connection will be
+    rejected.
   * `cookies` **{boolean | string | string[] | [k, v][] | Cookies | Object | URLSearchParams}** `Default: true` The
     cookies to add to the request. Manually set `cookie` header to override.
-  * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookies cache.
+  * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookie cache.
   * `credentials` **{include | omit | same-origin}** `Default: same-origin` Controls credentials in case of cross-origin
     redirects.
-  * `decodersOptions` **{Object}** Configures decoders options, e.g.: `brotli`, `zlib`, `zstd`.
+  * `decodersOptions` **{Object}** Configures decoder options, e.g.: `brotli`, `zlib`, `zstd`.
   * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or add a mixin.
-  * `encodersOptions` **{Object}** Configures encoders options, e.g.: `brotli`, `zlib`, `zstd`.
+  * `encodersOptions` **{Object}** Configures encoder options, e.g.: `brotli`, `zlib`, `zstd`.
   * `follow` **{number}** `Default: 20` The number of redirects to follow.
   * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol.
   * `headers` **{Object}** The headers to add to the request.
@@ -162,7 +166,7 @@ console.log(res.body);
   * `trimTrailingSlashes` **{boolean}** `Default: false` Controls whether to trim trailing slashes within the URL.
 * **Returns:** Promise that resolves to
   extended [http.IncomingMessage](https://nodejs.org/api/http.html#class-httpincomingmessage)
-  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#class-clienthttp2stream) which is respectively
+  or [http2.ClientHttp2Stream](https://nodejs.org/api/http2.html#class-clienthttp2stream) which are respectively
   readable and duplex streams.
   * if `digest: true` & `parse: true`
     * `body` **{string | Array | Buffer | Object}** The body based on its content type.
