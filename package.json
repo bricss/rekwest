@@ -13,10 +13,10 @@
     "@babel/core": "^8.0.1",
     "@babel/preset-env": "^8.0.2",
     "@eslint/markdown": "^8.0.3",
-    "c8": "^11.0.0",
-    "eslint": "^10.7.0",
-    "eslint-config-ultra-refined": "^4.1.10",
-    "mocha": "^11.7.6"
+    "c8": "^12.0.0",
+    "eslint": "^10.8.1",
+    "eslint-config-ultra-refined": "^4.2.1",
+    "mocha": "^11.8.0"
   },
   "engines": {
     "node": ">=22.0.0"
@@ -56,18 +56,13 @@
   ],
   "license": "MIT",
   "name": "rekwest",
-  "overrides": {
-    "c8": {
-      "yargs": "^18.0.0"
-    }
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bricss/rekwest.git"
   },
   "scripts": {
     "build": "rm -rf dist && npx babel src --out-dir dist --out-file-extension .cjs && sh misc.sh",
-    "cert:gen": "openssl req -days 365 -keyout localhost.key -newkey ec -nodes -pkeyopt ec_paramgen_curve:prime256v1 -subj //SKIP=1/CN=localhost -out localhost.cert -x509",
+    "cert:gen": "openssl req -days 365 -keyout localhost.key -newkey ec -nodes -pkeyopt ec_paramgen_curve:P-384 -subj //SKIP=1/CN=localhost -out localhost.cert -x509",
     "cert:ken": "openssl x509 -in localhost.cert -noout -text",
     "lint": "eslint --concurrency=auto",
     "prepack": "npm run build && npm run lint",
@@ -77,5 +72,5 @@
     "test:cover": "c8 --include=src --reporter=lcov --reporter=text npm test"
   },
   "type": "module",
-  "version": "8.1.0"
+  "version": "8.1.1"
 }

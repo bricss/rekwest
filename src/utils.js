@@ -62,33 +62,28 @@ export const brandCheck = (val, ctor) => {
   }
 };
 
-export const cloneWith = (target, ...rest) => {
+export const cloneWith = (target, ...sources) => {
   target = structuredClone(target);
-  if (!rest.length) {
-    return target;
-  }
 
-  return deepMerge(target, ...rest);
+  return sources.length ? deepMerge(target, ...sources) : target;
 };
 
-export const deepMerge = (target, ...rest) => {
-  rest = rest.filter((it) => Object(it) === it);
-  for (const source of rest) {
-    for (const key of Object.getOwnPropertyNames(source)) {
+export const deepMerge = (target, ...sources) => {
+  for (const source of sources) {
+    if (typeof source !== 'object') {
+      continue;
+    }
+
+    for (const key of Object.keys(source)) {
       const sv = source[key];
-      const tv = target[key];
+      const tv = Object.hasOwn(target, key) ? target[key] : undefined;
 
-      if (sv instanceof Function) {
-        target[key] = source[key];
-        continue;
-      }
-
-      if (Object(sv) === sv && Object(tv) === tv) {
-        target[key] = deepMerge(tv, sv);
-        continue;
-      }
-
-      target[key] = source[key];
+      Reflect.defineProperty(target, key, {
+        configurable: true,
+        enumerable: true,
+        value: sv && tv && typeof sv === 'object' && typeof tv === 'object' ? deepMerge(tv, sv) : sv,
+        writable: true,
+      });
     }
   }
 
