@@ -138,8 +138,8 @@ console.log(res.body);
   * `cookies` **{boolean | string | string[] | [k, v][] | Cookies | Object | URLSearchParams}** `Default: true` The
     cookies to add to the request. Manually set `cookie` header to override.
   * `cookiesTTL` **{boolean}** `Default: false` Controls enablement of TTL for the cookie cache.
-  * `credentials` **{include | omit | same-origin}** `Default: same-origin` Controls credentials in case of cross-origin
-    redirects.
+  * `credentials` **{'include' | 'omit' | 'same-origin'}** `Default: 'same-origin'` Controls credentials in case of
+    cross-origin redirects.
   * `decodersOptions` **{Object}** Configures decoder options, e.g.: `brotli`, `zlib`, `zstd`.
   * `digest` **{boolean}** `Default: true` Controls whether to read the response stream or add a mixin.
   * `encodersOptions` **{Object}** Configures encoder options, e.g.: `brotli`, `zlib`, `zstd`.
@@ -147,12 +147,14 @@ console.log(res.body);
   * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol.
   * `headers` **{Object}** The headers to add to the request.
   * `params` **{Object}** The search params to add to the `url`.
-  * `parse` **{boolean}** `Default: true` Controls whether to parse response body or return a buffer.
-  * `redirect` **{error | follow | manual}** `Default: follow` Controls the redirect flows.
+  * `parse` **{boolean}** `Default: true` Controls whether to parse the response body or return a buffer.
+  * `redirect` **{'error' | 'follow' | 'manual'}** `Default: 'follow'` Controls the redirect flows.
   * `retry` **{Object}** Represents the retry options.
     * `attempts` **{number}** `Default: 0` The number of retry attempts.
-    * `backoffStrategy` **{string}** `Default: interval * Math.log(Math.random() * (Math.E * Math.E - Math.E) + Math.E)`
-      The backoff strategy uses a log-uniform algorithm. To fix the interval, set the value to `interval * 1`.
+    * `backoffStrategy` **{string}**
+      `Default: 'interval * Math.log(Math.random() * (Math.E * Math.E - Math.E) + Math.E)'` The backoff strategy uses a
+      log-uniform algorithm. Evaluated in a sandboxed VM context. To fix the interval, set the value to
+      `'interval * 1'`.
     * `errorCodes` **{string[]}**
       `Default: ['ECONNREFUSED', 'ECONNRESET', 'EHOSTDOWN', 'EHOSTUNREACH', 'ENETDOWN', 'ENETUNREACH', 'ENOTFOUND', 'ERR_HTTP2_STREAM_ERROR']`
       The list of error codes to retry on.

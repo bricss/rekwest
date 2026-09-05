@@ -1,6 +1,7 @@
 import http2 from 'node:http2';
 import { isReadable } from 'node:stream';
 import { scheduler } from 'node:timers/promises';
+import { Script } from 'node:vm';
 import { RequestError } from './errors.js';
 import rekwest from './index.js';
 import { isPipeStream } from './utils.js';
@@ -35,7 +36,7 @@ export const retries = (err, options) => {
           );
         }
       } else {
-        interval = new Function('interval', `return Math.ceil(${ retry.backoffStrategy });`)(interval);
+        interval = new Script(`Math.ceil(${ retry.backoffStrategy })`).runInNewContext({ interval });
       }
 
       if (interval < 0 || Number.isNaN(interval)) {

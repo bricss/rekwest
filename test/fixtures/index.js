@@ -44,10 +44,10 @@ export async function mochaGlobalSetup() {
 
 export async function mochaGlobalTeardown() {
   await Promise.all([
-    once(this.h1cServer.close(), 'close'),
-    once(this.h2cServer.close(), 'close'),
-    once(this.h1sServer.close(), 'close'),
-    once(this.h2sServer.close(), 'close'),
+    this.h1cServer[Symbol.asyncDispose](),
+    this.h2cServer[Symbol.asyncDispose](),
+    this.h1sServer[Symbol.asyncDispose](),
+    this.h2sServer[Symbol.asyncDispose](),
   ]);
 
   console.log('server(s) has been closed');
