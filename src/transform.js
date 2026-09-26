@@ -17,6 +17,7 @@ import {
 } from './mediatypes.js';
 import {
   isBlobLike,
+  isPlainObject,
   isReadableStream,
 } from './utils.js';
 
@@ -61,10 +62,10 @@ export const transform = async (options) => {
       }
 
       case Object(body) === body && !Reflect.has(body, Symbol.asyncIterator): {
-        if (body.constructor === URLSearchParams) {
+        if (body instanceof URLSearchParams) {
           headers = { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_FORM_URLENCODED };
           body = body.toString();
-        } else if (!(!Array.isArray(body) && Reflect.has(body, Symbol.iterator))) {
+        } else if (Array.isArray(body) || (isPlainObject(body) && !Reflect.has(body, Symbol.iterator))) {
           headers = { [HTTP2_HEADER_CONTENT_TYPE]: APPLICATION_JSON };
           body = JSON.stringify(body);
         }

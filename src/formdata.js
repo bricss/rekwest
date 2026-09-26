@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import http2 from 'node:http2';
 import {
   APPLICATION_OCTET_STREAM,
+  MIME_EOL,
   MULTIPART_FORM_DATA,
 } from './mediatypes.js';
 import {
@@ -12,7 +13,6 @@ import {
   tap,
 } from './utils.js';
 
-const CRLF = '\r\n';
 const {
   HTTP2_HEADER_CONTENT_DISPOSITION,
   HTTP2_HEADER_CONTENT_TYPE,
@@ -182,12 +182,12 @@ export class FormData {
 }
 
 export const fdToAsyncIterable = (fd) => {
-  const boundary = randomBytes(32).toString('hex');
+  const boundary = randomBytes(32).toString('base64url');
   const contentType = `${ MULTIPART_FORM_DATA }; boundary=${ boundary }`;
-  const prefix = `--${ boundary }${ CRLF }${ HTTP2_HEADER_CONTENT_DISPOSITION }: form-data`;
+  const prefix = `--${ boundary }${ MIME_EOL }${ HTTP2_HEADER_CONTENT_DISPOSITION }: form-data`;
 
   const escape = (str) => str.replace(/\n/g, '%0A').replace(/\r/g, '%0D').replace(/"/g, '%22');
-  const normalize = (str) => str.replace(/\r?\n|\r/g, CRLF);
+  const normalize = (str) => str.replace(/\r?\n|\r/g, MIME_EOL);
 
   return {
     contentType,
@@ -195,18 +195,18 @@ export const fdToAsyncIterable = (fd) => {
       const encoder = new TextEncoder();
 
       for (const [name, val] of fd) {
-        if (val.constructor === String) {
+        if (typeof val === 'string') {
           yield encoder.encode(`${ prefix }; name="${
             escape(normalize(name))
-          }"${ CRLF.repeat(2) }${ normalize(val) }${ CRLF }`);
+          }"${ MIME_EOL.repeat(2) }${ normalize(val) }${ MIME_EOL }`);
         } else {
           yield encoder.encode(`${ prefix }; name="${
             escape(normalize(name))
-          }"${ val.name ? `; filename="${ escape(val.name) }"` : '' }${ CRLF }${
+          }"${ val.name ? `; filename="${ escape(val.name) }"` : '' }${ MIME_EOL }${
             HTTP2_HEADER_CONTENT_TYPE
           }: ${
             val.type || APPLICATION_OCTET_STREAM
-          }${ CRLF.repeat(2) }`);
+          }${ MIME_EOL.repeat(2) }`);
           yield* tap(val);
           yield new Uint8Array([
             13,
@@ -215,7 +215,7 @@ export const fdToAsyncIterable = (fd) => {
         }
       }
 
-      yield encoder.encode(`--${ boundary }--${ CRLF }`);
+      yield encoder.encode(`--${ boundary }--${ MIME_EOL }`);
     },
   };
 };

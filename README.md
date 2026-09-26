@@ -146,7 +146,8 @@ console.log(res.body);
   * `follow` **{number}** `Default: 20` The number of redirects to follow.
   * `h2` **{boolean}** `Default: false` Forces the use of HTTP/2 protocol.
   * `headers` **{Object}** The headers to add to the request.
-  * `params` **{Object}** The search params to add to the `url`.
+  * `params` **{Object}** The search params to add to the `url`. Supports nested objects and arrays using bracket
+    notation.
   * `parse` **{boolean}** `Default: true` Controls whether to parse the response body or return a buffer.
   * `redirect` **{'error' | 'follow' | 'manual'}** `Default: 'follow'` Controls the redirect flows.
   * `retry` **{Object}** Represents the retry options.

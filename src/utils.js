@@ -12,14 +12,26 @@ const {
 } = http2.constants;
 
 export const addSearchParams = (url, params = {}) => {
-  for (const [key, val] of Object.entries(params)) {
+  const traverse = (prefix, val) => {
     if (Array.isArray(val)) {
-      for (const v of val) {
-        url.searchParams.append(key, v);
+      for (const [idx, v] of val.entries()) {
+        if (isPlainObject(v)) {
+          traverse(`${ prefix }[${ idx }]`, v);
+        } else {
+          url.searchParams.append(prefix, v);
+        }
       }
-    } else {
-      url.searchParams.set(key, val);
+    } else if (isPlainObject(val)) {
+      for (const [key, v] of Object.entries(val)) {
+        traverse(`${ prefix }[${ key }]`, v);
+      }
+    } else if (val !== undefined) {
+      url.searchParams.append(prefix, val);
     }
+  };
+
+  for (const [key, val] of Object.entries(params)) {
+    traverse(key, val);
   }
 
   return url;
@@ -81,7 +93,7 @@ export const deepMerge = (target, ...sources) => {
       Reflect.defineProperty(target, key, {
         configurable: true,
         enumerable: true,
-        value: sv && tv && typeof sv === 'object' && typeof tv === 'object' ? deepMerge(tv, sv) : sv,
+        value: sv && tv && isTraversable(sv) && isTraversable(tv) ? deepMerge(tv, sv) : sv,
         writable: true,
       });
     }
@@ -105,7 +117,14 @@ export const isLikelyH2cPrefaceError = (err) => err.code === 'HPE_INVALID_CONSTA
 
 export const isPipeStream = (val) => val instanceof Readable;
 
+export const isPlainObject = (val) => Object(val) === val && [
+  Object.prototype,
+  null,
+].includes(Object.getPrototypeOf(val));
+
 export const isReadableStream = (val) => val instanceof ReadableStream;
+
+export const isTraversable = (val) => Array.isArray(val) || isPlainObject(val);
 
 export const normalize = (url, options = {}) => {
   if (!options.redirected) {

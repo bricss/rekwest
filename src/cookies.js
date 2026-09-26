@@ -6,7 +6,7 @@ import {
 export const cookieRex = /^[^=]+=(?:"[^"]*"|[^\p{Control};]*)(?:;\s*(?:[^=]+=(?:"[^"]*"|[^\p{Control};]*)|[^=]+))*$/u;
 export const cookiePairRex = /[^;\s]+=(?:"[^"]*"|[^;]*)/g;
 export const illegalCookieChars = /\p{Control}/u;
-export const isValidCookie = (str) => str?.constructor === String && cookieRex.test(str);
+export const isValidCookie = (str) => typeof str === 'string' && cookieRex.test(str);
 export const maxCookieLifetimeCap = 3456e7; // 400 days
 export const maxCookieSize = 4096;
 export const splitCookie = (str) => str.match(cookiePairRex);

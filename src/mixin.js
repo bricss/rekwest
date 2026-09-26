@@ -15,7 +15,7 @@ export const mixin = (res, { decodersOptions, digest = false, parse = false } = 
     Object.defineProperties(res, {
       arrayBuffer: {
         enumerable: true,
-        value: async function () {
+        async value() {
           brandCheck(this, res?.constructor);
           parse &&= false;
           const { buffer, byteLength, byteOffset } = await this.body();
@@ -25,7 +25,7 @@ export const mixin = (res, { decodersOptions, digest = false, parse = false } = 
       },
       blob: {
         enumerable: true,
-        value: async function () {
+        async value() {
           brandCheck(this, res?.constructor);
           const val = await this.arrayBuffer();
 
@@ -34,7 +34,7 @@ export const mixin = (res, { decodersOptions, digest = false, parse = false } = 
       },
       bytes: {
         enumerable: true,
-        value: async function () {
+        async value() {
           brandCheck(this, res?.constructor);
 
           return new Uint8Array(await this.arrayBuffer());
@@ -42,7 +42,7 @@ export const mixin = (res, { decodersOptions, digest = false, parse = false } = 
       },
       json: {
         enumerable: true,
-        value: async function () {
+        async value() {
           brandCheck(this, res?.constructor);
           const val = await this.text();
 
@@ -51,7 +51,7 @@ export const mixin = (res, { decodersOptions, digest = false, parse = false } = 
       },
       text: {
         enumerable: true,
-        value: async function () {
+        async value() {
           brandCheck(this, res?.constructor);
           const blob = await this.blob();
 
@@ -64,7 +64,7 @@ export const mixin = (res, { decodersOptions, digest = false, parse = false } = 
   return Object.defineProperties(res, {
     body: {
       enumerable: true,
-      value: async function () {
+      async value() {
         brandCheck(this, res?.constructor);
 
         if (this.bodyUsed) {
