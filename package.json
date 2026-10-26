@@ -10,7 +10,7 @@
   "description": "The robust request library that humanity deserves 🌐",
   "devDependencies": {
     "@babel/cli": "^8.0.6",
-    "@babel/core": "^8.0.7",
+    "@babel/core": "^8.0.9",
     "@babel/preset-env": "^8.0.7",
     "@eslint/markdown": "^8.0.3",
     "c8": "^12.0.0",
