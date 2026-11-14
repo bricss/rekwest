@@ -428,7 +428,7 @@ export default ({ baseURL, httpVersion }) => {
         const url = new URL('/gimme/nothing', base);
 
         await assert.rejects(rekwest(url, {
-          certPins: [Array.from({ length: 32 }, () => '00').join(':')],
+          certPins: [Array.from({ length: 32 }).fill('00').join(':')],
         }), (err) => {
           assert.ok(err.message.includes('Certificate pins mismatch'));
           assert.equal(err.name, 'RequestError');

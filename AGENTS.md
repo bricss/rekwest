@@ -146,8 +146,8 @@ Tests use Mocha with global setup/teardown (`test/fixtures/index.js`). Before ea
 
 - **`certPins`** option (`{string[]}`, default `[]`) — a list of SHA-256 fingerprints (colon-separated hex) for HTTPS
   pinning, implemented in `ackn.js`. A connection is rejected when the list is non-empty and none matches.
-  - Non-obvious gotcha: on **TLS session resumption** the check is skipped (`!socket.isSessionReused()`), so a
-    resumed/sessions-resumed connection will pass even if pins mismatch.
+    - Non-obvious gotcha: on **TLS session resumption** the check is skipped (`!socket.isSessionReused()`), so a
+      resumed/sessions-resumed connection will pass even if pins mismatch.
 
 ---
 
@@ -169,3 +169,20 @@ Tests use Mocha with global setup/teardown (`test/fixtures/index.js`). Before ea
 | **No Request/Response classes**       | Options passed as plain objects rather than spec-compliant `Request` / `Response` constructors. Missing middleware-chain compatibility. Static factories (`Response.json()`, `Response.error()`, `Request.clone()`) also absent. |
 | **No request/response interceptors**  | Missing middleware pipeline (like Axios interceptors) for global transform hooks (auth injection, logging, metrics).                                                                                                             |
 | **`res.body` returns Node.js stream** | Not a Web-compatible `ReadableStream`; limits interoperability with web-streams-aware libraries and edge runtimes.                                                                                                               |
+
+## Style
+
+`.editorconfig` enforces 2-space indentation, LF, UTF-8, 120-char lines, trimmed trailing whitespace, and a final
+newline (except Markdown trailing whitespace). Match these conventions exactly.
+
+`eslint.config.js` uses the strict **`eslint-config-ultra-refined`** preset, which includes: `@stylistic/eslint-plugin`,
+`@e18e/eslint-plugin`, along with separate Markdown linting. Follow existing formatting conventions; linting is enforced
+in CI.
+
+## Linting
+
+1. Run `npx eslint --fix` before attempting any manual lint fixes.
+2. Never manually fix an issue that can be automatically resolved.
+3. After auto-fixing, inspect the remaining errors and warnings.
+4. Only then proceed with manual corrections.
+5. Do not skip step 1, even if the linting issues appear trivial.

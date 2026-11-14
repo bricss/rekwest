@@ -15,7 +15,14 @@ const {
 } = http2.constants;
 
 export const preflight = (options) => {
-  let { cookies, credentials, h2, headers, method, url } = options;
+  let {
+    cookies,
+    credentials,
+    h2,
+    headers,
+    method,
+    url,
+  } = options;
 
   if (h2) {
     options.endStream = [

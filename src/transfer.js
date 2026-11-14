@@ -54,7 +54,8 @@ export const transfer = async (options) => {
     snoop(client, req, options, { reject });
 
     req.once('response', (res) => postflight(req, res, options, {
-      reject, resolve,
+      reject,
+      resolve,
     }));
 
     dispatch(req, options);

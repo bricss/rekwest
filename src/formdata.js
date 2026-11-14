@@ -133,7 +133,7 @@ export class FormData {
     this.constructor.#ensureArgs(args, 1, this.has.name);
     const name = String(args[0]).toWellFormed();
 
-    return !!this.#entries.find((it) => it.name === name);
+    return this.#entries.some((it) => it.name === name);
   }
 
   set(...args) {
@@ -225,5 +225,5 @@ export const isFormData = (val) => FormData.name === val?.[Symbol.toStringTag];
 export const parseFormData = (str) => {
   const rex = /^-+[^\r\n]+\r?\ncontent-disposition:\s*form-data;\s*name="(?<name>[^"]+)"(?:;\s*filename="(?<filename>[^"]+)")?(?:\r?\n[^\r\n:]+:[^\r\n]*)*\r?\n\r?\n(?<content>.*?)(?=\r?\n-+[^\r\n]+)/gims;
 
-  return [...str.matchAll(rex)].map(({ groups }) => structuredClone(groups));
+  return Array.from(str.matchAll(rex), ({ groups }) => structuredClone(groups));
 };
