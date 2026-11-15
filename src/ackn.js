@@ -1,6 +1,8 @@
 import { connect } from 'node:tls';
 import { RequestError } from './errors.js';
 
+const h2AlpnRex = /\bh2\b/i;
+
 export const ackn = (options = {}) => new Promise((resolve, reject) => {
   const url = new URL(options.url);
   const socket = connect({
@@ -36,7 +38,7 @@ export const ackn = (options = {}) => new Promise((resolve, reject) => {
       createConnection() {
         return socket;
       },
-      h2: /\bh2\b/i.test(alpnProtocol),
+      h2: h2AlpnRex.test(alpnProtocol),
       protocol: url.protocol,
     });
   });

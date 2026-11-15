@@ -168,10 +168,10 @@ export default (baseURL) => (req, res) => {
       message: 'unauthorized',
     }));
     res.end();
-  } else if (pathname.match(String.raw`^/gimme/repulse$`) && [
-    HTTP2_METHOD_POST,
-    HTTP2_METHOD_PUT,
-  ].includes(req.method)) {
+  } else if (
+    pathname.match(String.raw`^/gimme/repulse$`)
+    && (HTTP2_METHOD_POST === req.method || HTTP2_METHOD_PUT === req.method)
+  ) {
     res.statusCode = HTTP_STATUS_OK;
     req.pipe(res);
   } else if (pathname.match(String.raw`^/gimme/squash$`) && req.method === HTTP2_METHOD_POST) {

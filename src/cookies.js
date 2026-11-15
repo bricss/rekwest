@@ -3,13 +3,18 @@ import {
   toCamelCase,
 } from './utils.js';
 
-export const cookieRex = /^[^=]+=(?:"[^"]*"|[^\p{Control};]*)(?:;\s*(?:[^=]+=(?:"[^"]*"|[^\p{Control};]*)|[^=]+))*$/u;
-export const cookiePairRex = /[^;\s]+=(?:"[^"]*"|[^;]*)/g;
-export const illegalCookieChars = /\p{Control}/u;
+export const cookieExpiryRex = /(?:expires|max-age)=/i;
+export const cookieIllegalCharsRex = /\p{Control}/u;
+export const cookieLaxPairPattern = `[^=]+=(?:"[^"]*"|[^${ cookieIllegalCharsRex.source };]*)`;
+export const cookieRex = new RegExp(
+  String.raw`^${ cookieLaxPairPattern }(?:;\s*(?:${ cookieLaxPairPattern }|[^=]+))*$`,
+  'u',
+);
 export const isValidCookie = (str) => typeof str === 'string' && cookieRex.test(str);
+export const maxCookieByteSize = 4096;
 export const maxCookieLifetimeCap = 3456e7; // 400 days
-export const maxCookieSize = 4096;
-export const splitCookie = (str) => str.match(cookiePairRex);
+export const splitCookieKVRex = /=(?<v>.*)/s;
+export const splitCookieToPairs = (str) => str.match(/[^;\s]+=(?:"[^"]*"|[^;]*)/g);
 
 export class Cookies extends URLSearchParams {
 
@@ -34,44 +39,43 @@ export class Cookies extends URLSearchParams {
 
   constructor(input, { cookiesTTL } = { cookiesTTL: false }) {
     if (isValidCookie(input)) {
-      input = splitCookie(input);
+      input = splitCookieToPairs(input);
     }
 
     const ttlMap = new Map();
 
-    if (Array.isArray(input)) {
-      if (input.every((it) => isValidCookie(it))) {
-        input = input.filter((it) => !illegalCookieChars.test(it) && it.length <= maxCookieSize);
-        input = input.map(splitCookie).map(([cookie, ...attrs]) => {
-          cookie = cookie.split(/=(?<v>.*)/s, 2).map((it) => {
-            try {
-              return decodeURIComponent(it);
-            } catch {
-              return it;
-            }
-          });
+    if (Array.isArray(input) && input.every((it) => isValidCookie(it))) {
+      input = input.filter((it) => !cookieIllegalCharsRex.test(it)).map(splitCookieToPairs)
+                   .filter(([cookie]) => new Blob([cookie]).size <= maxCookieByteSize)
+                   .map(([cookie, ...attrs]) => {
+                     cookie = cookie.split(splitCookieKVRex, 2).map((it) => {
+                       try {
+                         return decodeURIComponent(it);
+                       } catch {
+                         return it;
+                       }
+                     });
 
-          if (cookiesTTL) {
-            for (const attr of attrs) {
-              if (/(?:expires|max-age)=/i.test(attr)) {
-                const [key, val] = attr.split(/=(?<v>.*)/s, 2);
-                let interval = val * 1e3 || Date.parse(val) - Date.now();
+                     if (cookiesTTL) {
+                       for (const attr of attrs) {
+                         if (cookieExpiryRex.test(attr)) {
+                           const [key, val] = attr.split(splitCookieKVRex, 2);
+                           let interval = val * 1e3 || Date.parse(val) - Date.now();
 
-                if (interval < 0 || Number.isNaN(interval)) {
-                  interval = 0;
-                }
+                           if (interval < 0 || Number.isNaN(interval)) {
+                             interval = 0;
+                           }
 
-                ttlMap.set(
-                  cookie[0],
-                  { [toCamelCase(key)]: Math.min(interval, maxCookieLifetimeCap) },
-                );
-              }
-            }
-          }
+                           ttlMap.set(
+                             cookie[0],
+                             { [toCamelCase(key)]: Math.min(interval, maxCookieLifetimeCap) },
+                           );
+                         }
+                       }
+                     }
 
-          return cookie;
-        });
-      }
+                     return cookie;
+                   });
     }
 
     super(input);

@@ -10,10 +10,7 @@ const {
 } = http2.constants;
 
 export const validation = (options = {}) => {
-  if (options.body && [
-    HTTP2_METHOD_GET,
-    HTTP2_METHOD_HEAD,
-  ].includes(options.method)) {
+  if (options.body && (HTTP2_METHOD_GET === options.method || HTTP2_METHOD_HEAD === options.method)) {
     throw new TypeError(`Request with ${ HTTP2_METHOD_GET }/${ HTTP2_METHOD_HEAD } method cannot have body`);
   }
 

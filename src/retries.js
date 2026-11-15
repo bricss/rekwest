@@ -16,10 +16,7 @@ export const retries = (err, options) => {
   const { body, method, retry, url } = options;
 
   if (retry?.attempts > 0) {
-    if (![
-      HTTP2_METHOD_GET,
-      HTTP2_METHOD_HEAD,
-    ].includes(method) && isPipeStream(body) && !isReadable(body)) {
+    if ((HTTP2_METHOD_GET !== method && HTTP2_METHOD_HEAD !== method) && isPipeStream(body) && !isReadable(body)) {
       throw new RequestError('Request stream already read', { cause: err });
     }
 

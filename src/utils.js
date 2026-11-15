@@ -11,6 +11,10 @@ const {
   HTTP2_HEADER_STATUS,
 } = http2.constants;
 
+const h2cAlpnRex = /\bh2c?\b/i;
+const successStatusRex = /^2\d{2}$/;
+const trailingSlashRex = /\/$/;
+
 export const addSearchParams = (url, params = {}) => {
   const traverse = (prefix, val) => {
     if (Array.isArray(val)) {
@@ -38,7 +42,7 @@ export const addSearchParams = (url, params = {}) => {
 };
 
 export const augment = (res, headers, options) => {
-  const h2 = /\bh2c?\b/i.test(res.session?.alpnProtocol);
+  const h2 = h2cAlpnRex.test(res.session?.alpnProtocol);
 
   if (h2) {
     Reflect.defineProperty(res, 'headers', {
@@ -59,7 +63,7 @@ export const augment = (res, headers, options) => {
 
   Reflect.defineProperty(res, 'ok', {
     enumerable: true,
-    value: /^2\d{2}$/.test(res.statusCode),
+    value: successStatusRex.test(res.statusCode),
   });
 
   Reflect.defineProperty(res, 'redirected', {
@@ -166,7 +170,7 @@ function normalizeUrl(url, { trimTrailingSlashes, stripTrailingSlash } = {}) {
   }
 
   if (stripTrailingSlash && url.pathname !== '/') {
-    url.pathname = url.pathname.replace(/\/$/, '');
+    url.pathname = url.pathname.replace(trailingSlashRex, '');
   }
 
   return url;

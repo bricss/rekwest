@@ -10,6 +10,10 @@ const {
   HTTP2_HEADER_CONTENT_TYPE,
 } = http2.constants;
 
+const essenceRex = /\b(?:ecmascript|javascript|x-www-form-urlencoded)\b/;
+const jsonRex = /\bjson\b/;
+const subtypeRex = /\b(?:csv|json|xml|yaml)\b/;
+
 export const mixin = (res, { decodersOptions, digest = false, parse = false } = {}) => {
   if (!digest) {
     Object.defineProperties(res, {
@@ -86,13 +90,13 @@ export const mixin = (res, { decodersOptions, digest = false, parse = false } = 
           } finally {
             isTextual = mimeType && (
               mimeType.type === 'text'
-              || mimeType.subtype.match(/\bcsv\b|\bjson\b|\bxml\b|\byaml\b/)
-              || mimeType.essence.match(/\becmascript\b|\bjavascript\b|\bx-www-form-urlencoded\b/)
+              || mimeType.subtype.match(subtypeRex)
+              || mimeType.essence.match(essenceRex)
             );
           }
 
           if (isTextual) {
-            if (/\bjson\b/.test(mimeType)) {
+            if (jsonRex.test(mimeType)) {
               body = JSON.parse(body.toString());
             } else if (isUtf8(body)) {
               body = body.toString();

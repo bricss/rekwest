@@ -23,6 +23,9 @@ const {
   HTTP_STATUS_TEMPORARY_REDIRECT,
 } = http2.constants;
 
+const httpSchemeRex = /^https?:/i;
+const redirectStatusRex = /3\d{2}/;
+
 export const redirects = (res, options) => {
   const {
     allowDowngrade,
@@ -32,7 +35,7 @@ export const redirects = (res, options) => {
     url,
   } = options;
 
-  if (follow && /3\d{2}/.test(res.statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
+  if (follow && redirectStatusRex.test(res.statusCode) && res.headers[HTTP2_HEADER_LOCATION]) {
     if (redirect === requestRedirect.error) {
       throw new RequestError(`Unexpected redirect, redirect mode is set to: ${ redirect }`);
     }
@@ -40,7 +43,7 @@ export const redirects = (res, options) => {
     if (redirect === requestRedirect.follow) {
       const loc = new URL(res.headers[HTTP2_HEADER_LOCATION], url);
 
-      if (!/^https?:/i.test(loc.protocol)) {
+      if (!httpSchemeRex.test(loc.protocol)) {
         throw new RequestError('URL scheme must be "http" or "https"');
       }
 
@@ -58,21 +61,19 @@ export const redirects = (res, options) => {
         options.h2 = false;
       }
 
-      if ([
-        HTTP_STATUS_PERMANENT_REDIRECT,
-        HTTP_STATUS_TEMPORARY_REDIRECT,
-      ].includes(res.statusCode) && isPipeStream(options.body) && !isReadable(options.body)) {
+      if (
+        (HTTP_STATUS_PERMANENT_REDIRECT === res.statusCode || HTTP_STATUS_TEMPORARY_REDIRECT === res.statusCode)
+        && isPipeStream(options.body) && !isReadable(options.body)
+      ) {
         throw new RequestError(`Unable to ${ redirect } redirect with streamable body`);
       }
 
-      if (([
-        HTTP_STATUS_MOVED_PERMANENTLY,
-        HTTP_STATUS_FOUND,
-      ].includes(res.statusCode) && options.method === HTTP2_METHOD_POST)
-      || (res.statusCode === HTTP_STATUS_SEE_OTHER && ![
-        HTTP2_METHOD_GET,
-        HTTP2_METHOD_HEAD,
-      ].includes(options.method))) {
+      if (
+        ((HTTP_STATUS_MOVED_PERMANENTLY === res.statusCode || HTTP_STATUS_FOUND === res.statusCode)
+          && options.method === HTTP2_METHOD_POST)
+        || (res.statusCode === HTTP_STATUS_SEE_OTHER
+          && (HTTP2_METHOD_GET !== options.method && HTTP2_METHOD_HEAD !== options.method))
+      ) {
         options.body = null;
         options.method = HTTP2_METHOD_GET;
       }

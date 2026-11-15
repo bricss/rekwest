@@ -25,10 +25,7 @@ export const preflight = (options) => {
   } = options;
 
   if (h2) {
-    options.endStream = [
-      HTTP2_METHOD_GET,
-      HTTP2_METHOD_HEAD,
-    ].includes(method);
+    options.endStream = HTTP2_METHOD_GET === method || HTTP2_METHOD_HEAD === method;
   } else {
     headers = stripHeaders(headers, [
       HTTP2_HEADER_AUTHORITY,
